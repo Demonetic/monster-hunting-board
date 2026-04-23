@@ -21,7 +21,7 @@ Ni ska skapa en tech stack som består av följande komponenter:
 
 - En Spring Boot-applikation (Backend)
 - En React-applikation (Frontend) eller en Vanilla HTML+CSS+JavaScript applikation
-- En databas (MySQL)
+- En databas (MySQL) i en docker container
 
 ### Kriterier
 
