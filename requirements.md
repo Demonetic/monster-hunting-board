@@ -20,7 +20,11 @@ Målet med uppgiften är att du ska få praktisk erfarenhet av att bygga och dri
 Ni ska skapa en tech stack som består av följande komponenter:
 
 - En Spring Boot-applikation (Backend)
-- En React-applikation (Frontend) eller en Vanilla HTML+CSS+JavaScript applikation
+  - Med säkerhet (exempelvis JWT)
+  - Vettiga tester
+- Frontend:
+  - En React-applikation
+  - eller en Vanilla HTML+CSS+JavaScript applikation
 - En databas (MySQL) i en docker container
   - `docker run --name datalagring-mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password -d mysql:latest`
 
