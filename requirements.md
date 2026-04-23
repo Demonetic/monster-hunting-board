@@ -20,7 +20,7 @@ Målet med uppgiften är att du ska få praktisk erfarenhet av att bygga och dri
 Ni ska skapa en tech stack som består av följande komponenter:
 
 - En Spring Boot-applikation (Backend)
-- En React-applikation (Frontend)
+- En React-applikation (Frontend) eller en Vanilla HTML+CSS+JavaScript applikation
 - En databas (MySQL)
 
 ### Kriterier
