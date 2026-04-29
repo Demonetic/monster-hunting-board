@@ -1,16 +1,88 @@
-# React + Vite
+# Frontend README
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+The frontend is a React application built with Vite. It communicates with the backend API through Axios and supports both:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- local development with the Vite dev server
+- bundled production builds served by Spring Boot
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js
+- npm
 
-## Expanding the ESLint configuration
+## Install Dependencies
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+From the `frontend` folder:
+
+```powershell
+npm install
+```
+
+## Run the Frontend in Development Mode
+
+Start the Vite dev server:
+
+```powershell
+npm run dev
+```
+
+Default frontend URL:
+
+- `http://localhost:5173`
+
+API behavior in development:
+
+- the frontend uses `/api` by default
+- Vite proxies `/api` requests to `http://localhost:8080`
+
+This means the backend should also be running during frontend development.
+
+## Build the Frontend for Bundled Mode
+
+Build the frontend into the Spring Boot static resource directory:
+
+```powershell
+npm.cmd run build
+```
+
+The production build output is written to:
+
+- `../src/main/resources/static`
+
+After building, start the backend from the repository root and open:
+
+- `http://localhost:8080`
+
+## Environment Variables
+
+Frontend environment variables use the Vite `VITE_` prefix.
+
+Relevant variable:
+
+- `VITE_API_URL`
+
+Example:
+
+```env
+VITE_API_URL=http://localhost:8080/api
+```
+
+If `VITE_API_URL` is not set, the frontend falls back to:
+
+```text
+/api
+```
+
+That fallback works for:
+
+- bundled mode in Spring Boot
+- local development through the Vite proxy
+
+## Available Scripts
+
+- `npm run dev`: start the Vite development server
+- `npm.cmd run build`: create a production build for Spring Boot
+- `npm run preview`: preview the production build with Vite
+- `npm run lint`: run ESLint

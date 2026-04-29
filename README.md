@@ -1,36 +1,71 @@
-# Projekt - Individuell uppgift 1: DevOps
+# Monster Hunting Board
 
-## Förutsättningar
+## Overview
 
-- Java Development Kit (Amazon Corretto) 21 LTS
-- Maven (för att bygga och köra projektet)
-- Git (för att hantera versionshantering)
-- SpringBoot
+Monster Hunting Board is a full-stack web application built with:
 
-## Kravspecifikation
+- Spring Boot for the backend API
+- React + Vite for the frontend
+- MySQL for the main application database
+- H2 for automated tests
 
-För att projektet ska bli godkänt ska följande krav i filen [requirements.md](requirements.md)
-vara uppfyllda.
+The application supports authentication with JWT, hunter and hunt management, and a bundled one-port mode where Spring Boot serves both the frontend and the API on `http://localhost:8080`.
 
-## Rättning
+## Repository Structure
 
-- Ni ska lämna in en inlämningsrapport i en markdown fil som
-  heter [`personal_reflections.md`](documentation/personal_reflections.md) i mappen `documentation`.
+- [src/README.md](src/README.md): backend setup, run commands, tests, and API request file usage
+- [frontend/README.md](frontend/README.md): frontend setup, development mode, and production build workflow
+- [generated-requests.http](generated-requests.http): sample API requests for manual backend testing
+- [requirements.md](requirements.md): assignment requirements
+- [documentation/](documentation/intended-layout-design.md): design notes and screenshots
 
-## Betyg
+## Main Workflows
 
-Sträcker sig från IG till VG.
+### Backend Only
 
-## Sista inlämningstid
+Run the Spring Boot application from the repository root:
 
-Hålltider finns på Learnpoint.
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
-- Ni kan göra färdigt er uppgift efter deadline men ni hamnar sist i prioritering med att rättas.
-- Om ni inte lämnar in något alls får ni IG på er inlämning.
-- Inlämningar ska forkas från huvudprojektet.
+The backend API will be available on `http://localhost:8080/api/...`.
 
-## Frågor
+### Frontend Development
 
-Återkom till utbildaren via Teams.
+Run the frontend dev server from the `frontend` folder:
 
-_OBS! Är det frågor som fler än du själv har nytta av att få svar på, använd er av kanaler för frågor och svar._
+```powershell
+cd frontend
+npm run dev
+```
+
+The Vite dev server runs on `http://localhost:5173` and proxies `/api` requests to the backend.
+
+### Bundled Full App
+
+Build the frontend into Spring Boot static resources, then start the backend:
+
+```powershell
+cd frontend
+npm.cmd run build
+cd ..
+.\mvnw.cmd spring-boot:run
+```
+
+Open `http://localhost:8080`.
+
+## Environment Configuration
+
+Copy `.env.example` to `.env` and fill in your local values for the main application.
+
+Example values include:
+
+- `DB_URL`
+- `DB_USER`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `SERVER_PORT`
+- `VITE_API_URL`
+
+Tests do not require `.env`. They use isolated H2 settings from `src/test/resources/application-test.properties`.
