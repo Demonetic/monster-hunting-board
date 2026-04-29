@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { getToken } from './authStorage'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: API_BASE_URL,
 })
 
 apiClient.interceptors.request.use((config) => {
