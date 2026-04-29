@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -41,6 +42,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                RegexRequestMatcher.regexMatcher(HttpMethod.GET, "^/(?!api(?:/|$)).*$"),
                                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/beasts/**"),
                                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/hunts/**"),
                                 AntPathRequestMatcher.antMatcher("/api/auth/register"),

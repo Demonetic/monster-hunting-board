@@ -27,8 +27,12 @@ temp/
 
 # Environment and local secret config
 .env
+.env.local
 .env.*
 !.env.example
+!**/.env.example
+frontend/.env
+frontend/.env.local
 application-local.properties
 application-local.yml
 application-local.yaml
