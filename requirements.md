@@ -52,7 +52,7 @@ Ni ska nu implementera en CI/CD-pipeline med GitHub Actions för att automatiser
 - Skapa de Dockerfiles som behövs för att dockerisera applikationen.
 - Skapa en docker-compose fil som kan starta applikationen med databasen.
 - Verifiera att ni kan köra igång applikationen med docker-compose samt om ni har möjlighet att köra igång applikationen på en annan dator eller på Hetzner.
-- Ni ska ha README för varje individuell del av projektet.
+- Ni ska ha README för varje individuell del av projektet, dvs för frontend och backend.
 - Ni ska även ha en övergripande README i roten på projektet som beskriver hur man kan köra igång applikationen.
 
 ---
