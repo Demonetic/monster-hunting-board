@@ -1,0 +1,89 @@
+# Build output
+target/
+build/
+out/
+
+# Maven
+.mvn/
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# Logs
+logs/
+*.log
+hs_err_pid*
+replay_pid*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Environment and local secret config
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/test/resources/application-local.properties
+src/test/resources/application-local.yml
+src/test/resources/application-local.yaml
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Eclipse / STS
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# NetBeans
+nbproject/
+nbactions.xml
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Java / JVM
+*.class
+*.jar
+*.war
+*.ear
+
+# Test / coverage output
+coverage/
+site/
+jacoco.exec
+
+# Database / local runtime artifacts
+*.pid
+*.seed
+*.lock
+
+# Misc
+*.orig
