@@ -87,3 +87,4 @@ jacoco.exec
 
 # Misc
 *.orig
+.ai/
