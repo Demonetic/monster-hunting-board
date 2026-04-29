@@ -1,0 +1,219 @@
+@baseUrl = http://localhost:8080
+@runId = 20990101120000
+
+@hunterUsername = hunter1
+@hunterPassword = password123
+@gmUsername = gamemaster
+@gmPassword = password123
+
+### 1. Login hunter1 and save token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{hunterUsername}}",
+  "password": "{{hunterPassword}}"
+}
+
+> {%
+client.global.set("hunterToken", response.body.token);
+%}
+
+### 2. Login gamemaster and save token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{gmUsername}}",
+  "password": "{{gmPassword}}"
+}
+
+> {%
+client.global.set("gmToken", response.body.token);
+%}
+
+### 3. Get current hunter
+GET {{baseUrl}}/api/hunters/me
+Authorization: Bearer {{hunterToken}}
+
+### 4. Change appearance
+PATCH {{baseUrl}}/api/hunters/me/appearance
+Authorization: Bearer {{hunterToken}}
+Content-Type: application/json
+
+{
+  "appearance": "PALADIN"
+}
+
+### 5. Get all beasts
+GET {{baseUrl}}/api/beasts
+
+### 6. Create shared beast for hunts
+POST {{baseUrl}}/api/beasts
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "type": "GRIFFIN",
+  "difficulty": "MEDIUM",
+  "hp": 200,
+  "attackPower": 40,
+  "rewardExp": 120,
+  "rewardGold": 80
+}
+
+> {%
+client.global.set("sharedBeastId", response.body.id);
+%}
+
+### 7. Create disposable beast for update/delete
+POST {{baseUrl}}/api/beasts
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "type": "PHOENIX",
+  "difficulty": "HARD",
+  "hp": 280,
+  "attackPower": 52,
+  "rewardExp": 190,
+  "rewardGold": 140
+}
+
+> {%
+client.global.set("disposableBeastId", response.body.id);
+%}
+
+### 8. Get disposable beast by id
+GET {{baseUrl}}/api/beasts/{{disposableBeastId}}
+
+### 9. Update disposable beast as gamemaster
+PUT {{baseUrl}}/api/beasts/{{disposableBeastId}}
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "hp": 300,
+  "attackPower": 60,
+  "rewardExp": 210
+}
+
+### 10. Delete disposable beast as gamemaster
+DELETE {{baseUrl}}/api/beasts/{{disposableBeastId}}
+Authorization: Bearer {{gmToken}}
+
+### 11. Get all hunts
+GET {{baseUrl}}/api/hunts
+
+### 12. Create scheduled party hunt
+POST {{baseUrl}}/api/hunts
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "title": "Party Hunt {{runId}}",
+  "type": "HUNT",
+  "difficulty": "EASY",
+  "status": "SCHEDULED",
+  "startTime": "2099-01-01T12:00:00",
+  "maxPartySize": 3,
+  "beastIds": [{{sharedBeastId}}],
+  "rewardExp": 50,
+  "rewardGold": 25
+}
+
+> {%
+client.global.set("partyHuntId", response.body.id);
+%}
+
+### 13. Create solo hunt
+POST {{baseUrl}}/api/hunts
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "title": "Solo Hunt {{runId}}",
+  "type": "SOLO_HUNT",
+  "difficulty": "EASY",
+  "status": "ACTIVE",
+  "beastIds": [{{sharedBeastId}}],
+  "rewardExp": 40,
+  "rewardGold": 20
+}
+
+> {%
+client.global.set("soloHuntId", response.body.id);
+%}
+
+### 14. Create disposable hunt for update/delete
+POST {{baseUrl}}/api/hunts
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "title": "Disposable Hunt {{runId}}",
+  "type": "HUNT",
+  "difficulty": "MEDIUM",
+  "status": "SCHEDULED",
+  "startTime": "2099-01-02T12:00:00",
+  "maxPartySize": 4,
+  "beastIds": [{{sharedBeastId}}],
+  "rewardExp": 100,
+  "rewardGold": 75
+}
+
+> {%
+client.global.set("disposableHuntId", response.body.id);
+%}
+
+### 15. Get party hunt by id
+GET {{baseUrl}}/api/hunts/{{partyHuntId}}
+
+### 16. Get scheduled hunts
+GET {{baseUrl}}/api/hunts/scheduled
+
+### 17. Update disposable hunt as gamemaster
+PUT {{baseUrl}}/api/hunts/{{disposableHuntId}}
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "title": "Updated Disposable Hunt {{runId}}",
+  "rewardExp": 150,
+  "rewardGold": 90
+}
+
+### 18. Delete disposable hunt as gamemaster
+DELETE {{baseUrl}}/api/hunts/{{disposableHuntId}}
+Authorization: Bearer {{gmToken}}
+
+### 19. Join created party hunt as hunter
+POST {{baseUrl}}/api/hunts/{{partyHuntId}}/join
+Authorization: Bearer {{hunterToken}}
+
+### 20. Activate created party hunt as gamemaster
+PUT {{baseUrl}}/api/hunts/{{partyHuntId}}
+Authorization: Bearer {{gmToken}}
+Content-Type: application/json
+
+{
+  "status": "ACTIVE"
+}
+
+### 21. Complete created party hunt as hunter
+POST {{baseUrl}}/api/hunts/{{partyHuntId}}/complete
+Authorization: Bearer {{hunterToken}}
+Content-Type: application/json
+
+{
+  "won": true
+}
+
+### 22. Start created solo hunt as hunter
+POST {{baseUrl}}/api/hunts/{{soloHuntId}}/solo/start
+Authorization: Bearer {{hunterToken}}
+Content-Type: application/json
+
+{
+  "won": true
+}
