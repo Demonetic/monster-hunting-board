@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
@@ -37,6 +37,7 @@ import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 import se.edugrade.monsterhuntingboard.util.RewardResult;
 
 @Service
+@RequiredArgsConstructor
 public class HuntService {
 
     private final HuntRepository huntRepository;
@@ -44,20 +45,6 @@ public class HuntService {
     private final HunterRepository hunterRepository;
     private final HuntParticipationRepository huntParticipationRepository;
     private final BattleService battleService;
-
-    public HuntService(
-            HuntRepository huntRepository,
-            BeastRepository beastRepository,
-            HunterRepository hunterRepository,
-            HuntParticipationRepository huntParticipationRepository,
-            BattleService battleService
-    ) {
-        this.huntRepository = huntRepository;
-        this.beastRepository = beastRepository;
-        this.hunterRepository = hunterRepository;
-        this.huntParticipationRepository = huntParticipationRepository;
-        this.battleService = battleService;
-    }
 
     @Transactional
     public HuntResponse createHunt(CreateHuntRequest request) {
@@ -77,7 +64,7 @@ public class HuntService {
                 .build();
 
         Hunt savedHunt = huntRepository.save(hunt);
-        return toResponse(savedHunt);
+        return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
     }
 
     @Transactional
@@ -85,7 +72,10 @@ public class HuntService {
         return huntRepository.findAll()
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
-                .map(this::toResponse)
+                .map(hunt -> HuntResponse.from(
+                        hunt,
+                        Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
+                ))
                 .toList();
     }
 
@@ -93,7 +83,7 @@ public class HuntService {
     public HuntResponse getHuntById(Long id) {
         Hunt hunt = getHuntOrThrow(id);
         updateHuntStatusIfNeeded(hunt);
-        return toResponse(hunt);
+        return HuntResponse.from(hunt, Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId())));
     }
 
     @Transactional
@@ -102,7 +92,10 @@ public class HuntService {
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
                 .filter(hunt -> hunt.getStatus() == HuntStatus.SCHEDULED)
-                .map(this::toResponse)
+                .map(hunt -> HuntResponse.from(
+                        hunt,
+                        Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
+                ))
                 .toList();
     }
 
@@ -130,15 +123,7 @@ public class HuntService {
 
         huntParticipationRepository.save(createParticipation(hunter, hunt));
 
-        return new JoinHuntResponse(
-                hunt.getId(),
-                hunt.getTitle(),
-                hunter.getId(),
-                hunter.getDisplayName(),
-                (int) (currentPartySize + 1),
-                hunt.getMaxPartySize(),
-                "Hunter joined the hunt successfully"
-        );
+        return JoinHuntResponse.from(hunt, hunter, (int) (currentPartySize + 1), "Hunter joined the hunt successfully");
     }
 
     @Transactional
@@ -206,7 +191,8 @@ public class HuntService {
         validateUpdatedHunt(hunt);
         updateHuntStatusIfNeeded(hunt);
 
-        return toResponse(huntRepository.save(hunt));
+        Hunt savedHunt = huntRepository.save(hunt);
+        return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
     }
 
     @Transactional
@@ -320,35 +306,6 @@ public class HuntService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
     }
 
-    private HuntResponse toResponse(Hunt hunt) {
-        return new HuntResponse(
-                hunt.getId(),
-                hunt.getTitle(),
-                hunt.getType(),
-                hunt.getDifficulty(),
-                hunt.getStatus(),
-                hunt.getStartTime(),
-                hunt.getMaxPartySize(),
-                hunt.getBeasts().stream().map(this::toBeastResponse).toList(),
-                Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId())),
-                hunt.getRewardExp(),
-                hunt.getRewardGold(),
-                hunt.getCreatedAt()
-        );
-    }
-
-    private BeastResponse toBeastResponse(Beast beast) {
-        return new BeastResponse(
-                beast.getId(),
-                beast.getType(),
-                beast.getDifficulty(),
-                beast.getHp(),
-                beast.getAttackPower(),
-                beast.getRewardExp(),
-                beast.getRewardGold()
-        );
-    }
-
     private HuntResultResponse applyResult(Hunt hunt, Hunter hunter, HuntParticipation participation, boolean won) {
         RewardResult rewardResult = won
                 ? GameBalanceUtil.applyWinReward(hunt)
@@ -371,16 +328,12 @@ public class HuntService {
         participation.setGoldChange(rewardResult.goldChange());
         participation.setCompletedAt(LocalDateTime.now());
 
-        return new HuntResultResponse(
-                hunt.getId(),
-                hunt.getTitle(),
+        return HuntResultResponse.from(
+                hunt,
+                hunter,
                 won,
                 rewardResult.expChange(),
-                rewardResult.goldChange(),
-                hunter.getExp(),
-                hunter.getGold(),
-                hunter.getLevel(),
-                hunter.getBaseHp()
+                rewardResult.goldChange()
         );
     }
 

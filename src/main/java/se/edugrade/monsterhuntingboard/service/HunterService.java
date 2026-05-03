@@ -1,6 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
@@ -12,19 +13,16 @@ import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 
 @Service
+@RequiredArgsConstructor
 public class HunterService {
 
     private final HunterRepository hunterRepository;
-
-    public HunterService(HunterRepository hunterRepository) {
-        this.hunterRepository = hunterRepository;
-    }
 
     @Transactional(readOnly = true)
     public HunterResponse getCurrentHunter(String username) {
         Hunter hunter = hunterRepository.findByUserAccountUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
-        return toResponse(hunter);
+        return HunterResponse.from(hunter);
     }
 
     @Transactional
@@ -37,27 +35,14 @@ public class HunterService {
         }
 
         hunter.setAppearance(request.appearance());
-        return toResponse(hunter);
+        return HunterResponse.from(hunter);
     }
 
     @Transactional(readOnly = true)
     public List<HunterResponse> getAllHunters() {
         return hunterRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(HunterResponse::from)
                 .toList();
-    }
-
-    private HunterResponse toResponse(Hunter hunter) {
-        return new HunterResponse(
-                hunter.getId(),
-                hunter.getDisplayName(),
-                hunter.getAppearance(),
-                hunter.getLevel(),
-                hunter.getExp(),
-                hunter.getGold(),
-                hunter.getBaseHp(),
-                hunter.getCurrentHp()
-        );
     }
 }

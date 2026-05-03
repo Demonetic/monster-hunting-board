@@ -2,6 +2,7 @@ package se.edugrade.monsterhuntingboard.service;
 
 import jakarta.transaction.Transactional;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
@@ -22,24 +23,13 @@ import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
 import se.edugrade.monsterhuntingboard.security.JwtService;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-
-    public AuthService(
-            UserAccountRepository userAccountRepository,
-            PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager,
-            JwtService jwtService
-    ) {
-        this.userAccountRepository = userAccountRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-    }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -73,7 +63,7 @@ public class AuthService {
         UserAccount savedUserAccount = userAccountRepository.save(userAccount);
         String token = jwtService.generateToken(buildClaims(savedUserAccount), buildUserDetails(savedUserAccount));
 
-        return new AuthResponse(token, savedUserAccount.getUsername(), savedUserAccount.getRole());
+        return AuthResponse.from(token, savedUserAccount);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -85,7 +75,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.username()));
 
         String token = jwtService.generateToken(buildClaims(userAccount), buildUserDetails(userAccount));
-        return new AuthResponse(token, userAccount.getUsername(), userAccount.getRole());
+        return AuthResponse.from(token, userAccount);
     }
 
     private UserDetails buildUserDetails(UserAccount userAccount) {

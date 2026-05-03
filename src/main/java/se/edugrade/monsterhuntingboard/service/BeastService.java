@@ -1,6 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.BeastRequest;
@@ -15,15 +16,11 @@ import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 
 @Service
+@RequiredArgsConstructor
 public class BeastService {
 
     private final BeastRepository beastRepository;
     private final HuntRepository huntRepository;
-
-    public BeastService(BeastRepository beastRepository, HuntRepository huntRepository) {
-        this.beastRepository = beastRepository;
-        this.huntRepository = huntRepository;
-    }
 
     @Transactional
     public BeastResponse createBeast(BeastRequest request) {
@@ -37,14 +34,14 @@ public class BeastService {
                 .build();
 
         Beast savedBeast = beastRepository.save(beast);
-        return toResponse(savedBeast);
+        return BeastResponse.from(savedBeast);
     }
 
     @Transactional(readOnly = true)
     public List<BeastResponse> getAllBeasts() {
         return beastRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(BeastResponse::from)
                 .toList();
     }
 
@@ -52,14 +49,14 @@ public class BeastService {
     public BeastResponse getBeastById(Long id) {
         Beast beast = beastRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Beast not found with id: " + id));
-        return toResponse(beast);
+        return BeastResponse.from(beast);
     }
 
     @Transactional(readOnly = true)
     public List<BeastResponse> getBeastsByDifficulty(Difficulty difficulty) {
         return beastRepository.findByDifficulty(difficulty)
                 .stream()
-                .map(this::toResponse)
+                .map(BeastResponse::from)
                 .toList();
     }
 
@@ -67,7 +64,7 @@ public class BeastService {
     public List<BeastResponse> getBeastsByType(BeastType type) {
         return beastRepository.findByType(type)
                 .stream()
-                .map(this::toResponse)
+                .map(BeastResponse::from)
                 .toList();
     }
 
@@ -94,7 +91,7 @@ public class BeastService {
             beast.setRewardGold(request.rewardGold());
         }
 
-        return toResponse(beastRepository.save(beast));
+        return BeastResponse.from(beastRepository.save(beast));
     }
 
     @Transactional
@@ -111,17 +108,5 @@ public class BeastService {
     private Beast getBeastOrThrow(Long id) {
         return beastRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Beast not found with id: " + id));
-    }
-
-    private BeastResponse toResponse(Beast beast) {
-        return new BeastResponse(
-                beast.getId(),
-                beast.getType(),
-                beast.getDifficulty(),
-                beast.getHp(),
-                beast.getAttackPower(),
-                beast.getRewardExp(),
-                beast.getRewardGold()
-        );
     }
 }
