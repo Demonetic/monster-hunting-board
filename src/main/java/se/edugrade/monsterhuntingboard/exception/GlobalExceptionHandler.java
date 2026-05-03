@@ -2,6 +2,8 @@ package se.edugrade.monsterhuntingboard.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +19,14 @@ import se.edugrade.monsterhuntingboard.dto.ErrorResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
             ResourceNotFoundException exception,
             HttpServletRequest request
     ) {
+        log.warn("Resource not found: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request);
     }
 
@@ -31,6 +35,7 @@ public class GlobalExceptionHandler {
             DuplicateResourceException exception,
             HttpServletRequest request
     ) {
+        log.warn("Duplicate resource: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request);
     }
 
@@ -39,6 +44,7 @@ public class GlobalExceptionHandler {
             UnauthorizedActionException exception,
             HttpServletRequest request
     ) {
+        log.warn("Unauthorized action: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request);
     }
 
@@ -47,6 +53,7 @@ public class GlobalExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
+        log.warn("Access denied: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request);
     }
 
@@ -55,6 +62,7 @@ public class GlobalExceptionHandler {
             PartyFullException exception,
             HttpServletRequest request
     ) {
+        log.warn("Party full: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request);
     }
 
@@ -63,6 +71,7 @@ public class GlobalExceptionHandler {
             InvalidHuntStateException exception,
             HttpServletRequest request
     ) {
+        log.warn("Invalid hunt state: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
@@ -71,6 +80,7 @@ public class GlobalExceptionHandler {
             InvalidGameRuleException exception,
             HttpServletRequest request
     ) {
+        log.warn("Invalid game rule: {}", exception.getMessage());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
     }
 
@@ -85,6 +95,7 @@ public class GlobalExceptionHandler {
                 .map(this::formatFieldError)
                 .collect(Collectors.joining(", "));
 
+        log.warn("Validation failed: {}", message);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
@@ -93,6 +104,7 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException exception,
             HttpServletRequest request
     ) {
+        log.warn("Data integrity violation: {}", exception.getMostSpecificCause().getMessage());
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMostSpecificCause().getMessage(), request);
     }
 
@@ -102,6 +114,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         String message = "Invalid value for parameter: " + exception.getName();
+        log.warn("Method argument type mismatch: {}", message);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
@@ -110,6 +123,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
+        log.warn("Malformed request body");
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed request body", request);
     }
 
@@ -118,6 +132,7 @@ public class GlobalExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
+        log.error("Unexpected error: {}", exception.getMessage(), exception);
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
     }
 

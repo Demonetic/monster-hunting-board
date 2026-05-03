@@ -3,6 +3,8 @@ package se.edugrade.monsterhuntingboard.service;
 import jakarta.transaction.Transactional;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
@@ -25,6 +27,7 @@ import se.edugrade.monsterhuntingboard.security.JwtService;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
@@ -62,6 +65,7 @@ public class AuthService {
 
         UserAccount savedUserAccount = userAccountRepository.save(userAccount);
         String token = jwtService.generateToken(buildClaims(savedUserAccount), buildUserDetails(savedUserAccount));
+        log.info("Registered user: {} (id={})", savedUserAccount.getUsername(), savedUserAccount.getId());
 
         return AuthResponse.from(token, savedUserAccount);
     }
@@ -75,6 +79,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.username()));
 
         String token = jwtService.generateToken(buildClaims(userAccount), buildUserDetails(userAccount));
+        log.info("User logged in: {}", userAccount.getUsername());
         return AuthResponse.from(token, userAccount);
     }
 

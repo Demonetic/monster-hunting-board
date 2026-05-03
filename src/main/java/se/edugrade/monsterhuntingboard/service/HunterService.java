@@ -2,6 +2,8 @@ package se.edugrade.monsterhuntingboard.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
@@ -15,6 +17,7 @@ import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 @Service
 @RequiredArgsConstructor
 public class HunterService {
+    private static final Logger log = LoggerFactory.getLogger(HunterService.class);
 
     private final HunterRepository hunterRepository;
 
@@ -35,6 +38,7 @@ public class HunterService {
         }
 
         hunter.setAppearance(request.appearance());
+        log.info("Updated hunter appearance: {} -> {}", username, hunter.getAppearance());
         return HunterResponse.from(hunter);
     }
 

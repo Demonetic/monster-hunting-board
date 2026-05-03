@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
@@ -39,6 +41,7 @@ import se.edugrade.monsterhuntingboard.util.RewardResult;
 @Service
 @RequiredArgsConstructor
 public class HuntService {
+    private static final Logger log = LoggerFactory.getLogger(HuntService.class);
 
     private final HuntRepository huntRepository;
     private final BeastRepository beastRepository;
@@ -64,6 +67,7 @@ public class HuntService {
                 .build();
 
         Hunt savedHunt = huntRepository.save(hunt);
+        log.info("Created hunt: {} (id={})", savedHunt.getTitle(), savedHunt.getId());
         return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
     }
 
@@ -122,6 +126,7 @@ public class HuntService {
         }
 
         huntParticipationRepository.save(createParticipation(hunter, hunt));
+        log.info("Hunter {} joined hunt {}", hunter.getDisplayName(), hunt.getTitle());
 
         return JoinHuntResponse.from(hunt, hunter, (int) (currentPartySize + 1), "Hunter joined the hunt successfully");
     }
@@ -192,6 +197,7 @@ public class HuntService {
         updateHuntStatusIfNeeded(hunt);
 
         Hunt savedHunt = huntRepository.save(hunt);
+        log.info("Updated hunt: {} (id={})", savedHunt.getTitle(), savedHunt.getId());
         return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
     }
 
@@ -204,6 +210,7 @@ public class HuntService {
         }
 
         huntRepository.delete(hunt);
+        log.info("Deleted hunt id={}", id);
     }
 
     private List<Beast> resolveBeasts(List<Long> beastIds) {
@@ -327,6 +334,7 @@ public class HuntService {
         participation.setExpChange(rewardResult.expChange());
         participation.setGoldChange(rewardResult.goldChange());
         participation.setCompletedAt(LocalDateTime.now());
+        log.info("Completed hunt {} for hunter {} with result {}", hunt.getTitle(), hunter.getDisplayName(), won ? "WIN" : "LOSS");
 
         return HuntResultResponse.from(
                 hunt,

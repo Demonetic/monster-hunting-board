@@ -2,6 +2,8 @@ package se.edugrade.monsterhuntingboard.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.BeastRequest;
@@ -18,6 +20,7 @@ import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 @Service
 @RequiredArgsConstructor
 public class BeastService {
+    private static final Logger log = LoggerFactory.getLogger(BeastService.class);
 
     private final BeastRepository beastRepository;
     private final HuntRepository huntRepository;
@@ -34,6 +37,7 @@ public class BeastService {
                 .build();
 
         Beast savedBeast = beastRepository.save(beast);
+        log.info("Created beast: {} (id={})", savedBeast.getType(), savedBeast.getId());
         return BeastResponse.from(savedBeast);
     }
 
@@ -91,7 +95,9 @@ public class BeastService {
             beast.setRewardGold(request.rewardGold());
         }
 
-        return BeastResponse.from(beastRepository.save(beast));
+        Beast savedBeast = beastRepository.save(beast);
+        log.info("Updated beast id={}", savedBeast.getId());
+        return BeastResponse.from(savedBeast);
     }
 
     @Transactional
@@ -103,6 +109,7 @@ public class BeastService {
         }
 
         beastRepository.delete(beast);
+        log.info("Deleted beast id={}", id);
     }
 
     private Beast getBeastOrThrow(Long id) {
