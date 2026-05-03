@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,7 +54,7 @@ class HuntRepositoryTest {
 
     @Test
     void statusAndBeastLookupMethodsWork() {
-        assertEquals(1, huntRepository.findByStatus(HuntStatus.SCHEDULED).size());
-        assertTrue(huntRepository.existsByBeastsId(beast.getId()));
+        assertThat(huntRepository.findByStatus(HuntStatus.SCHEDULED)).hasSize(1);
+        assertThat(huntRepository.existsByBeastsId(beast.getId())).isTrue();
     }
 }

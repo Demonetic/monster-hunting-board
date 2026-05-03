@@ -1,8 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -81,17 +80,18 @@ class BeastServiceTest {
                 new UpdateBeastRequest(null, null, 250, 45, 130, null)
         );
 
-        assertEquals(250, response.hp());
-        assertEquals(45, response.attackPower());
-        assertEquals(130, response.rewardExp());
-        assertEquals(25, response.rewardGold());
-        assertEquals(BeastType.BASILISK, response.type());
+        assertThat(response.hp()).isEqualTo(250);
+        assertThat(response.attackPower()).isEqualTo(45);
+        assertThat(response.rewardExp()).isEqualTo(130);
+        assertThat(response.rewardGold()).isEqualTo(25);
+        assertThat(response.type()).isEqualTo(BeastType.BASILISK);
     }
 
     @Test
     void deleteBeastAllowsUnusedButRejectsUsed() {
         beastService.deleteBeast(freeBeast.getId());
-        assertFalse(beastRepository.existsById(freeBeast.getId()));
-        assertThrows(InvalidGameRuleException.class, () -> beastService.deleteBeast(usedBeast.getId()));
+        assertThat(beastRepository.existsById(freeBeast.getId())).isFalse();
+        assertThatThrownBy(() -> beastService.deleteBeast(usedBeast.getId()))
+                .isInstanceOf(InvalidGameRuleException.class);
     }
 }

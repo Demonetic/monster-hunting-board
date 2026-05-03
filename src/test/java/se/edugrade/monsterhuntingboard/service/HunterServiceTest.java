@@ -1,7 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,9 +66,9 @@ class HunterServiceTest {
     void getCurrentHunterWorks() {
         HunterResponse response = hunterService.getCurrentHunter(username);
 
-        assertEquals("Aria", response.displayName());
-        assertEquals(Appearance.MAGE, response.appearance());
-        assertEquals(1, response.level());
+        assertThat(response.displayName()).isEqualTo("Aria");
+        assertThat(response.appearance()).isEqualTo(Appearance.MAGE);
+        assertThat(response.level()).isEqualTo(1);
     }
 
     @Test
@@ -78,10 +78,8 @@ class HunterServiceTest {
                 new UpdateAppearanceRequest(Appearance.PALADIN)
         );
 
-        assertEquals(Appearance.PALADIN, response.appearance());
-        assertThrows(
-                InvalidGameRuleException.class,
-                () -> hunterService.updateAppearance(username, new UpdateAppearanceRequest(Appearance.BARD))
-        );
+        assertThat(response.appearance()).isEqualTo(Appearance.PALADIN);
+        assertThatThrownBy(() -> hunterService.updateAppearance(username, new UpdateAppearanceRequest(Appearance.BARD)))
+                .isInstanceOf(InvalidGameRuleException.class);
     }
 }

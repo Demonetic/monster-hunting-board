@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,12 +40,9 @@ class BeastRepositoryTest {
 
     @Test
     void findByTypeAndDifficultyReturnsMatchingBeasts() {
-        assertEquals(1, beastRepository.findByType(BeastType.GRIFFIN).size());
-        assertEquals(1, beastRepository.findByDifficulty(Difficulty.BOSS).size());
-        assertTrue(
-                beastRepository.findByDifficultyAndType(Difficulty.MEDIUM, BeastType.GRIFFIN)
-                        .stream()
-                        .allMatch(beast -> beast.getType() == BeastType.GRIFFIN)
-        );
+        assertThat(beastRepository.findByType(BeastType.GRIFFIN)).hasSize(1);
+        assertThat(beastRepository.findByDifficulty(Difficulty.BOSS)).hasSize(1);
+        assertThat(beastRepository.findByDifficultyAndType(Difficulty.MEDIUM, BeastType.GRIFFIN))
+                .allMatch(beast -> beast.getType() == BeastType.GRIFFIN);
     }
 }

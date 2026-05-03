@@ -1,6 +1,10 @@
 package se.edugrade.monsterhuntingboard.controller;
 
-import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,93 +12,76 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import se.edugrade.monsterhuntingboard.util.TestIds;
-import se.edugrade.monsterhuntingboard.dto.AuthResponse;
+import se.edugrade.monsterhuntingboard.config.SecurityConfig;
+import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
-import se.edugrade.monsterhuntingboard.dto.LoginRequest;
-import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
-import se.edugrade.monsterhuntingboard.model.Appearance;
-import se.edugrade.monsterhuntingboard.model.Beast;
+import se.edugrade.monsterhuntingboard.dto.HuntResultResponse;
+import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
 import se.edugrade.monsterhuntingboard.model.BeastType;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
-import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
-import se.edugrade.monsterhuntingboard.model.Role;
-import se.edugrade.monsterhuntingboard.model.UserAccount;
-import se.edugrade.monsterhuntingboard.repository.BeastRepository;
-import se.edugrade.monsterhuntingboard.repository.HuntRepository;
-import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
-import se.edugrade.monsterhuntingboard.service.BattleService;
+import se.edugrade.monsterhuntingboard.security.CustomUserDetailsService;
+import se.edugrade.monsterhuntingboard.security.JwtAuthenticationFilter;
+import se.edugrade.monsterhuntingboard.security.JwtService;
+import se.edugrade.monsterhuntingboard.service.HuntService;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@WebMvcTest(HuntController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 class HuntControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockitoBean
+    private HuntService huntService;
 
-    @Autowired
-    private BeastRepository beastRepository;
+    @MockitoBean
+    private JwtService jwtService;
 
-    @Autowired
-    private HuntRepository huntRepository;
-
-    @Autowired
-    private UserAccountRepository userAccountRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @MockBean
-    private BattleService battleService;
-
-    @BeforeEach
-    void setUp() {
-        given(battleService.rollWin()).willReturn(true);
-    }
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     @Test
     void getAllHuntsReturnsOk() throws Exception {
-        createScheduledHunt();
+        when(huntService.getAllHunts()).thenReturn(List.of(createHuntResponse(1L, "Scheduled Hunt", HuntStatus.SCHEDULED)));
 
         mockMvc.perform(get("/api/hunts"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Scheduled Hunt"));
     }
 
     @Test
     void getScheduledHuntsReturnsOk() throws Exception {
-        createScheduledHunt();
+        when(huntService.getScheduledHunts()).thenReturn(List.of(
+                createHuntResponse(1L, "Scheduled Hunt", HuntStatus.SCHEDULED)
+        ));
 
         mockMvc.perform(get("/api/hunts/scheduled"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("SCHEDULED"));
     }
 
     @Test
     void gameMasterCanCreateUpdateAndDeleteHunt() throws Exception {
-        String token = loginGameMasterAndGetToken();
-        Beast beast = createBeast();
+        HuntResponse created = createHuntResponse(1L, "Controller Hunt", HuntStatus.SCHEDULED);
+        HuntResponse updated = createHuntResponse(1L, "Updated Hunt Title", HuntStatus.SCHEDULED);
 
-        MvcResult createResult = mockMvc.perform(post("/api/hunts")
-                        .header("Authorization", "Bearer " + token)
+        when(huntService.createHunt(any())).thenReturn(created);
+        when(huntService.updateHunt(eq(1L), any())).thenReturn(updated);
+        doNothing().when(huntService).deleteHunt(1L);
+
+        mockMvc.perform(post("/api/hunts")
+                        .with(user("gm").roles("GAME_MASTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -104,22 +91,16 @@ class HuntControllerTest {
                                   "status": "SCHEDULED",
                                   "startTime": "2026-01-01T12:00:00",
                                   "maxPartySize": 3,
-                                  "beastIds": [%d],
+                                  "beastIds": [1],
                                   "rewardExp": 50,
                                   "rewardGold": 25
                                 }
-                                """.formatted(beast.getId())))
+                                """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("Controller Hunt"))
-                .andReturn();
+                .andExpect(jsonPath("$.title").value("Controller Hunt"));
 
-        HuntResponse createdHunt = objectMapper.readValue(
-                createResult.getResponse().getContentAsString(),
-                HuntResponse.class
-        );
-
-        mockMvc.perform(put("/api/hunts/{id}", createdHunt.id())
-                        .header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/hunts/1")
+                        .with(user("gm").roles("GAME_MASTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -129,26 +110,30 @@ class HuntControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Updated Hunt Title"))
-                .andExpect(jsonPath("$.rewardExp").value(150));
+                .andExpect(jsonPath("$.title").value("Updated Hunt Title"));
 
-        mockMvc.perform(delete("/api/hunts/{id}", createdHunt.id())
-                        .header("Authorization", "Bearer " + token))
+        mockMvc.perform(delete("/api/hunts/1")
+                        .with(user("gm").roles("GAME_MASTER")))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void hunterCanJoinAndCompleteActiveHunt() throws Exception {
-        String token = registerHunterAndGetToken("Complete Hunter");
-        Hunt hunt = createActiveHunt();
+        when(huntService.joinHunt(1L, "aria")).thenReturn(
+                new JoinHuntResponse(1L, "Active Hunt", 10L, "Aria", 1, 4, "Joined")
+        );
+        when(huntService.completeHuntForCurrentHunter(eq(1L), eq("aria"), any())).thenReturn(
+                new HuntResultResponse(1L, "Active Hunt", true, 100, 75, 100, 75, 2, 110)
+        );
 
-        mockMvc.perform(post("/api/hunts/{id}/join", hunt.getId())
-                        .header("Authorization", "Bearer " + token))
+        mockMvc.perform(post("/api/hunts/1/join")
+                        .with(user("aria").roles("HUNTER")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.huntId").value(hunt.getId()));
+                .andExpect(jsonPath("$.huntId").value(1))
+                .andExpect(jsonPath("$.hunterDisplayName").value("Aria"));
 
-        mockMvc.perform(post("/api/hunts/{id}/complete", hunt.getId())
-                        .header("Authorization", "Bearer " + token)
+        mockMvc.perform(post("/api/hunts/1/complete")
+                        .with(user("aria").roles("HUNTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -161,11 +146,12 @@ class HuntControllerTest {
 
     @Test
     void hunterCanStartSoloHunt() throws Exception {
-        String token = registerHunterAndGetToken("Solo Hunter");
-        Hunt hunt = createSoloHunt();
+        when(huntService.startSoloHunt(eq(1L), eq("solo"), any())).thenReturn(
+                new HuntResultResponse(1L, "Solo Hunt", true, 50, 25, 50, 25, 1, 100)
+        );
 
-        mockMvc.perform(post("/api/hunts/{id}/solo/start", hunt.getId())
-                        .header("Authorization", "Bearer " + token)
+        mockMvc.perform(post("/api/hunts/1/solo/start")
+                        .with(user("solo").roles("HUNTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -178,13 +164,8 @@ class HuntControllerTest {
 
     @Test
     void permissionsAndInvalidJsonAreEnforcedForHuntEndpoints() throws Exception {
-        String hunterToken = registerHunterAndGetToken("Restricted Hunter");
-        String gmToken = loginGameMasterAndGetToken();
-        Beast beast = createBeast();
-        Hunt hunt = createActiveHunt();
-
         mockMvc.perform(post("/api/hunts")
-                        .header("Authorization", "Bearer " + hunterToken)
+                        .with(user("hunter").roles("HUNTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -194,15 +175,15 @@ class HuntControllerTest {
                                   "status": "SCHEDULED",
                                   "startTime": "2026-01-01T12:00:00",
                                   "maxPartySize": 3,
-                                  "beastIds": [%d],
+                                  "beastIds": [1],
                                   "rewardExp": 50,
                                   "rewardGold": 25
                                 }
-                                """.formatted(beast.getId())))
+                                """))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(put("/api/hunts/{id}", hunt.getId())
-                        .header("Authorization", "Bearer " + hunterToken)
+        mockMvc.perform(put("/api/hunts/1")
+                        .with(user("hunter").roles("HUNTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -211,103 +192,35 @@ class HuntControllerTest {
                                 """))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(delete("/api/hunts/{id}", hunt.getId())
-                        .header("Authorization", "Bearer " + hunterToken))
+        mockMvc.perform(delete("/api/hunts/1")
+                        .with(user("hunter").roles("HUNTER")))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/api/hunts/{id}/join", hunt.getId())
-                        .header("Authorization", "Bearer " + gmToken))
+        mockMvc.perform(post("/api/hunts/1/join")
+                        .with(user("gm").roles("GAME_MASTER")))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/hunts")
-                        .header("Authorization", "Bearer " + gmToken)
+                        .with(user("gm").roles("GAME_MASTER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Broken Hunt\",\"type\":\"HUNT\","))
                 .andExpect(status().isBadRequest());
     }
 
-    private Beast createBeast() {
-        return beastRepository.save(Beast.builder()
-                .type(BeastType.BASILISK)
-                .difficulty(Difficulty.EASY)
-                .hp(100)
-                .attackPower(20)
-                .rewardExp(50)
-                .rewardGold(25)
-                .build());
-    }
-
-    private Hunt createScheduledHunt() {
-        Beast beast = createBeast();
-        return huntRepository.save(Hunt.builder()
-                .title("Scheduled Hunt " + TestIds.shortId())
-                .type(HuntType.HUNT)
-                .difficulty(Difficulty.MEDIUM)
-                .status(HuntStatus.SCHEDULED)
-                .startTime(LocalDateTime.now().plusHours(2))
-                .maxPartySize(4)
-                .beasts(List.of(beast))
-                .rewardExp(100)
-                .rewardGold(75)
-                .build());
-    }
-
-    private Hunt createActiveHunt() {
-        Beast beast = createBeast();
-        return huntRepository.save(Hunt.builder()
-                .title("Active Hunt " + TestIds.shortId())
-                .type(HuntType.HUNT)
-                .difficulty(Difficulty.MEDIUM)
-                .status(HuntStatus.ACTIVE)
-                .startTime(LocalDateTime.now().plusHours(2))
-                .maxPartySize(4)
-                .beasts(List.of(beast))
-                .rewardExp(100)
-                .rewardGold(75)
-                .build());
-    }
-
-    private Hunt createSoloHunt() {
-        Beast beast = createBeast();
-        return huntRepository.save(Hunt.builder()
-                .title("Solo Hunt " + TestIds.shortId())
-                .type(HuntType.SOLO_HUNT)
-                .difficulty(Difficulty.EASY)
-                .status(HuntStatus.ACTIVE)
-                .beasts(List.of(beast))
-                .rewardExp(50)
-                .rewardGold(25)
-                .build());
-    }
-
-    private String registerHunterAndGetToken(String displayName) throws Exception {
-        String username = "h-" + TestIds.shortId();
-        RegisterRequest request = new RegisterRequest(username, "password123", displayName, Appearance.KNIGHT);
-
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        return objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class).token();
-    }
-
-    private String loginGameMasterAndGetToken() throws Exception {
-        String username = "gm-" + TestIds.shortId();
-        userAccountRepository.save(UserAccount.builder()
-                .username(username)
-                .password(passwordEncoder.encode("password123"))
-                .role(Role.GAME_MASTER)
-                .build());
-
-        LoginRequest request = new LoginRequest(username, "password123");
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        return objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class).token();
+    private HuntResponse createHuntResponse(Long id, String title, HuntStatus status) {
+        return new HuntResponse(
+                id,
+                title,
+                HuntType.HUNT,
+                Difficulty.EASY,
+                status,
+                LocalDateTime.of(2026, 1, 1, 12, 0),
+                3,
+                List.of(new BeastResponse(1L, BeastType.BASILISK, Difficulty.EASY, 100, 20, 50, 25)),
+                0,
+                50,
+                25,
+                LocalDateTime.of(2026, 1, 1, 10, 0)
+        );
     }
 }

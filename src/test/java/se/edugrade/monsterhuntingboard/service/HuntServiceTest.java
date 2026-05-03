@@ -1,10 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
@@ -13,9 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.util.TestIds;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
@@ -64,7 +61,7 @@ class HuntServiceTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @MockBean
+    @MockitoBean
     private BattleService battleService;
 
     private Beast beast;
@@ -119,20 +116,20 @@ class HuntServiceTest {
 
         HuntResponse response = huntService.createHunt(request);
 
-        assertNotNull(response.id());
-        assertEquals("Test Hunt", response.title());
-        assertEquals(HuntType.HUNT, response.type());
-        assertEquals(1, response.beasts().size());
-        assertEquals(0, response.currentPartySize());
+        assertThat(response.id()).isNotNull();
+        assertThat(response.title()).isEqualTo("Test Hunt");
+        assertThat(response.type()).isEqualTo(HuntType.HUNT);
+        assertThat(response.beasts()).hasSize(1);
+        assertThat(response.currentPartySize()).isEqualTo(0);
     }
 
     @Test
     void joinHuntWorksAndFullPartyIsRejected() {
         JoinHuntResponse response = huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
 
-        assertEquals(activeHunt.getId(), response.huntId());
-        assertEquals("Aria", response.hunterDisplayName());
-        assertEquals(1, response.currentPartySize());
+        assertThat(response.huntId()).isEqualTo(activeHunt.getId());
+        assertThat(response.hunterDisplayName()).isEqualTo("Aria");
+        assertThat(response.currentPartySize()).isEqualTo(1);
 
         Hunt fullHunt = huntRepository.save(Hunt.builder()
                 .title("Full Hunt")
@@ -147,7 +144,8 @@ class HuntServiceTest {
                 .build());
 
         huntService.joinHunt(fullHunt.getId(), hunterOneUsername);
-        assertThrows(PartyFullException.class, () -> huntService.joinHunt(fullHunt.getId(), hunterTwoUsername));
+        assertThatThrownBy(() -> huntService.joinHunt(fullHunt.getId(), hunterTwoUsername))
+                .isInstanceOf(PartyFullException.class);
     }
 
     @Test
@@ -160,11 +158,11 @@ class HuntServiceTest {
                 new CompleteHuntRequest(true)
         );
 
-        assertTrue(response.won());
-        assertEquals(100, response.expChange());
-        assertEquals(75, response.goldChange());
-        assertEquals(2, response.newLevel());
-        assertEquals(110, response.newBaseHp());
+        assertThat(response.won()).isTrue();
+        assertThat(response.expChange()).isEqualTo(100);
+        assertThat(response.goldChange()).isEqualTo(75);
+        assertThat(response.newLevel()).isEqualTo(2);
+        assertThat(response.newBaseHp()).isEqualTo(110);
     }
 
     @Test
@@ -178,11 +176,11 @@ class HuntServiceTest {
                 new CompleteHuntRequest(true)
         );
 
-        assertFalse(response.won());
-        assertEquals(-25, response.expChange());
-        assertEquals(0, response.goldChange());
-        assertEquals(1, response.newLevel());
-        assertEquals(100, response.newBaseHp());
+        assertThat(response.won()).isFalse();
+        assertThat(response.expChange()).isEqualTo(-25);
+        assertThat(response.goldChange()).isEqualTo(0);
+        assertThat(response.newLevel()).isEqualTo(1);
+        assertThat(response.newBaseHp()).isEqualTo(100);
     }
 
     @Test
@@ -202,8 +200,8 @@ class HuntServiceTest {
                 hunterOneUsername,
                 new CompleteHuntRequest(true)
         );
-        assertTrue(winResponse.won());
-        assertEquals(50, winResponse.expChange());
+        assertThat(winResponse.won()).isTrue();
+        assertThat(winResponse.expChange()).isEqualTo(50);
 
         given(battleService.rollWin()).willReturn(false);
         Hunt hardSoloHunt = huntRepository.save(Hunt.builder()
@@ -221,8 +219,8 @@ class HuntServiceTest {
                 hunterOneUsername,
                 new CompleteHuntRequest(true)
         );
-        assertFalse(lossResponse.won());
-        assertEquals(-50, lossResponse.expChange());
+        assertThat(lossResponse.won()).isFalse();
+        assertThat(lossResponse.expChange()).isEqualTo(-50);
     }
 
     @Test
@@ -231,16 +229,13 @@ class HuntServiceTest {
                 activeHunt.getId(),
                 new UpdateHuntRequest("Updated Hunt", null, null, null, null, null, 150, 90)
         );
-        assertEquals("Updated Hunt", updated.title());
-        assertEquals(150, updated.rewardExp());
+        assertThat(updated.title()).isEqualTo("Updated Hunt");
+        assertThat(updated.rewardExp()).isEqualTo(150);
 
-        assertThrows(
-                InvalidGameRuleException.class,
-                () -> huntService.updateHunt(
-                        activeHunt.getId(),
-                        new UpdateHuntRequest(null, null, null, null, null, List.of(), null, null)
-                )
-        );
+        assertThatThrownBy(() -> huntService.updateHunt(
+                activeHunt.getId(),
+                new UpdateHuntRequest(null, null, null, null, null, List.of(), null, null)
+        )).isInstanceOf(InvalidGameRuleException.class);
 
         Hunt deletableHunt = huntRepository.save(Hunt.builder()
                 .title("Delete Hunt")
@@ -254,10 +249,11 @@ class HuntServiceTest {
                 .rewardGold(25)
                 .build());
         huntService.deleteHunt(deletableHunt.getId());
-        assertFalse(huntRepository.existsById(deletableHunt.getId()));
+        assertThat(huntRepository.existsById(deletableHunt.getId())).isFalse();
 
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
-        assertThrows(InvalidGameRuleException.class, () -> huntService.deleteHunt(activeHunt.getId()));
+        assertThatThrownBy(() -> huntService.deleteHunt(activeHunt.getId()))
+                .isInstanceOf(InvalidGameRuleException.class);
     }
 
     private void saveHunter(String username, String displayName, Appearance appearance) {

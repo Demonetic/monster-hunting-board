@@ -1,8 +1,6 @@
 package se.edugrade.monsterhuntingboard.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
@@ -10,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
@@ -21,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import se.edugrade.monsterhuntingboard.util.TestIds;
 import se.edugrade.monsterhuntingboard.dto.AuthResponse;
 import se.edugrade.monsterhuntingboard.dto.BeastRequest;
@@ -57,7 +55,7 @@ class MonsterHuntingBoardIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @MockBean
+    @MockitoBean
     private BattleService battleService;
 
     private String baseUrl;
@@ -83,7 +81,7 @@ class MonsterHuntingBoardIntegrationTest {
                 registerRequest,
                 AuthResponse.class
         );
-        assertEquals(HttpStatus.CREATED, registerResponse.getStatusCode());
+        assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         String hunterToken = restTemplate.postForEntity(
                 baseUrl + "/api/auth/login",
@@ -119,7 +117,7 @@ class MonsterHuntingBoardIntegrationTest {
                 ),
                 BeastResponse.class
         );
-        assertEquals(HttpStatus.CREATED, beastResponse.getStatusCode());
+        assertThat(beastResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         ResponseEntity<HuntResponse> huntResponse = restTemplate.exchange(
                 baseUrl + "/api/hunts",
@@ -140,7 +138,7 @@ class MonsterHuntingBoardIntegrationTest {
                 ),
                 HuntResponse.class
         );
-        assertEquals(HttpStatus.CREATED, huntResponse.getStatusCode());
+        assertThat(huntResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         ResponseEntity<JoinHuntResponse> joinResponse = restTemplate.exchange(
                 baseUrl + "/api/hunts/" + huntResponse.getBody().id() + "/join",
@@ -148,7 +146,7 @@ class MonsterHuntingBoardIntegrationTest {
                 authorizedEntity(hunterToken),
                 JoinHuntResponse.class
         );
-        assertEquals(HttpStatus.OK, joinResponse.getStatusCode());
+        assertThat(joinResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<HuntResultResponse> completeResponse = restTemplate.exchange(
                 baseUrl + "/api/hunts/" + huntResponse.getBody().id() + "/complete",
@@ -157,11 +155,11 @@ class MonsterHuntingBoardIntegrationTest {
                 HuntResultResponse.class
         );
 
-        assertEquals(HttpStatus.OK, completeResponse.getStatusCode());
-        assertNotNull(completeResponse.getBody());
-        assertTrue(completeResponse.getBody().won());
-        assertTrue(completeResponse.getBody().expChange() > 0);
-        assertTrue(completeResponse.getBody().goldChange() > 0);
+        assertThat(completeResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(completeResponse.getBody()).isNotNull();
+        assertThat(completeResponse.getBody().won()).isTrue();
+        assertThat(completeResponse.getBody().expChange()).isGreaterThan(0);
+        assertThat(completeResponse.getBody().goldChange()).isGreaterThan(0);
     }
 
     @Test
@@ -198,7 +196,7 @@ class MonsterHuntingBoardIntegrationTest {
                 String.class
         );
 
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     private HttpEntity<Void> authorizedEntity(String token) {

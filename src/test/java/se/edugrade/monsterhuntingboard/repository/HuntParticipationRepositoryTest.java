@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,12 +96,12 @@ class HuntParticipationRepositoryTest {
 
     @Test
     void findByHunterIdAndHuntIdReturnsParticipation() {
-        assertTrue(huntParticipationRepository.findByHunterIdAndHuntId(hunter.getId(), hunt.getId()).isPresent());
-        assertTrue(huntParticipationRepository.existsByHunterIdAndHuntId(hunter.getId(), hunt.getId()));
+        assertThat(huntParticipationRepository.findByHunterIdAndHuntId(hunter.getId(), hunt.getId())).isPresent();
+        assertThat(huntParticipationRepository.existsByHunterIdAndHuntId(hunter.getId(), hunt.getId())).isTrue();
     }
 
     @Test
     void countByHuntIdReturnsParticipantCount() {
-        assertEquals(1L, huntParticipationRepository.countByHuntId(hunt.getId()));
+        assertThat(huntParticipationRepository.countByHuntId(hunt.getId())).isEqualTo(1L);
     }
 }

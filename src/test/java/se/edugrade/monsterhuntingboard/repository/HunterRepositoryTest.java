@@ -1,6 +1,6 @@
 package se.edugrade.monsterhuntingboard.repository;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class HunterRepositoryTest {
 
     @Test
     void findByUserAccountUsernameAndDisplayNameWork() {
-        assertTrue(hunterRepository.findByUserAccountUsername(username).isPresent());
-        assertTrue(hunterRepository.existsByDisplayName(displayName));
+        assertThat(hunterRepository.findByUserAccountUsername(username)).isPresent();
+        assertThat(hunterRepository.existsByDisplayName(displayName)).isTrue();
     }
 }

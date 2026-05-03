@@ -1,9 +1,7 @@
 package se.edugrade.monsterhuntingboard.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,10 +47,10 @@ class AuthServiceTest {
 
         AuthResponse response = authService.register(request);
 
-        assertNotNull(response.token());
-        assertEquals(username, response.username());
-        assertEquals(Role.HUNTER, response.role());
-        assertTrue(userAccountRepository.existsByUsername(username));
+        assertThat(response.token()).isNotBlank();
+        assertThat(response.username()).isEqualTo(username);
+        assertThat(response.role()).isEqualTo(Role.HUNTER);
+        assertThat(userAccountRepository.existsByUsername(username)).isTrue();
     }
 
     @Test
@@ -67,7 +65,8 @@ class AuthServiceTest {
                 Appearance.PALADIN
         );
 
-        assertThrows(DuplicateResourceException.class, () -> authService.register(request));
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(DuplicateResourceException.class);
     }
 
     @Test
@@ -77,9 +76,9 @@ class AuthServiceTest {
 
         AuthResponse response = authService.login(new LoginRequest(username, "password123"));
 
-        assertNotNull(response.token());
-        assertEquals(username, response.username());
-        assertEquals(Role.HUNTER, response.role());
+        assertThat(response.token()).isNotBlank();
+        assertThat(response.username()).isEqualTo(username);
+        assertThat(response.role()).isEqualTo(Role.HUNTER);
 
         RegisterRequest bardRequest = new RegisterRequest(
                 "bard-" + TestIds.shortId(),
@@ -87,7 +86,8 @@ class AuthServiceTest {
                 "Bard Hunter",
                 Appearance.BARD
         );
-        assertThrows(InvalidGameRuleException.class, () -> authService.register(bardRequest));
+        assertThatThrownBy(() -> authService.register(bardRequest))
+                .isInstanceOf(InvalidGameRuleException.class);
     }
 
     private void saveHunterUser(String username, String displayName, Appearance appearance) {
