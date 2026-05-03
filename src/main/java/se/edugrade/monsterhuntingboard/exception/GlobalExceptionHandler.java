@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -119,7 +118,7 @@ public class GlobalExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), request);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
     }
 
     private String formatFieldError(FieldError fieldError) {
@@ -134,13 +133,7 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request
     ) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                LocalDateTime.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                message,
-                request.getRequestURI()
-        );
+        ErrorResponse errorResponse = ErrorResponse.from(status, message, request.getRequestURI());
 
         return ResponseEntity.status(status).body(errorResponse);
     }
