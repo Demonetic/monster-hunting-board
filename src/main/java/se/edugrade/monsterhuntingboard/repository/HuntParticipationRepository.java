@@ -11,6 +11,8 @@ public interface HuntParticipationRepository extends JpaRepository<HuntParticipa
 
     List<HuntParticipation> findByHuntId(Long huntId);
 
+    List<HuntParticipation> findByHuntIdOrderByJoinedAtAscIdAsc(Long huntId);
+
     Optional<HuntParticipation> findByHunterIdAndHuntId(Long hunterId, Long huntId);
 
     boolean existsByHunterIdAndHuntId(Long hunterId, Long huntId);

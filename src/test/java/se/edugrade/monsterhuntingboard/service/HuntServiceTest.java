@@ -3,12 +3,12 @@ package se.edugrade.monsterhuntingboard.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
-import se.edugrade.monsterhuntingboard.util.TestIds;
+import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
@@ -36,11 +36,11 @@ import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
-import se.edugrade.monsterhuntingboard.service.SoloBattleSimulation;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
+import se.edugrade.monsterhuntingboard.util.TestIds;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -75,8 +75,6 @@ class HuntServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(battleService.rollWin()).willReturn(true);
-        given(battleService.calculateDamageTaken(any(), anyBoolean(), anyBoolean())).willReturn(20);
         given(battleService.simulateSoloBattle(any(), any())).willReturn(
                 new SoloBattleSimulation(true, 10, 90, List.of())
         );
@@ -93,7 +91,7 @@ class HuntServiceTest {
         activeHunt = huntRepository.save(Hunt.builder()
                 .title("Griffin Hunt at Dawn")
                 .type(HuntType.HUNT)
-                .difficulty(Difficulty.MEDIUM)
+                .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.ACTIVE)
                 .startTime(LocalDateTime.now().plusHours(2))
                 .maxPartySize(4)
@@ -106,6 +104,7 @@ class HuntServiceTest {
         hunterTwoUsername = "h2-" + TestIds.shortId();
         saveHunter(hunterOneUsername, "Aria", Appearance.MAGE);
         saveHunter(hunterTwoUsername, "Rowan", Appearance.RANGER);
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupWinSimulation());
     }
 
     @Test
@@ -113,7 +112,7 @@ class HuntServiceTest {
         CreateHuntRequest request = new CreateHuntRequest(
                 "Test Hunt",
                 HuntType.HUNT,
-                Difficulty.EASY,
+                Difficulty.BOSS,
                 HuntStatus.SCHEDULED,
                 LocalDateTime.now().plusHours(3),
                 3,
@@ -127,8 +126,36 @@ class HuntServiceTest {
         assertThat(response.id()).isNotNull();
         assertThat(response.title()).isEqualTo("Test Hunt");
         assertThat(response.type()).isEqualTo(HuntType.HUNT);
+        assertThat(response.difficulty()).isEqualTo(Difficulty.BOSS);
         assertThat(response.beasts()).hasSize(1);
         assertThat(response.currentPartySize()).isEqualTo(0);
+    }
+
+    @Test
+    void createHuntRejectsNonBossPartyHuntAndBossSoloHunt() {
+        assertThatThrownBy(() -> huntService.createHunt(new CreateHuntRequest(
+                "Invalid Party Hunt",
+                HuntType.HUNT,
+                Difficulty.HARD,
+                HuntStatus.SCHEDULED,
+                LocalDateTime.now().plusHours(1),
+                4,
+                List.of(beast.getId()),
+                100,
+                50
+        ))).isInstanceOf(InvalidGameRuleException.class);
+
+        assertThatThrownBy(() -> huntService.createHunt(new CreateHuntRequest(
+                "Invalid Solo Hunt",
+                HuntType.SOLO_HUNT,
+                Difficulty.BOSS,
+                HuntStatus.ACTIVE,
+                null,
+                null,
+                List.of(beast.getId()),
+                100,
+                50
+        ))).isInstanceOf(InvalidGameRuleException.class);
     }
 
     @Test
@@ -142,7 +169,7 @@ class HuntServiceTest {
         Hunt fullHunt = huntRepository.save(Hunt.builder()
                 .title("Full Hunt")
                 .type(HuntType.HUNT)
-                .difficulty(Difficulty.EASY)
+                .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.ACTIVE)
                 .startTime(LocalDateTime.now().plusHours(1))
                 .maxPartySize(1)
@@ -159,6 +186,7 @@ class HuntServiceTest {
     @Test
     void completeHuntWithWinRollGivesReward() {
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
 
         HuntResultResponse response = huntService.completeHuntForCurrentHunter(
                 activeHunt.getId(),
@@ -171,14 +199,16 @@ class HuntServiceTest {
         assertThat(response.goldChange()).isEqualTo(75);
         assertThat(response.newLevel()).isEqualTo(1);
         assertThat(response.newBaseHp()).isEqualTo(100);
-        assertThat(response.newCurrentHp()).isEqualTo(80);
-        assertThat(response.damageTaken()).isEqualTo(20);
+        assertThat(response.newCurrentHp()).isEqualTo(82);
+        assertThat(response.damageTaken()).isEqualTo(18);
+        assertThat(response.turns()).hasSize(3);
     }
 
     @Test
     void completeHuntWithLossRollGivesPenalty() {
-        given(battleService.rollWin()).willReturn(false);
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupLossSimulation());
 
         HuntResultResponse response = huntService.completeHuntForCurrentHunter(
                 activeHunt.getId(),
@@ -187,11 +217,11 @@ class HuntServiceTest {
         );
 
         assertThat(response.won()).isFalse();
-        assertThat(response.expChange()).isEqualTo(-25);
+        assertThat(response.expChange()).isEqualTo(-28);
         assertThat(response.goldChange()).isEqualTo(0);
         assertThat(response.newLevel()).isEqualTo(1);
         assertThat(response.newBaseHp()).isEqualTo(100);
-        assertThat(response.newCurrentHp()).isEqualTo(80);
+        assertThat(response.newCurrentHp()).isEqualTo(0);
     }
 
     @Test
@@ -243,11 +273,23 @@ class HuntServiceTest {
     void activePotionsApplyToOneHuntAndAreConsumed() {
         UserAccount userAccount = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow();
         Hunter hunter = userAccount.getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
         hunter.setExpPotionActive(true);
         hunter.setEndurancePotionActive(true);
-        given(battleService.calculateDamageTaken(any(), anyBoolean(), eq(true))).willReturn(14);
 
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+                new GroupBattleSimulation(
+                        true,
+                        0,
+                        List.of(),
+                        Map.of(
+                                hunter.getId(), new HunterBattleOutcome(86, 14),
+                                secondHunter.getId(), new HunterBattleOutcome(90, 10)
+                        )
+                )
+        );
 
         HuntResultResponse response = huntService.completeHuntForCurrentHunter(
                 activeHunt.getId(),
@@ -267,6 +309,54 @@ class HuntServiceTest {
     }
 
     @Test
+    void groupVictoryRewardsAllParticipantsEvenIfDead() {
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+                new GroupBattleSimulation(
+                        true,
+                        0,
+                        List.of(),
+                        Map.of(
+                                firstHunter.getId(), new HunterBattleOutcome(84, 16),
+                                secondHunter.getId(), new HunterBattleOutcome(0, 100)
+                        )
+                )
+        );
+
+        huntService.completeHuntForCurrentHunter(activeHunt.getId(), hunterOneUsername, new CompleteHuntRequest(true));
+
+        Hunter refreshedSecondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+        assertThat(refreshedSecondHunter.getExp()).isEqualTo(100);
+        assertThat(refreshedSecondHunter.getGold()).isEqualTo(75);
+        assertThat(refreshedSecondHunter.getCurrentHp()).isEqualTo(0);
+        assertThat(huntParticipationRepository.findByHunterIdAndHuntId(refreshedSecondHunter.getId(), activeHunt.getId()))
+                .get()
+                .extracting(participation -> participation.isCompleted(), participation -> participation.isWon())
+                .containsExactly(true, true);
+    }
+
+    @Test
+    void groupLossPenalizesAllParticipantsAndFailsHunt() {
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupLossSimulation());
+
+        huntService.completeHuntForCurrentHunter(activeHunt.getId(), hunterOneUsername, new CompleteHuntRequest(true));
+
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+        assertThat(firstHunter.getExp()).isZero();
+        assertThat(secondHunter.getExp()).isZero();
+        assertThat(firstHunter.getCurrentHp()).isZero();
+        assertThat(secondHunter.getCurrentHp()).isZero();
+        assertThat(huntRepository.findById(activeHunt.getId()).orElseThrow().getStatus()).isEqualTo(HuntStatus.FAILED);
+    }
+
+    @Test
     void updateAndDeleteRulesAreEnforced() {
         HuntResponse updated = huntService.updateHunt(
                 activeHunt.getId(),
@@ -280,10 +370,15 @@ class HuntServiceTest {
                 new UpdateHuntRequest(null, null, null, null, null, List.of(), null, null)
         )).isInstanceOf(InvalidGameRuleException.class);
 
+        assertThatThrownBy(() -> huntService.updateHunt(
+                activeHunt.getId(),
+                new UpdateHuntRequest(null, Difficulty.HARD, null, null, null, null, null, null)
+        )).isInstanceOf(InvalidGameRuleException.class);
+
         Hunt deletableHunt = huntRepository.save(Hunt.builder()
                 .title("Delete Hunt")
                 .type(HuntType.HUNT)
-                .difficulty(Difficulty.EASY)
+                .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.SCHEDULED)
                 .startTime(LocalDateTime.now().plusHours(1))
                 .maxPartySize(2)
@@ -320,5 +415,43 @@ class HuntServiceTest {
         userAccount.setHunter(hunter);
         hunter.setUserAccount(userAccount);
         userAccountRepository.save(userAccount);
+    }
+
+    private GroupBattleSimulation defaultGroupWinSimulation() {
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        return new GroupBattleSimulation(
+                true,
+                0,
+                List.of(
+                        new BattleTurnResponse(1, "Aria", "Boss", 15, "Aria: 100 HP, Rowan: 100 HP | Boss HP: 285"),
+                        new BattleTurnResponse(2, "Rowan", "Boss", 13, "Aria: 100 HP, Rowan: 100 HP | Boss HP: 272"),
+                        new BattleTurnResponse(3, "Boss", "Aria", 18, "Aria: 82 HP, Rowan: 100 HP | Boss HP: 272")
+                ),
+                Map.of(
+                        firstHunter.getId(), new HunterBattleOutcome(82, 18),
+                        secondHunter.getId(), new HunterBattleOutcome(100, 0)
+                )
+        );
+    }
+
+    private GroupBattleSimulation defaultGroupLossSimulation() {
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        return new GroupBattleSimulation(
+                false,
+                120,
+                List.of(
+                        new BattleTurnResponse(1, "Boss", "Aria", 55, "Aria: 45 HP, Rowan: 100 HP | Boss HP: 320"),
+                        new BattleTurnResponse(2, "Boss", "Rowan", 100, "Aria: 45 HP, Rowan: 0 HP (down) | Boss HP: 320"),
+                        new BattleTurnResponse(3, "Boss", "Aria", 45, "Aria: 0 HP (down), Rowan: 0 HP (down) | Boss HP: 320")
+                ),
+                Map.of(
+                        firstHunter.getId(), new HunterBattleOutcome(0, 100),
+                        secondHunter.getId(), new HunterBattleOutcome(0, 100)
+                )
+        );
     }
 }

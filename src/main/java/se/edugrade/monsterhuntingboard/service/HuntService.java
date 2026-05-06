@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
@@ -163,9 +164,13 @@ public class HuntService {
             throw new InvalidHuntStateException("Hunt participation has already been completed");
         }
         validateHunterCanFight(hunter);
+        if (hunt.getType() != HuntType.HUNT) {
+            throw new InvalidGameRuleException("Only HUNT missions can be completed here");
+        }
 
-        boolean won = battleService.rollWin();
-        return applyResult(hunt, hunter, participation, won);
+        List<HuntParticipation> participations = huntParticipationRepository.findByHuntIdOrderByJoinedAtAscIdAsc(hunt.getId());
+        GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(hunt, participations);
+        return applyGroupResult(hunt, participations, hunter.getId(), simulation);
     }
 
     @Transactional
@@ -244,6 +249,7 @@ public class HuntService {
     }
 
     private HuntConfiguration buildPartyHuntConfiguration(CreateHuntRequest request) {
+        validateDifficultyMatchesType(request.type(), request.difficulty());
         if (request.startTime() == null) {
             throw new InvalidGameRuleException("startTime is required for HUNT");
         }
@@ -259,6 +265,7 @@ public class HuntService {
     }
 
     private HuntConfiguration buildSoloHuntConfiguration(CreateHuntRequest request) {
+        validateDifficultyMatchesType(request.type(), request.difficulty());
         HuntStatus status = request.status() != null ? request.status() : HuntStatus.ACTIVE;
         return new HuntConfiguration(null, null, status);
     }
@@ -285,6 +292,7 @@ public class HuntService {
     }
 
     private void validateUpdatedHunt(Hunt hunt) {
+        validateDifficultyMatchesType(hunt.getType(), hunt.getDifficulty());
         if (hunt.getType() == HuntType.SOLO_HUNT) {
             if (hunt.getMaxPartySize() != null || hunt.getStartTime() != null) {
                 throw new InvalidGameRuleException("SOLO_HUNT cannot have maxPartySize or startTime");
@@ -313,55 +321,6 @@ public class HuntService {
     private Hunter getHunterOrThrow(String username) {
         return hunterRepository.findByUserAccountUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
-    }
-
-    private HuntResultResponse applyResult(Hunt hunt, Hunter hunter, HuntParticipation participation, boolean won) {
-        boolean expPotionApplied = hunter.isExpPotionActive() && won;
-        boolean endurancePotionApplied = hunter.isEndurancePotionActive();
-
-        RewardResult baseRewardResult = won
-                ? GameBalanceUtil.applyWinReward(hunt)
-                : GameBalanceUtil.applyLoss(hunt.getDifficulty());
-        RewardResult rewardResult = expPotionApplied
-                ? new RewardResult(
-                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
-                        baseRewardResult.goldChange()
-                )
-                : baseRewardResult;
-
-        int newExp = Math.max(0, hunter.getExp() + rewardResult.expChange());
-        int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
-        int newLevel = GameBalanceUtil.calculateLevel(newExp);
-        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
-        int damageTaken = battleService.calculateDamageTaken(hunt, won, endurancePotionApplied);
-        int newCurrentHp = Math.max(0, Math.min(newBaseHp, hunter.getCurrentHp() - damageTaken));
-
-        hunter.setExp(newExp);
-        hunter.setGold(newGold);
-        hunter.setLevel(newLevel);
-        hunter.setBaseHp(newBaseHp);
-        hunter.setCurrentHp(newCurrentHp);
-        hunter.setExpPotionActive(false);
-        hunter.setEndurancePotionActive(false);
-
-        participation.setCompleted(true);
-        participation.setWon(won);
-        participation.setExpChange(rewardResult.expChange());
-        participation.setGoldChange(rewardResult.goldChange());
-        participation.setCompletedAt(LocalDateTime.now());
-        log.info("Completed hunt {} for hunter {} with result {}", hunt.getTitle(), hunter.getDisplayName(), won ? "WIN" : "LOSS");
-
-        return HuntResultResponse.from(
-                hunt,
-                hunter,
-                won,
-                rewardResult.expChange(),
-                rewardResult.goldChange(),
-                damageTaken,
-                expPotionApplied,
-                endurancePotionApplied,
-                List.of()
-        );
     }
 
     private HuntResultResponse applySoloResult(
@@ -421,6 +380,106 @@ public class HuntService {
         );
     }
 
+    private HuntResultResponse applyGroupResult(
+            Hunt hunt,
+            List<HuntParticipation> participations,
+            Long currentHunterId,
+            GroupBattleSimulation simulation
+    ) {
+        boolean won = simulation.huntersWon();
+        LocalDateTime completedAt = LocalDateTime.now();
+        Map<Long, HunterBattleOutcome> outcomes = simulation.hunterOutcomes();
+        Map<Long, HuntParticipation> participationsByHunterId = participations.stream()
+                .collect(Collectors.toMap(participation -> participation.getHunter().getId(), Function.identity()));
+
+        HuntResultResponse currentHunterResponse = null;
+        for (HuntParticipation partyParticipation : participations) {
+            Hunter partyHunter = partyParticipation.getHunter();
+            HunterBattleOutcome outcome = outcomes.get(partyHunter.getId());
+            if (outcome == null) {
+                throw new InvalidGameRuleException("Missing battle outcome for hunter " + partyHunter.getDisplayName());
+            }
+
+            HuntResultResponse hunterResult = applyGroupHunterOutcome(
+                    hunt,
+                    partyHunter,
+                    participationsByHunterId.get(partyHunter.getId()),
+                    outcome,
+                    won,
+                    completedAt,
+                    simulation.turns()
+            );
+            if (partyHunter.getId().equals(currentHunterId)) {
+                currentHunterResponse = hunterResult;
+            }
+        }
+
+        hunt.setStatus(won ? HuntStatus.COMPLETED : HuntStatus.FAILED);
+        if (currentHunterResponse == null) {
+            throw new ResourceNotFoundException("Current hunter result not found for this hunt");
+        }
+        log.info("Completed group hunt {} with result {}", hunt.getTitle(), won ? "WIN" : "LOSS");
+        return currentHunterResponse;
+    }
+
+    private HuntResultResponse applyGroupHunterOutcome(
+            Hunt hunt,
+            Hunter hunter,
+            HuntParticipation participation,
+            HunterBattleOutcome outcome,
+            boolean won,
+            LocalDateTime completedAt,
+            List<BattleTurnResponse> turns
+    ) {
+        boolean expPotionApplied = hunter.isExpPotionActive() && won;
+        boolean endurancePotionApplied = hunter.isEndurancePotionActive();
+        int previousLevel = hunter.getLevel();
+        int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
+
+        RewardResult baseRewardResult = won
+                ? GameBalanceUtil.applyWinReward(hunt)
+                : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
+        RewardResult rewardResult = expPotionApplied
+                ? new RewardResult(
+                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
+                        baseRewardResult.goldChange()
+                )
+                : baseRewardResult;
+
+        int adjustedExp = hunter.getExp() + rewardResult.expChange();
+        int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
+        int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
+        int newLevel = GameBalanceUtil.calculateLevel(newExp);
+        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
+        int newCurrentHp = newLevel > previousLevel ? newBaseHp : outcome.remainingHp();
+
+        hunter.setExp(newExp);
+        hunter.setGold(newGold);
+        hunter.setLevel(newLevel);
+        hunter.setBaseHp(newBaseHp);
+        hunter.setCurrentHp(newCurrentHp);
+        hunter.setExpPotionActive(false);
+        hunter.setEndurancePotionActive(false);
+
+        participation.setCompleted(true);
+        participation.setWon(won);
+        participation.setExpChange(rewardResult.expChange());
+        participation.setGoldChange(rewardResult.goldChange());
+        participation.setCompletedAt(completedAt);
+
+        return HuntResultResponse.from(
+                hunt,
+                hunter,
+                won,
+                rewardResult.expChange(),
+                rewardResult.goldChange(),
+                outcome.damageTaken(),
+                expPotionApplied,
+                endurancePotionApplied,
+                turns
+        );
+    }
+
     private HuntParticipation createParticipation(Hunter hunter, Hunt hunt) {
         return HuntParticipation.builder()
                 .hunter(hunter)
@@ -453,6 +512,15 @@ public class HuntService {
     private void validateHunterCanFight(Hunter hunter) {
         if (hunter.getCurrentHp() <= 0) {
             throw new InvalidGameRuleException("Hunter has no HP left and must recover before fighting");
+        }
+    }
+
+    private void validateDifficultyMatchesType(HuntType type, Difficulty difficulty) {
+        if (type == HuntType.HUNT && difficulty != Difficulty.BOSS) {
+            throw new InvalidGameRuleException("HUNT missions must use BOSS difficulty");
+        }
+        if (type == HuntType.SOLO_HUNT && difficulty == Difficulty.BOSS) {
+            throw new InvalidGameRuleException("SOLO_HUNT missions cannot use BOSS difficulty");
         }
     }
 

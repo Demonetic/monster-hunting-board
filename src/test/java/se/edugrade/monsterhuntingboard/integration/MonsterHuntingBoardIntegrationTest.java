@@ -1,9 +1,11 @@
 package se.edugrade.monsterhuntingboard.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import se.edugrade.monsterhuntingboard.util.TestIds;
 import se.edugrade.monsterhuntingboard.dto.AuthResponse;
+import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
 import se.edugrade.monsterhuntingboard.dto.BeastRequest;
 import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
@@ -32,12 +35,15 @@ import se.edugrade.monsterhuntingboard.dto.LoginRequest;
 import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
 import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
+import se.edugrade.monsterhuntingboard.model.HuntParticipation;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
 import se.edugrade.monsterhuntingboard.service.BattleService;
+import se.edugrade.monsterhuntingboard.service.GroupBattleSimulation;
+import se.edugrade.monsterhuntingboard.service.HunterBattleOutcome;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -62,8 +68,18 @@ class MonsterHuntingBoardIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        given(battleService.rollWin()).willReturn(true);
         baseUrl = "http://localhost:" + port;
+        given(battleService.simulateGroupBossBattle(any(), any())).willAnswer(invocation -> {
+            List<HuntParticipation> participations = invocation.getArgument(1);
+            Long hunterId = participations.getFirst().getHunter().getId();
+
+            return new GroupBattleSimulation(
+                    true,
+                    0,
+                    List.of(new BattleTurnResponse(1, "Integration Hunter", "Boss", 15, "Integration Hunter: 88 HP | Boss HP: 0")),
+                    Map.of(hunterId, new HunterBattleOutcome(88, 12))
+            );
+        });
     }
 
     @Test
@@ -127,7 +143,7 @@ class MonsterHuntingBoardIntegrationTest {
                         new CreateHuntRequest(
                                 "Integration Hunt",
                                 HuntType.HUNT,
-                                Difficulty.EASY,
+                                Difficulty.BOSS,
                                 HuntStatus.ACTIVE,
                                 java.time.LocalDateTime.now().plusHours(2),
                                 3,
@@ -184,7 +200,7 @@ class MonsterHuntingBoardIntegrationTest {
                         new CreateHuntRequest(
                                 "Forbidden Hunt",
                                 HuntType.HUNT,
-                                Difficulty.EASY,
+                                Difficulty.BOSS,
                                 HuntStatus.SCHEDULED,
                                 java.time.LocalDateTime.of(2026, 1, 1, 12, 0),
                                 2,

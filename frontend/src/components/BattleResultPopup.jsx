@@ -94,8 +94,8 @@ function BattleResultPopup({ result, onClose }) {
               {result.turns.map((turn) => (
                 <p key={turn.turnNumber}>
                   <span>Turn {turn.turnNumber}:</span>{' '}
-                  {turn.attacker === 'HUNTER' ? 'Hunter' : 'Monster'} dealt {turn.damage} damage.
-                  {' '}Hunter HP: {turn.hunterHpAfterTurn}. Monster HP: {turn.monsterHpAfterTurn}.
+                  {turn.attacker} attacked {turn.target} for {turn.damage} damage.
+                  {' '}{turn.battleState}
                 </p>
               ))}
             </div>
