@@ -1,6 +1,8 @@
 package se.edugrade.monsterhuntingboard.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,10 +32,13 @@ import se.edugrade.monsterhuntingboard.model.Beast;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntParticipation;
+import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.HunterGeneratedHuntProgress;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
+import se.edugrade.monsterhuntingboard.repository.HunterGeneratedHuntProgressRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 import se.edugrade.monsterhuntingboard.repository.HunterRepository;
@@ -44,11 +49,13 @@ import se.edugrade.monsterhuntingboard.util.RewardResult;
 @RequiredArgsConstructor
 public class HuntService {
     private static final Logger log = LoggerFactory.getLogger(HuntService.class);
+    private static final ZoneId STOCKHOLM_ZONE = ZoneId.of("Europe/Stockholm");
 
     private final HuntRepository huntRepository;
     private final BeastRepository beastRepository;
     private final HunterRepository hunterRepository;
     private final HuntParticipationRepository huntParticipationRepository;
+    private final HunterGeneratedHuntProgressRepository hunterGeneratedHuntProgressRepository;
     private final BattleService battleService;
 
     @Transactional
@@ -78,6 +85,7 @@ public class HuntService {
         return huntRepository.findAll()
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
+                .filter(this::isVisibleOnBoard)
                 .map(hunt -> HuntResponse.from(
                         hunt,
                         Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
@@ -97,7 +105,7 @@ public class HuntService {
         return huntRepository.findByStatus(HuntStatus.SCHEDULED)
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
-                .filter(hunt -> hunt.getStatus() == HuntStatus.SCHEDULED)
+                .filter(hunt -> hunt.getStatus() == HuntStatus.SCHEDULED && isVisibleOnBoard(hunt))
                 .map(hunt -> HuntResponse.from(
                         hunt,
                         Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
@@ -114,6 +122,8 @@ public class HuntService {
         if (hunt.getType() != HuntType.HUNT) {
             throw new InvalidGameRuleException("Only HUNT missions can be joined");
         }
+        validateGeneratedHuntAvailability(hunt);
+        validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
         validateHuntHasNotStarted(hunt);
         if (hunt.getStatus() != HuntStatus.SCHEDULED && hunt.getStatus() != HuntStatus.ACTIVE) {
             throw new InvalidHuntStateException("This hunt cannot be joined in its current state");
@@ -142,10 +152,12 @@ public class HuntService {
         if (hunt.getType() != HuntType.SOLO_HUNT) {
             throw new InvalidGameRuleException("Only SOLO_HUNT missions can be started here");
         }
+        validateGeneratedHuntAvailability(hunt);
+        validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
         validateSoloHuntIsActive(hunt);
         validateHunterCanFight(hunter);
 
-        HuntParticipation savedParticipation = huntParticipationRepository.save(createParticipation(hunter, hunt));
+        HuntParticipation savedParticipation = huntParticipationRepository.save(getOrCreateSoloParticipation(hunter, hunt));
         SoloBattleSimulation simulation = battleService.simulateSoloBattle(hunt, hunter);
         return applySoloResult(hunt, hunter, savedParticipation, simulation);
     }
@@ -164,6 +176,8 @@ public class HuntService {
         if (participation.isCompleted()) {
             throw new InvalidHuntStateException("Hunt participation has already been completed");
         }
+        validateGeneratedHuntAvailability(hunt);
+        validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
         validateHunterCanFight(hunter);
         if (hunt.getType() != HuntType.HUNT) {
             throw new InvalidGameRuleException("Only HUNT missions can be completed here");
@@ -356,12 +370,15 @@ public class HuntService {
         hunter.setCurrentHp(newCurrentHp);
         hunter.setExpPotionActive(false);
         hunter.setEndurancePotionActive(false);
+        if (won) {
+            registerGeneratedHuntWin(hunter, hunt);
+        }
 
         participation.setCompleted(true);
         participation.setWon(won);
         participation.setExpChange(rewardResult.expChange());
         participation.setGoldChange(rewardResult.goldChange());
-        participation.setCompletedAt(LocalDateTime.now());
+        participation.setCompletedAt(getCurrentTime());
         log.info("Completed solo hunt {} for hunter {} with result {}", hunt.getTitle(), hunter.getDisplayName(), won ? "WIN" : "LOSS");
 
         return HuntResultResponse.from(
@@ -384,7 +401,7 @@ public class HuntService {
             GroupBattleSimulation simulation
     ) {
         boolean won = simulation.huntersWon();
-        LocalDateTime completedAt = LocalDateTime.now();
+        LocalDateTime completedAt = getCurrentTime();
         Map<Long, HunterBattleOutcome> outcomes = simulation.hunterOutcomes();
         Map<Long, HuntParticipation> participationsByHunterId = participations.stream()
                 .collect(Collectors.toMap(participation -> participation.getHunter().getId(), Function.identity()));
@@ -453,6 +470,9 @@ public class HuntService {
         hunter.setCurrentHp(newCurrentHp);
         hunter.setExpPotionActive(false);
         hunter.setEndurancePotionActive(false);
+        if (won) {
+            registerGeneratedHuntWin(hunter, hunt);
+        }
 
         participation.setCompleted(true);
         participation.setWon(won);
@@ -484,8 +504,21 @@ public class HuntService {
                 .build();
     }
 
+    private HuntParticipation getOrCreateSoloParticipation(Hunter hunter, Hunt hunt) {
+        return huntParticipationRepository.findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
+                .map(existingParticipation -> {
+                    existingParticipation.setCompleted(false);
+                    existingParticipation.setWon(false);
+                    existingParticipation.setExpChange(0);
+                    existingParticipation.setGoldChange(0);
+                    existingParticipation.setCompletedAt(null);
+                    return existingParticipation;
+                })
+                .orElseGet(() -> createParticipation(hunter, hunt));
+    }
+
     private void validateHuntHasNotStarted(Hunt hunt) {
-        if (hunt.getStartTime() != null && LocalDateTime.now().isAfter(hunt.getStartTime())) {
+        if (hunt.getStartTime() != null && getCurrentTime().isAfter(hunt.getStartTime())) {
             throw new InvalidHuntStateException("Hunt has already started");
         }
     }
@@ -506,6 +539,50 @@ public class HuntService {
         if (hunter.getCurrentHp() <= 0) {
             throw new InvalidGameRuleException("Hunter has no HP left and must recover before fighting");
         }
+    }
+
+    private void validateGeneratedHuntAvailability(Hunt hunt) {
+        if (!hunt.isGenerated()) {
+            return;
+        }
+
+        LocalDateTime now = getCurrentTime();
+        if (hunt.getAvailableFrom() != null && now.isBefore(hunt.getAvailableFrom())) {
+            throw new InvalidHuntStateException("This generated hunt is not available yet");
+        }
+        if (hunt.getExpiresAt() != null && !now.isBefore(hunt.getExpiresAt())) {
+            throw new InvalidHuntStateException("This generated hunt is no longer available");
+        }
+    }
+
+    private void validateHunterHasRemainingGeneratedEligibility(Hunt hunt, Hunter hunter) {
+        if (!hunt.isGenerated() || hunt.getWinLimitPerHunter() == null) {
+            return;
+        }
+
+        int currentWins = hunterGeneratedHuntProgressRepository.findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
+                .map(HunterGeneratedHuntProgress::getWinCount)
+                .orElse(0);
+        if (currentWins >= hunt.getWinLimitPerHunter()) {
+            throw new InvalidGameRuleException("Hunter has reached the win limit for this hunt");
+        }
+    }
+
+    private void registerGeneratedHuntWin(Hunter hunter, Hunt hunt) {
+        if (!hunt.isGenerated()) {
+            return;
+        }
+
+        HunterGeneratedHuntProgress progress = hunterGeneratedHuntProgressRepository
+                .findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
+                .orElseGet(() -> HunterGeneratedHuntProgress.builder()
+                        .hunter(hunter)
+                        .hunt(hunt)
+                        .winCount(0)
+                        .build());
+        progress.setWinCount(progress.getWinCount() + 1);
+        progress.setLastWinAt(getCurrentTime());
+        hunterGeneratedHuntProgressRepository.save(progress);
     }
 
     private RewardResult calculateWinRewardForHunter(Hunt hunt, Hunter hunter, boolean expPotionApplied) {
@@ -536,11 +613,41 @@ public class HuntService {
     }
 
     private void updateHuntStatusIfNeeded(Hunt hunt) {
+        LocalDateTime now = getCurrentTime();
+        if (hunt.isGenerated() && hunt.getExpiresAt() != null && !now.isBefore(hunt.getExpiresAt())) {
+            if (hunt.getStatus() == HuntStatus.SCHEDULED || hunt.getStatus() == HuntStatus.ACTIVE) {
+                hunt.setStatus(HuntStatus.FAILED);
+            }
+            return;
+        }
+
         if (hunt.getStatus() == HuntStatus.SCHEDULED
                 && hunt.getStartTime() != null
-                && LocalDateTime.now().isAfter(hunt.getStartTime())) {
+                && now.isAfter(hunt.getStartTime())) {
+            hunt.setStatus(HuntStatus.ACTIVE);
+        } else if (hunt.isGenerated()
+                && hunt.getType() == HuntType.SOLO_HUNT
+                && hunt.getStatus() == HuntStatus.SCHEDULED
+                && (hunt.getAvailableFrom() == null || !now.isBefore(hunt.getAvailableFrom()))) {
             hunt.setStatus(HuntStatus.ACTIVE);
         }
+    }
+
+    private boolean isVisibleOnBoard(Hunt hunt) {
+        if (!hunt.isGenerated()) {
+            return true;
+        }
+
+        LocalDateTime now = getCurrentTime();
+        boolean afterAvailability = hunt.getAvailableFrom() == null || !now.isBefore(hunt.getAvailableFrom());
+        boolean beforeExpiry = hunt.getExpiresAt() == null || now.isBefore(hunt.getExpiresAt());
+        return afterAvailability
+                && beforeExpiry
+                && (hunt.getStatus() == HuntStatus.SCHEDULED || hunt.getStatus() == HuntStatus.ACTIVE);
+    }
+
+    private LocalDateTime getCurrentTime() {
+        return ZonedDateTime.now(STOCKHOLM_ZONE).toLocalDateTime();
     }
 
     private record HuntConfiguration(

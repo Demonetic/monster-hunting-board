@@ -31,6 +31,7 @@ import se.edugrade.monsterhuntingboard.model.Beast;
 import se.edugrade.monsterhuntingboard.model.BeastType;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
+import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
@@ -331,6 +332,39 @@ class HuntServiceTest {
         );
 
         assertThat(response.expChange()).isEqualTo(110);
+    }
+
+    @Test
+    void repeatableHuntCapsWinsAtFivePerDay() {
+        Hunt repeatableHunt = huntRepository.save(Hunt.builder()
+                .title("Daily Repeatable")
+                .type(HuntType.SOLO_HUNT)
+                .difficulty(Difficulty.EASY)
+                .status(HuntStatus.ACTIVE)
+                .sourceType(HuntSourceType.REPEATABLE)
+                .generated(true)
+                .availableFrom(LocalDateTime.now().minusHours(1))
+                .expiresAt(LocalDateTime.now().plusHours(6))
+                .winLimitPerHunter(5)
+                .beasts(List.of(beast))
+                .rewardExp(50)
+                .rewardGold(25)
+                .build());
+
+        for (int attempt = 0; attempt < 5; attempt++) {
+            HuntResultResponse response = huntService.startSoloHunt(
+                    repeatableHunt.getId(),
+                    hunterOneUsername,
+                    new CompleteHuntRequest(true)
+            );
+            assertThat(response.won()).isTrue();
+        }
+
+        assertThatThrownBy(() -> huntService.startSoloHunt(
+                repeatableHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        )).isInstanceOf(InvalidGameRuleException.class);
     }
 
     @Test

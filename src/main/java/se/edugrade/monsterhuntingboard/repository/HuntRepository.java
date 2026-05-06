@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
+import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 
@@ -21,6 +22,12 @@ public interface HuntRepository extends JpaRepository<Hunt, Long> {
     List<Hunt> findByStatusAndStartTimeAfter(HuntStatus status, LocalDateTime startTime);
 
     List<Hunt> findByTypeAndStatus(HuntType type, HuntStatus status);
+
+    List<Hunt> findByGeneratedTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
+            HuntSourceType sourceType,
+            LocalDateTime availableFromInclusive,
+            LocalDateTime availableFromExclusive
+    );
 
     boolean existsByBeastsId(Long beastId);
 }
