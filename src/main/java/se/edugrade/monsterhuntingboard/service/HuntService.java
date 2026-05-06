@@ -350,7 +350,9 @@ public class HuntService {
         int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
         int newLevel = GameBalanceUtil.calculateLevel(newExp);
         int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
-        int newCurrentHp = newLevel > previousLevel ? newBaseHp : simulation.hunterRemainingHp();
+        int newCurrentHp = won
+                ? (newLevel > previousLevel ? newBaseHp : simulation.hunterRemainingHp())
+                : newBaseHp;
 
         hunter.setExp(newExp);
         hunter.setGold(newGold);
@@ -451,7 +453,9 @@ public class HuntService {
         int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
         int newLevel = GameBalanceUtil.calculateLevel(newExp);
         int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
-        int newCurrentHp = newLevel > previousLevel ? newBaseHp : outcome.remainingHp();
+        int newCurrentHp = won
+                ? (newLevel > previousLevel ? newBaseHp : outcome.remainingHp())
+                : newBaseHp;
 
         hunter.setExp(newExp);
         hunter.setGold(newGold);

@@ -221,7 +221,7 @@ class HuntServiceTest {
         assertThat(response.goldChange()).isEqualTo(0);
         assertThat(response.newLevel()).isEqualTo(1);
         assertThat(response.newBaseHp()).isEqualTo(100);
-        assertThat(response.newCurrentHp()).isEqualTo(0);
+        assertThat(response.newCurrentHp()).isEqualTo(100);
     }
 
     @Test
@@ -266,7 +266,7 @@ class HuntServiceTest {
         );
         assertThat(lossResponse.won()).isFalse();
         assertThat(lossResponse.expChange()).isEqualTo(-28);
-        assertThat(lossResponse.newCurrentHp()).isEqualTo(0);
+        assertThat(lossResponse.newCurrentHp()).isEqualTo(100);
     }
 
     @Test
@@ -351,8 +351,8 @@ class HuntServiceTest {
         Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
         assertThat(firstHunter.getExp()).isZero();
         assertThat(secondHunter.getExp()).isZero();
-        assertThat(firstHunter.getCurrentHp()).isZero();
-        assertThat(secondHunter.getCurrentHp()).isZero();
+        assertThat(firstHunter.getCurrentHp()).isEqualTo(100);
+        assertThat(secondHunter.getCurrentHp()).isEqualTo(100);
         assertThat(huntRepository.findById(activeHunt.getId()).orElseThrow().getStatus()).isEqualTo(HuntStatus.FAILED);
     }
 
