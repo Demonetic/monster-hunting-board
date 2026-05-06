@@ -16,7 +16,7 @@ export function purchaseShopItem(itemType) {
   return apiClient.post('/hunters/me/shop/purchase', { itemType })
 }
 
-export function useInventoryItem(itemId) {
+export function activateInventoryItem(itemId) {
   return apiClient.post(`/hunters/me/inventory/${itemId}/use`)
 }
 

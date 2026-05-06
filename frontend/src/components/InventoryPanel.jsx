@@ -3,7 +3,7 @@ import {
   getCurrentHunter,
   getShop,
   purchaseShopItem,
-  useInventoryItem,
+  activateInventoryItem,
   discardInventoryItem,
   updateAppearance,
 } from '../api/hunterApi'
@@ -159,7 +159,7 @@ function InventoryPanel({ onClose }) {
     setInventoryActionItemId(item.id)
 
     try {
-      const response = await useInventoryItem(item.id)
+      const response = await activateInventoryItem(item.id)
       syncHunterFromInventoryAction(response.data.hunter)
       setShopMessage(response.data.message)
     } catch (actionError) {
