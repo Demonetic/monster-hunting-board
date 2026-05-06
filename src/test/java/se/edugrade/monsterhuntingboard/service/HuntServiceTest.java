@@ -165,8 +165,8 @@ class HuntServiceTest {
         assertThat(response.won()).isTrue();
         assertThat(response.expChange()).isEqualTo(100);
         assertThat(response.goldChange()).isEqualTo(75);
-        assertThat(response.newLevel()).isEqualTo(2);
-        assertThat(response.newBaseHp()).isEqualTo(110);
+        assertThat(response.newLevel()).isEqualTo(1);
+        assertThat(response.newBaseHp()).isEqualTo(100);
         assertThat(response.newCurrentHp()).isEqualTo(80);
         assertThat(response.damageTaken()).isEqualTo(20);
     }
@@ -250,6 +250,8 @@ class HuntServiceTest {
         assertThat(response.expPotionApplied()).isTrue();
         assertThat(response.endurancePotionApplied()).isTrue();
         assertThat(response.expChange()).isEqualTo(110);
+        assertThat(response.newLevel()).isEqualTo(1);
+        assertThat(response.newBaseHp()).isEqualTo(100);
         assertThat(response.damageTaken()).isEqualTo(14);
         assertThat(response.newCurrentHp()).isEqualTo(86);
         assertThat(hunter.isExpPotionActive()).isFalse();

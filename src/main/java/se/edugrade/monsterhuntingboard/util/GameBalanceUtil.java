@@ -4,12 +4,40 @@ import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 
 public final class GameBalanceUtil {
+    private static final int BASE_EXP_TO_LEVEL_UP = 200;
+    private static final int EXP_INCREMENT_PER_LEVEL = 50;
 
     private GameBalanceUtil() {
     }
 
     public static int calculateLevel(int exp) {
-        return 1 + (exp / 100);
+        int level = 1;
+
+        while (exp >= getLevelFloorExp(level + 1)) {
+            level++;
+        }
+
+        return level;
+    }
+
+    public static int getLevelFloorExp(int level) {
+        if (level <= 1) {
+            return 0;
+        }
+
+        int totalExp = 0;
+        for (int currentLevel = 1; currentLevel < level; currentLevel++) {
+            totalExp += getExpRequiredForNextLevel(currentLevel);
+        }
+        return totalExp;
+    }
+
+    public static int getExpRequiredForNextLevel(int currentLevel) {
+        if (currentLevel < 1) {
+            throw new IllegalArgumentException("currentLevel must be at least 1");
+        }
+
+        return BASE_EXP_TO_LEVEL_UP + ((currentLevel - 1) * EXP_INCREMENT_PER_LEVEL);
     }
 
     public static int calculateBaseHp(int level) {
