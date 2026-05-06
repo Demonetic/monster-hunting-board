@@ -467,6 +467,39 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.battle-result-turns {
+  display: grid;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.battle-result-turns-title {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4a2f1b;
+}
+
+.battle-result-turn-list {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 140px;
+  overflow-y: auto;
+  text-align: left;
+  padding-right: 0.3rem;
+}
+
+.battle-result-turn-list p {
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.battle-result-turn-list span {
+  font-weight: 700;
+}
+
 .battle-result-dismiss {
   position: absolute;
   bottom: -36px;

@@ -40,6 +40,10 @@ public final class GameBalanceUtil {
         return BASE_EXP_TO_LEVEL_UP + ((currentLevel - 1) * EXP_INCREMENT_PER_LEVEL);
     }
 
+    public static int calculateLevelScaledExpLoss(int level) {
+        return 20 + (level * 8);
+    }
+
     public static int calculateBaseHp(int level) {
         return 100 + ((level - 1) * 10);
     }

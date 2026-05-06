@@ -36,6 +36,7 @@ import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
+import se.edugrade.monsterhuntingboard.service.SoloBattleSimulation;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
@@ -76,6 +77,9 @@ class HuntServiceTest {
     void setUp() {
         given(battleService.rollWin()).willReturn(true);
         given(battleService.calculateDamageTaken(any(), anyBoolean(), anyBoolean())).willReturn(20);
+        given(battleService.simulateSoloBattle(any(), any())).willReturn(
+                new SoloBattleSimulation(true, 10, 90, List.of())
+        );
 
         beast = beastRepository.save(Beast.builder()
                 .type(BeastType.GRIFFIN)
@@ -209,9 +213,9 @@ class HuntServiceTest {
         );
         assertThat(winResponse.won()).isTrue();
         assertThat(winResponse.expChange()).isEqualTo(50);
-        assertThat(winResponse.newCurrentHp()).isEqualTo(80);
+        assertThat(winResponse.newCurrentHp()).isEqualTo(90);
+        assertThat(winResponse.turns()).isEmpty();
 
-        given(battleService.rollWin()).willReturn(false);
         Hunt hardSoloHunt = huntRepository.save(Hunt.builder()
                 .title("Hard Solo Trial")
                 .type(HuntType.SOLO_HUNT)
@@ -221,6 +225,9 @@ class HuntServiceTest {
                 .rewardExp(50)
                 .rewardGold(25)
                 .build());
+        given(battleService.simulateSoloBattle(eq(hardSoloHunt), any())).willReturn(
+                new SoloBattleSimulation(false, 100, 0, List.of())
+        );
 
         HuntResultResponse lossResponse = huntService.startSoloHunt(
                 hardSoloHunt.getId(),
@@ -228,7 +235,8 @@ class HuntServiceTest {
                 new CompleteHuntRequest(true)
         );
         assertThat(lossResponse.won()).isFalse();
-        assertThat(lossResponse.expChange()).isEqualTo(-50);
+        assertThat(lossResponse.expChange()).isEqualTo(-28);
+        assertThat(lossResponse.newCurrentHp()).isEqualTo(0);
     }
 
     @Test

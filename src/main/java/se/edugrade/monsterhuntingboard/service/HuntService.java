@@ -144,8 +144,8 @@ public class HuntService {
         validateHunterCanFight(hunter);
 
         HuntParticipation savedParticipation = huntParticipationRepository.save(createParticipation(hunter, hunt));
-        boolean won = battleService.rollWin();
-        return applyResult(hunt, hunter, savedParticipation, won);
+        SoloBattleSimulation simulation = battleService.simulateSoloBattle(hunt, hunter);
+        return applySoloResult(hunt, hunter, savedParticipation, simulation);
     }
 
     @Transactional
@@ -359,7 +359,65 @@ public class HuntService {
                 rewardResult.goldChange(),
                 damageTaken,
                 expPotionApplied,
-                endurancePotionApplied
+                endurancePotionApplied,
+                List.of()
+        );
+    }
+
+    private HuntResultResponse applySoloResult(
+            Hunt hunt,
+            Hunter hunter,
+            HuntParticipation participation,
+            SoloBattleSimulation simulation
+    ) {
+        boolean won = simulation.hunterWon();
+        boolean expPotionApplied = hunter.isExpPotionActive() && won;
+        boolean endurancePotionApplied = hunter.isEndurancePotionActive();
+        int previousLevel = hunter.getLevel();
+        int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
+
+        RewardResult baseRewardResult = won
+                ? GameBalanceUtil.applyWinReward(hunt)
+                : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
+        RewardResult rewardResult = expPotionApplied
+                ? new RewardResult(
+                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
+                        baseRewardResult.goldChange()
+                )
+                : baseRewardResult;
+
+        int adjustedExp = hunter.getExp() + rewardResult.expChange();
+        int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
+        int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
+        int newLevel = GameBalanceUtil.calculateLevel(newExp);
+        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
+        int newCurrentHp = newLevel > previousLevel ? newBaseHp : simulation.hunterRemainingHp();
+
+        hunter.setExp(newExp);
+        hunter.setGold(newGold);
+        hunter.setLevel(newLevel);
+        hunter.setBaseHp(newBaseHp);
+        hunter.setCurrentHp(newCurrentHp);
+        hunter.setExpPotionActive(false);
+        hunter.setEndurancePotionActive(false);
+
+        participation.setCompleted(true);
+        participation.setWon(won);
+        participation.setExpChange(rewardResult.expChange());
+        participation.setGoldChange(rewardResult.goldChange());
+        participation.setCompletedAt(LocalDateTime.now());
+        log.info("Completed solo hunt {} for hunter {} with result {}", hunt.getTitle(), hunter.getDisplayName(), won ? "WIN" : "LOSS");
+
+        return HuntResultResponse.from(
+                hunt,
+                hunter,
+                won,
+                rewardResult.expChange(),
+                rewardResult.goldChange(),
+                simulation.damageTaken(),
+                expPotionApplied,
+                endurancePotionApplied,
+                simulation.turns()
         );
     }
 

@@ -87,6 +87,21 @@ function BattleResultPopup({ result, onClose }) {
           )}
         </div>
 
+        {result.turns?.length > 0 && (
+          <div className="battle-result-turns">
+            <h4 className="battle-result-turns-title">Battle Log</h4>
+            <div className="battle-result-turn-list">
+              {result.turns.map((turn) => (
+                <p key={turn.turnNumber}>
+                  <span>Turn {turn.turnNumber}:</span>{' '}
+                  {turn.attacker === 'HUNTER' ? 'Hunter' : 'Monster'} dealt {turn.damage} damage.
+                  {' '}Hunter HP: {turn.hunterHpAfterTurn}. Monster HP: {turn.monsterHpAfterTurn}.
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           className="battle-result-dismiss"

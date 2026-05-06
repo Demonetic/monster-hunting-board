@@ -123,7 +123,7 @@ class HuntControllerTest {
                 new JoinHuntResponse(1L, "Active Hunt", 10L, "Aria", 1, 4, "Joined")
         );
         when(huntService.completeHuntForCurrentHunter(eq(1L), eq("aria"), any())).thenReturn(
-                new HuntResultResponse(1L, "Active Hunt", true, 100, 75, 100, 75, 2, 110, 82, 18, false, true)
+                new HuntResultResponse(1L, "Active Hunt", true, 100, 75, 100, 75, 2, 110, 82, 18, false, true, List.of())
         );
 
         mockMvc.perform(post("/api/hunts/1/join")
@@ -147,7 +147,7 @@ class HuntControllerTest {
     @Test
     void hunterCanStartSoloHunt() throws Exception {
         when(huntService.startSoloHunt(eq(1L), eq("solo"), any())).thenReturn(
-                new HuntResultResponse(1L, "Solo Hunt", true, 50, 25, 50, 25, 1, 100, 88, 12, false, false)
+                new HuntResultResponse(1L, "Solo Hunt", true, 50, 25, 50, 25, 1, 100, 88, 12, false, false, List.of())
         );
 
         mockMvc.perform(post("/api/hunts/1/solo/start")

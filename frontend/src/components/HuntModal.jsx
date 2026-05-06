@@ -13,6 +13,7 @@ import basiliskIcon from '../assets/icon_basilisk.png'
 import buttonImage from '../assets/button_new.png'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
+const LOW_HP_WARNING_THRESHOLD = 20
 
 const monsterImages = {
   dragon: dragonIcon,
@@ -364,6 +365,20 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
   }
 
   const handleSoloStart = async () => {
+    if (
+      hunterState &&
+      hunterState.currentHp > 0 &&
+      hunterState.currentHp < LOW_HP_WARNING_THRESHOLD
+    ) {
+      const confirmed = window.confirm(
+        'Your HP is very low. This hunt is dangerous and you should heal first. Continue anyway?',
+      )
+
+      if (!confirmed) {
+        return
+      }
+    }
+
     const response = await startSoloHunt(hunt.id, true)
 
     setHuntProgress((current) => ({
@@ -658,6 +673,11 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
                   <p>
                     <span>Your HP:</span> {hunterState.currentHp} / {hunterState.baseHp}
                   </p>
+                  {hunterState.currentHp < LOW_HP_WARNING_THRESHOLD && (
+                    <p className="hunt-action-error">
+                      Low HP warning: heal before entering a solo hunt.
+                    </p>
+                  )}
                   <p>
                     <span>EXP Potion:</span> {hunterState.expPotionActive ? 'Ready for this hunt' : 'Inactive'}
                   </p>

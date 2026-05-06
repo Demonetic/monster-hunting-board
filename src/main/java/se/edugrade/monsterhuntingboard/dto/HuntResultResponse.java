@@ -1,5 +1,6 @@
 package se.edugrade.monsterhuntingboard.dto;
 
+import java.util.List;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 
@@ -16,7 +17,8 @@ public record HuntResultResponse(
         int newCurrentHp,
         int damageTaken,
         boolean expPotionApplied,
-        boolean endurancePotionApplied
+        boolean endurancePotionApplied,
+        List<BattleTurnResponse> turns
 ) {
     public static HuntResultResponse from(
             Hunt hunt,
@@ -26,7 +28,8 @@ public record HuntResultResponse(
             int goldChange,
             int damageTaken,
             boolean expPotionApplied,
-            boolean endurancePotionApplied
+            boolean endurancePotionApplied,
+            List<BattleTurnResponse> turns
     ) {
         return new HuntResultResponse(
                 hunt.getId(),
@@ -41,7 +44,8 @@ public record HuntResultResponse(
                 hunter.getCurrentHp(),
                 damageTaken,
                 expPotionApplied,
-                endurancePotionApplied
+                endurancePotionApplied,
+                turns
         );
     }
 }
