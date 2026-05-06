@@ -860,7 +860,9 @@ textarea:focus-visible {
 }
 
 .inventory-stats,
-.inventory-editor {
+.inventory-editor,
+.inventory-backpack,
+.inventory-shop {
   display: grid;
   gap: 0.65rem;
   padding: 0;
@@ -892,6 +894,16 @@ textarea:focus-visible {
 }
 
 .inventory-editor h3 {
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #412917;
+  text-shadow: 0 1px 2px rgba(255, 244, 215, 0.28);
+}
+
+.inventory-backpack h3,
+.inventory-shop h3 {
+  font-family: 'Cinzel', Georgia, serif;
   font-size: 1.15rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -938,6 +950,98 @@ textarea:focus-visible {
 
 .inventory-error {
   color: #8b1e18;
+}
+
+.inventory-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.inventory-slot {
+  min-height: 96px;
+  padding: 0.5rem;
+  border: 1px solid rgba(77, 53, 31, 0.24);
+  background: rgba(255, 248, 232, 0.3);
+  display: grid;
+  align-content: start;
+  gap: 0.28rem;
+  position: relative;
+}
+
+.inventory-slot-number {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: rgba(65, 41, 23, 0.72);
+}
+
+.inventory-slot strong,
+.inventory-shop-copy strong {
+  font-family: 'Cinzel', Georgia, serif;
+  color: #412917;
+  font-size: 0.9rem;
+}
+
+.inventory-slot p,
+.inventory-shop-copy p,
+.inventory-shop-copy span,
+.inventory-shop-header p {
+  color: #4b3320;
+  font-size: 0.84rem;
+}
+
+.inventory-slot.is-empty {
+  opacity: 0.78;
+}
+
+.inventory-shop {
+  gap: 0.75rem;
+}
+
+.inventory-shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inventory-shop-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.inventory-shop-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(77, 53, 31, 0.18);
+  background: rgba(255, 248, 232, 0.22);
+}
+
+.inventory-shop-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.inventory-shop-button {
+  border: 1px solid rgba(72, 46, 24, 0.28);
+  background: rgba(255, 247, 228, 0.55);
+  color: #3b2a1a;
+  padding: 0.42rem 0.72rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.inventory-shop-button:disabled {
+  cursor: default;
+  opacity: 0.56;
 }
 
 .hunts-panel {
@@ -1646,6 +1750,17 @@ textarea:focus-visible {
 
   .inventory-editor select {
     justify-self: center;
+  }
+
+  .inventory-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-shop-header,
+  .inventory-shop-item {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
   }
 
   .inventory-panel-close {

@@ -69,6 +69,8 @@ class HunterServiceTest {
         assertThat(response.displayName()).isEqualTo("Aria");
         assertThat(response.appearance()).isEqualTo(Appearance.MAGE);
         assertThat(response.level()).isEqualTo(1);
+        assertThat(response.inventory()).isEmpty();
+        assertThat(response.inventoryCapacity()).isEqualTo(10);
     }
 
     @Test

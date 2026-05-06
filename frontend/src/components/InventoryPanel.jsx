@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getCurrentHunter, updateAppearance } from '../api/hunterApi'
+import {
+  getCurrentHunter,
+  getShop,
+  purchaseShopItem,
+  updateAppearance,
+} from '../api/hunterApi'
 import { getRole } from '../api/authStorage'
 import panelImage from '../assets/panel_new.png'
 import buttonImage from '../assets/button_new.png'
@@ -29,6 +34,9 @@ function InventoryPanel({ onClose }) {
   const [selectedAppearance, setSelectedAppearance] = useState('MAGE')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [shop, setShop] = useState(null)
+  const [shopMessage, setShopMessage] = useState('')
+  const [purchasingItemType, setPurchasingItemType] = useState('')
 
   useEffect(() => {
     if (isGameMaster) {
@@ -42,11 +50,15 @@ function InventoryPanel({ onClose }) {
       setError('')
 
       try {
-        const response = await getCurrentHunter()
+        const [hunterResponse, shopResponse] = await Promise.all([
+          getCurrentHunter(),
+          getShop(),
+        ])
 
         if (!cancelled) {
-          setHunter(response.data)
-          setSelectedAppearance(response.data.appearance)
+          setHunter(hunterResponse.data)
+          setSelectedAppearance(hunterResponse.data.appearance)
+          setShop(shopResponse.data)
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -91,6 +103,48 @@ function InventoryPanel({ onClose }) {
       setIsSaving(false)
     }
   }
+
+  const handlePurchase = async (itemType) => {
+    setShopMessage('')
+    setSuccessMessage('')
+    setError('')
+    setPurchasingItemType(itemType)
+
+    try {
+      const response = await purchaseShopItem(itemType)
+      setHunter(response.data.hunter)
+      setShop((currentShop) => {
+        if (!currentShop) {
+          return currentShop
+        }
+
+        return {
+          ...currentShop,
+          hunterGold: response.data.remainingGold,
+          inventorySize: response.data.inventorySize,
+        }
+      })
+      setShopMessage(response.data.message)
+    } catch (purchaseError) {
+      setError(
+        purchaseError.response?.data?.message ?? 'Could not buy item.',
+      )
+    } finally {
+      setPurchasingItemType('')
+    }
+  }
+
+  const backpackSlots = useMemo(() => {
+    const capacity = hunter?.inventoryCapacity ?? 10
+    const inventoryBySlot = new Map(
+      (hunter?.inventory ?? []).map((item) => [item.slotIndex, item]),
+    )
+
+    return Array.from({ length: capacity }, (_, slotIndex) => ({
+      slotIndex,
+      item: inventoryBySlot.get(slotIndex) ?? null,
+    }))
+  }, [hunter])
 
   return (
     <div className="game-overlay-layer">
@@ -155,6 +209,7 @@ function InventoryPanel({ onClose }) {
                 <p><span>Gold:</span> {hunter.gold}</p>
                 <p><span>Base HP:</span> {hunter.baseHp}</p>
                 <p><span>Current HP:</span> {hunter.currentHp}</p>
+                <p><span>Backpack:</span> {hunter.inventory.length} / {hunter.inventoryCapacity}</p>
               </div>
 
               <div className="inventory-editor">
@@ -175,7 +230,66 @@ function InventoryPanel({ onClose }) {
                 {successMessage && (
                   <p className="inventory-success">{successMessage}</p>
                 )}
+                {shopMessage && (
+                  <p className="inventory-success">{shopMessage}</p>
+                )}
               </div>
+
+              <div className="inventory-backpack">
+                <h3>Backpack</h3>
+                <div className="inventory-slot-grid">
+                  {backpackSlots.map(({ slotIndex, item }) => (
+                    <div
+                      key={slotIndex}
+                      className={`inventory-slot ${item ? 'is-filled' : 'is-empty'}`}
+                    >
+                      <span className="inventory-slot-number">{slotIndex + 1}</span>
+                      {item ? (
+                        <>
+                          <strong>{item.displayName}</strong>
+                          <p>{item.description}</p>
+                        </>
+                      ) : (
+                        <p>Empty</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {shop && (
+                <div className="inventory-shop">
+                  <div className="inventory-shop-header">
+                    <h3>Shop</h3>
+                    <p>Gold: {shop.hunterGold}</p>
+                  </div>
+
+                  <div className="inventory-shop-list">
+                    {shop.items.map((item) => (
+                      <div key={item.itemType} className="inventory-shop-item">
+                        <div className="inventory-shop-copy">
+                          <strong>{item.displayName}</strong>
+                          <p>{item.description}</p>
+                          <span>{item.price} gold</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="inventory-shop-button"
+                          onClick={() => handlePurchase(item.itemType)}
+                          disabled={
+                            purchasingItemType === item.itemType ||
+                            hunter.inventory.length >= hunter.inventoryCapacity ||
+                            hunter.gold < item.price
+                          }
+                        >
+                          {purchasingItemType === item.itemType ? 'Buying...' : 'Buy'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="inventory-actions">
                 <button

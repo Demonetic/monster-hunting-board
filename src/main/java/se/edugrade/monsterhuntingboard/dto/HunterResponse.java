@@ -1,7 +1,9 @@
 package se.edugrade.monsterhuntingboard.dto;
 
-import se.edugrade.monsterhuntingboard.model.Appearance;
+import java.util.List;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.HunterInventoryItem;
+import se.edugrade.monsterhuntingboard.model.Appearance;
 
 public record HunterResponse(
         Long id,
@@ -11,9 +13,11 @@ public record HunterResponse(
         int exp,
         int gold,
         int baseHp,
-        int currentHp
+        int currentHp,
+        int inventoryCapacity,
+        List<InventoryItemResponse> inventory
 ) {
-    public static HunterResponse from(Hunter hunter) {
+    public static HunterResponse from(Hunter hunter, List<HunterInventoryItem> inventoryItems, int inventoryCapacity) {
         return new HunterResponse(
                 hunter.getId(),
                 hunter.getDisplayName(),
@@ -22,7 +26,9 @@ public record HunterResponse(
                 hunter.getExp(),
                 hunter.getGold(),
                 hunter.getBaseHp(),
-                hunter.getCurrentHp()
+                hunter.getCurrentHp(),
+                inventoryCapacity,
+                inventoryItems.stream().map(InventoryItemResponse::from).toList()
         );
     }
 }

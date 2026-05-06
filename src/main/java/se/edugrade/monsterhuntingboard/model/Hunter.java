@@ -72,6 +72,10 @@ public class Hunter {
     @OneToMany(mappedBy = "hunter", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HuntParticipation> participations = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "hunter", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HunterInventoryItem> inventoryItems = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

@@ -92,3 +92,8 @@ jacoco.exec
 # Misc
 *.orig
 .ai/
+
+# Bundled frontend build output copied into Spring static resources
+src/main/resources/static/index.html
+src/main/resources/static/assets/index-*.css
+src/main/resources/static/assets/index-*.js
