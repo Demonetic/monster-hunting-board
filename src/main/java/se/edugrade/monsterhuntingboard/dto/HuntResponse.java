@@ -5,12 +5,14 @@ import java.util.List;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
+import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 
 public record HuntResponse(
         Long id,
         String title,
         HuntType type,
+        HuntSourceType sourceType,
         Difficulty difficulty,
         HuntStatus status,
         LocalDateTime startTime,
@@ -26,6 +28,7 @@ public record HuntResponse(
                 hunt.getId(),
                 hunt.getTitle(),
                 hunt.getType(),
+                hunt.getSourceType(),
                 hunt.getDifficulty(),
                 hunt.getStatus(),
                 hunt.getStartTime(),

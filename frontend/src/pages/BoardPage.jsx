@@ -67,8 +67,16 @@ function getAvailablePosition(index, placedPositions) {
 }
 
 function getPinType(hunt) {
-  if (hunt.difficulty === 'BOSS') {
+  if (hunt.sourceType === 'DAILY_BOSS' || hunt.difficulty === 'BOSS') {
     return 'boss'
+  }
+
+  if (hunt.sourceType === 'REPEATABLE') {
+    return 'solo'
+  }
+
+  if (hunt.sourceType === 'DAILY_BOUNTY' || hunt.sourceType === 'WEEKLY_CONTRACT') {
+    return 'group'
   }
 
   if (hunt.type === 'SOLO_HUNT') {

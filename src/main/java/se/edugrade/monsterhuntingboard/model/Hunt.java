@@ -61,7 +61,7 @@ public class Hunt {
     @Builder.Default
     private HuntSourceType sourceType = HuntSourceType.MANUAL;
 
-    @Column(nullable = false)
+    @Column(name = "is_generated", nullable = false)
     @Builder.Default
     private boolean generated = false;
 

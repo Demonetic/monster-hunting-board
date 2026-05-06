@@ -29,6 +29,7 @@ import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
 import se.edugrade.monsterhuntingboard.model.BeastType;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
+import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.security.CustomUserDetailsService;
 import se.edugrade.monsterhuntingboard.security.JwtAuthenticationFilter;
@@ -212,6 +213,7 @@ class HuntControllerTest {
                 id,
                 title,
                 HuntType.HUNT,
+                HuntSourceType.MANUAL,
                 Difficulty.EASY,
                 status,
                 LocalDateTime.of(2026, 1, 1, 12, 0),

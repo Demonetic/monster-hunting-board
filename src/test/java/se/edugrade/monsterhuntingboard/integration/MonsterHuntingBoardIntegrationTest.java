@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +51,7 @@ import se.edugrade.monsterhuntingboard.service.HunterBattleOutcome;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class MonsterHuntingBoardIntegrationTest {
+    private static final ZoneId STOCKHOLM_ZONE = ZoneId.of("Europe/Stockholm");
 
     @LocalServerPort
     private int port;
@@ -145,7 +149,7 @@ class MonsterHuntingBoardIntegrationTest {
                                 HuntType.HUNT,
                                 Difficulty.BOSS,
                                 HuntStatus.ACTIVE,
-                                java.time.LocalDateTime.now().plusHours(2),
+                                futureStockholmTime(4),
                                 3,
                                 List.of(beastResponse.getBody().id()),
                                 50,
@@ -226,5 +230,9 @@ class MonsterHuntingBoardIntegrationTest {
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
         return new HttpEntity<>(body, headers);
+    }
+
+    private LocalDateTime futureStockholmTime(int hoursAhead) {
+        return ZonedDateTime.now(STOCKHOLM_ZONE).toLocalDateTime().plusHours(hoursAhead);
     }
 }

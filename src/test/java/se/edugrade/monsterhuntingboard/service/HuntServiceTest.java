@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,7 @@ import se.edugrade.monsterhuntingboard.util.TestIds;
 @ActiveProfiles("test")
 @Transactional
 class HuntServiceTest {
+    private static final ZoneId STOCKHOLM_ZONE = ZoneId.of("Europe/Stockholm");
 
     @Autowired
     private HuntService huntService;
@@ -95,7 +98,7 @@ class HuntServiceTest {
                 .type(HuntType.HUNT)
                 .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.ACTIVE)
-                .startTime(LocalDateTime.now().plusHours(2))
+                .startTime(futureStockholmTime(4))
                 .maxPartySize(4)
                 .beasts(List.of(beast))
                 .rewardExp(100)
@@ -116,7 +119,7 @@ class HuntServiceTest {
                 HuntType.HUNT,
                 Difficulty.BOSS,
                 HuntStatus.SCHEDULED,
-                LocalDateTime.now().plusHours(3),
+                futureStockholmTime(5),
                 3,
                 List.of(beast.getId()),
                 50,
@@ -140,7 +143,7 @@ class HuntServiceTest {
                 HuntType.HUNT,
                 Difficulty.HARD,
                 HuntStatus.SCHEDULED,
-                LocalDateTime.now().plusHours(1),
+                futureStockholmTime(3),
                 4,
                 List.of(beast.getId()),
                 100,
@@ -173,7 +176,7 @@ class HuntServiceTest {
                 .type(HuntType.HUNT)
                 .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.ACTIVE)
-                .startTime(LocalDateTime.now().plusHours(1))
+                .startTime(futureStockholmTime(3))
                 .maxPartySize(1)
                 .beasts(List.of(beast))
                 .rewardExp(50)
@@ -343,8 +346,8 @@ class HuntServiceTest {
                 .status(HuntStatus.ACTIVE)
                 .sourceType(HuntSourceType.REPEATABLE)
                 .generated(true)
-                .availableFrom(LocalDateTime.now().minusHours(1))
-                .expiresAt(LocalDateTime.now().plusHours(6))
+                .availableFrom(currentStockholmTime().minusHours(1))
+                .expiresAt(currentStockholmTime().plusHours(6))
                 .winLimitPerHunter(5)
                 .beasts(List.of(beast))
                 .rewardExp(50)
@@ -439,7 +442,7 @@ class HuntServiceTest {
                 .type(HuntType.HUNT)
                 .difficulty(Difficulty.BOSS)
                 .status(HuntStatus.SCHEDULED)
-                .startTime(LocalDateTime.now().plusHours(1))
+                .startTime(futureStockholmTime(3))
                 .maxPartySize(2)
                 .beasts(List.of(beast))
                 .rewardExp(50)
@@ -512,5 +515,13 @@ class HuntServiceTest {
                         secondHunter.getId(), new HunterBattleOutcome(0, 100)
                 )
         );
+    }
+
+    private LocalDateTime currentStockholmTime() {
+        return ZonedDateTime.now(STOCKHOLM_ZONE).toLocalDateTime();
+    }
+
+    private LocalDateTime futureStockholmTime(int hoursAhead) {
+        return currentStockholmTime().plusHours(hoursAhead);
     }
 }

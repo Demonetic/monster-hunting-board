@@ -122,7 +122,7 @@ public class HuntGenerationService {
 
     private void ensureDailyBosses(LocalDate date, LocalDateTime dayStart, LocalDateTime nextDayStart) {
         List<Hunt> existingBosses = huntRepository
-                .findByGeneratedTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
+                .findByGeneratedIsTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
                         HuntSourceType.DAILY_BOSS,
                         dayStart,
                         nextDayStart
@@ -156,7 +156,7 @@ public class HuntGenerationService {
             Integer startHour
     ) {
         List<Hunt> existing = huntRepository
-                .findByGeneratedTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
+                .findByGeneratedIsTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
                         sourceType,
                         periodStart,
                         periodEnd

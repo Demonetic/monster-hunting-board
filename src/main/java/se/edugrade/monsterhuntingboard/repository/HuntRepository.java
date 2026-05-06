@@ -23,7 +23,7 @@ public interface HuntRepository extends JpaRepository<Hunt, Long> {
 
     List<Hunt> findByTypeAndStatus(HuntType type, HuntStatus status);
 
-    List<Hunt> findByGeneratedTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
+    List<Hunt> findByGeneratedIsTrueAndSourceTypeAndAvailableFromGreaterThanEqualAndAvailableFromLessThan(
             HuntSourceType sourceType,
             LocalDateTime availableFromInclusive,
             LocalDateTime availableFromExclusive
