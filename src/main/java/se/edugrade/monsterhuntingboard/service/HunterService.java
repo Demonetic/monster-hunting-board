@@ -8,12 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
 import se.edugrade.monsterhuntingboard.dto.UpdateAppearanceRequest;
-import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
-import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.repository.HunterInventoryItemRepository;
 import se.edugrade.monsterhuntingboard.repository.HunterRepository;
+import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +38,12 @@ public class HunterService {
         Hunter hunter = hunterRepository.findByUserAccountUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
 
-        if (request.appearance() == Appearance.BARD) {
-            throw new InvalidGameRuleException("Hunters cannot use appearance BARD");
-        }
-
+        int previousBaseHp = hunter.getBaseHp();
+        int damageTaken = Math.max(0, previousBaseHp - hunter.getCurrentHp());
         hunter.setAppearance(request.appearance());
+        int newBaseHp = GameBalanceUtil.calculateBaseHp(hunter.getLevel(), hunter.getAppearance());
+        hunter.setBaseHp(newBaseHp);
+        hunter.setCurrentHp(Math.max(0, newBaseHp - damageTaken));
         log.info("Updated hunter appearance: {} -> {}", username, hunter.getAppearance());
         return HunterResponse.from(
                 hunter,

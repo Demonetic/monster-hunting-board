@@ -15,14 +15,13 @@ import se.edugrade.monsterhuntingboard.dto.AuthResponse;
 import se.edugrade.monsterhuntingboard.dto.LoginRequest;
 import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
 import se.edugrade.monsterhuntingboard.exception.DuplicateResourceException;
-import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
-import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
 import se.edugrade.monsterhuntingboard.security.JwtService;
+import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +38,6 @@ public class AuthService {
         if (userAccountRepository.existsByUsername(request.username())) {
             throw new DuplicateResourceException("Username is already taken");
         }
-        if (request.appearance() == Appearance.BARD) {
-            throw new InvalidGameRuleException("Hunters cannot use appearance BARD");
-        }
 
         UserAccount userAccount = UserAccount.builder()
                 .username(request.username())
@@ -49,14 +45,16 @@ public class AuthService {
                 .role(Role.HUNTER)
                 .build();
 
+        int baseHp = GameBalanceUtil.calculateBaseHp(1, request.appearance());
+
         Hunter hunter = Hunter.builder()
                 .displayName(request.displayName())
                 .appearance(request.appearance())
                 .level(1)
                 .exp(0)
                 .gold(0)
-                .baseHp(100)
-                .currentHp(100)
+                .baseHp(baseHp)
+                .currentHp(baseHp)
                 .userAccount(userAccount)
                 .build();
 

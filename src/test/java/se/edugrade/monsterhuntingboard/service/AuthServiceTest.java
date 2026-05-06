@@ -14,12 +14,12 @@ import se.edugrade.monsterhuntingboard.dto.AuthResponse;
 import se.edugrade.monsterhuntingboard.dto.LoginRequest;
 import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
 import se.edugrade.monsterhuntingboard.exception.DuplicateResourceException;
-import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
+import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -51,6 +51,8 @@ class AuthServiceTest {
         assertThat(response.username()).isEqualTo(username);
         assertThat(response.role()).isEqualTo(Role.HUNTER);
         assertThat(userAccountRepository.existsByUsername(username)).isTrue();
+        Hunter savedHunter = userAccountRepository.findByUsername(username).orElseThrow().getHunter();
+        assertThat(savedHunter.getBaseHp()).isEqualTo(100);
     }
 
     @Test
@@ -70,7 +72,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginWorksAndBardRegistrationIsRejected() {
+    void loginWorksAndBardRegistrationIsAllowed() {
         String username = "login-" + TestIds.shortId();
         saveHunterUser(username, "Login Hunter", Appearance.RANGER);
 
@@ -86,8 +88,24 @@ class AuthServiceTest {
                 "Bard Hunter",
                 Appearance.BARD
         );
-        assertThatThrownBy(() -> authService.register(bardRequest))
-                .isInstanceOf(InvalidGameRuleException.class);
+        AuthResponse bardResponse = authService.register(bardRequest);
+        assertThat(bardResponse.username()).startsWith("bard-");
+    }
+
+    @Test
+    void paladinRegistrationGetsHigherBaseHp() {
+        String username = "pala-" + TestIds.shortId();
+
+        authService.register(new RegisterRequest(
+                username,
+                "password123",
+                "Paladin Hunter",
+                Appearance.PALADIN
+        ));
+
+        Hunter hunter = userAccountRepository.findByUsername(username).orElseThrow().getHunter();
+        assertThat(hunter.getBaseHp()).isEqualTo(GameBalanceUtil.calculateBaseHp(1, Appearance.PALADIN));
+        assertThat(hunter.getCurrentHp()).isEqualTo(GameBalanceUtil.calculateBaseHp(1, Appearance.PALADIN));
     }
 
     private void saveHunterUser(String username, String displayName, Appearance appearance) {
@@ -103,8 +121,8 @@ class AuthServiceTest {
                 .level(1)
                 .exp(0)
                 .gold(0)
-                .baseHp(100)
-                .currentHp(100)
+                .baseHp(GameBalanceUtil.calculateBaseHp(1, appearance))
+                .currentHp(GameBalanceUtil.calculateBaseHp(1, appearance))
                 .userAccount(userAccount)
                 .build();
 

@@ -40,6 +40,7 @@ import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
+import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 import se.edugrade.monsterhuntingboard.util.TestIds;
 
 @SpringBootTest
@@ -102,7 +103,7 @@ class HuntServiceTest {
 
         hunterOneUsername = "h1-" + TestIds.shortId();
         hunterTwoUsername = "h2-" + TestIds.shortId();
-        saveHunter(hunterOneUsername, "Aria", Appearance.MAGE);
+        saveHunter(hunterOneUsername, "Aria", Appearance.KNIGHT);
         saveHunter(hunterTwoUsername, "Rowan", Appearance.RANGER);
         given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupWinSimulation());
     }
@@ -309,6 +310,30 @@ class HuntServiceTest {
     }
 
     @Test
+    void mageMindOfStudyAddsBonusExpOnWin() {
+        String mageUsername = "mage-" + TestIds.shortId();
+        saveHunter(mageUsername, "Lyra", Appearance.MAGE);
+        Hunter mageHunter = userAccountRepository.findByUsername(mageUsername).orElseThrow().getHunter();
+        huntService.joinHunt(activeHunt.getId(), mageUsername);
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+                new GroupBattleSimulation(
+                        true,
+                        0,
+                        List.of(),
+                        Map.of(mageHunter.getId(), new HunterBattleOutcome(90, 10))
+                )
+        );
+
+        HuntResultResponse response = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                mageUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        assertThat(response.expChange()).isEqualTo(110);
+    }
+
+    @Test
     void groupVictoryRewardsAllParticipantsEvenIfDead() {
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
         huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
@@ -407,8 +432,8 @@ class HuntServiceTest {
                 .level(1)
                 .exp(0)
                 .gold(0)
-                .baseHp(100)
-                .currentHp(100)
+                .baseHp(GameBalanceUtil.calculateBaseHp(1, appearance))
+                .currentHp(GameBalanceUtil.calculateBaseHp(1, appearance))
                 .userAccount(userAccount)
                 .build();
 

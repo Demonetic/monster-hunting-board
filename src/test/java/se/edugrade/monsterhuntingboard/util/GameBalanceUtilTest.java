@@ -3,6 +3,7 @@ package se.edugrade.monsterhuntingboard.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import se.edugrade.monsterhuntingboard.model.Appearance;
 
 class GameBalanceUtilTest {
 
@@ -23,5 +24,15 @@ class GameBalanceUtilTest {
         assertThat(GameBalanceUtil.calculateLevel(449)).isEqualTo(2);
         assertThat(GameBalanceUtil.calculateLevel(450)).isEqualTo(3);
         assertThat(GameBalanceUtil.calculateLevel(750)).isEqualTo(4);
+    }
+
+    @Test
+    void appearanceBonusesApplyToHpAndRewards() {
+        assertThat(GameBalanceUtil.calculateBaseHp(1, Appearance.KNIGHT)).isEqualTo(100);
+        assertThat(GameBalanceUtil.calculateBaseHp(1, Appearance.PALADIN)).isEqualTo(115);
+        assertThat(GameBalanceUtil.applyAppearanceExpBonus(100, Appearance.MAGE)).isEqualTo(110);
+        assertThat(GameBalanceUtil.applyAppearanceExpBonus(100, Appearance.RANGER)).isEqualTo(100);
+        assertThat(GameBalanceUtil.applyAppearanceGoldBonus(75, Appearance.BARD, true)).isEqualTo(83);
+        assertThat(GameBalanceUtil.applyAppearanceGoldBonus(75, Appearance.BARD, false)).isEqualTo(75);
     }
 }

@@ -1,5 +1,6 @@
 package se.edugrade.monsterhuntingboard.util;
 
+import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 
@@ -45,7 +46,15 @@ public final class GameBalanceUtil {
     }
 
     public static int calculateBaseHp(int level) {
-        return 100 + ((level - 1) * 10);
+        return calculateBaseHp(level, null);
+    }
+
+    public static int calculateBaseHp(int level, Appearance appearance) {
+        int baseHp = 100 + ((level - 1) * 10);
+        if (appearance == Appearance.PALADIN) {
+            baseHp += 15;
+        }
+        return baseHp;
     }
 
     public static int calculateLossExp(Difficulty difficulty) {
@@ -70,5 +79,19 @@ public final class GameBalanceUtil {
             return expReward;
         }
         return expReward + Math.max(1, Math.round(expReward * 0.1f));
+    }
+
+    public static int applyAppearanceExpBonus(int expReward, Appearance appearance) {
+        if (expReward <= 0 || appearance != Appearance.MAGE) {
+            return expReward;
+        }
+        return expReward + Math.max(1, Math.round(expReward * 0.1f));
+    }
+
+    public static int applyAppearanceGoldBonus(int goldReward, Appearance appearance, boolean fortuneSongTriggered) {
+        if (goldReward <= 0 || appearance != Appearance.BARD || !fortuneSongTriggered) {
+            return goldReward;
+        }
+        return goldReward + Math.max(1, Math.round(goldReward * 0.1f));
     }
 }

@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
+import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntParticipation;
 import se.edugrade.monsterhuntingboard.model.Hunter;
@@ -59,7 +60,7 @@ public class BattleService {
 
         while (hunterHp > 0 && monsterHp > 0) {
             if (hunterTurn) {
-                int hunterDamage = rollHunterDamage(hunter.getLevel());
+                int hunterDamage = rollHunterDamage(hunter.getLevel(), hunter.getAppearance());
                 monsterHp = Math.max(0, monsterHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
@@ -73,6 +74,7 @@ public class BattleService {
                 if (hunter.isEndurancePotionActive()) {
                     monsterDamage = Math.max(1, monsterDamage - calculateEnduranceReduction(hunter.getLevel()));
                 }
+                monsterDamage = applyPassiveDamageReduction(monsterDamage, hunter.getAppearance());
                 hunterHp = Math.max(0, hunterHp - monsterDamage);
                 totalDamageTaken += monsterDamage;
                 turns.add(new BattleTurnResponse(
@@ -102,6 +104,7 @@ public class BattleService {
                     hunter.getId(),
                     hunter.getDisplayName(),
                     hunter.getLevel(),
+                    hunter.getAppearance(),
                     hunter.getCurrentHp(),
                     hunter.isEndurancePotionActive()
             ));
@@ -124,7 +127,7 @@ public class BattleService {
                     continue;
                 }
 
-                int hunterDamage = rollHunterDamage(attacker.level());
+                int hunterDamage = rollHunterDamage(attacker.level(), attacker.appearance());
                 bossHp = Math.max(0, bossHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
@@ -147,6 +150,7 @@ public class BattleService {
             if (target.endurancePotionActive()) {
                 bossDamage = Math.max(1, bossDamage - calculateEnduranceReduction(target.level()));
             }
+            bossDamage = applyPassiveDamageReduction(bossDamage, target.appearance());
             target.applyDamage(bossDamage);
             turns.add(new BattleTurnResponse(
                     turnNumber++,
@@ -185,9 +189,18 @@ public class BattleService {
         return baseHp + 120 + levelScaling + partyScaling;
     }
 
-    private int rollHunterDamage(int hunterLevel) {
+    private int rollHunterDamage(int hunterLevel, Appearance appearance) {
         int minDamage = 8 + (hunterLevel * 2);
         int maxDamage = 14 + (hunterLevel * 3);
+        if (appearance == Appearance.HUNTER) {
+            maxDamage += 4;
+        }
+        if (appearance == Appearance.RANGER) {
+            int midpoint = minDamage + Math.floorDiv(maxDamage - minDamage, 2);
+            if (ThreadLocalRandom.current().nextInt(100) < 65) {
+                return rollBetween(midpoint, maxDamage);
+            }
+        }
         return rollBetween(minDamage, maxDamage);
     }
 
@@ -209,6 +222,13 @@ public class BattleService {
 
     private int calculateEnduranceReduction(int hunterLevel) {
         return 5 + Math.floorDiv(hunterLevel, 2);
+    }
+
+    private int applyPassiveDamageReduction(int damage, Appearance appearance) {
+        if (appearance == Appearance.KNIGHT) {
+            return Math.max(1, damage - 2);
+        }
+        return damage;
     }
 
     private boolean hasLivingHunters(Map<Long, HunterBattleState> hunterStates) {
@@ -235,6 +255,7 @@ public class BattleService {
         private final Long hunterId;
         private final String displayName;
         private final int level;
+        private final Appearance appearance;
         private final boolean endurancePotionActive;
         private int remainingHp;
         private int damageTaken;
@@ -243,12 +264,14 @@ public class BattleService {
                 Long hunterId,
                 String displayName,
                 int level,
+                Appearance appearance,
                 int remainingHp,
                 boolean endurancePotionActive
         ) {
             this.hunterId = hunterId;
             this.displayName = displayName;
             this.level = level;
+            this.appearance = appearance;
             this.remainingHp = remainingHp;
             this.endurancePotionActive = endurancePotionActive;
         }
@@ -272,6 +295,10 @@ public class BattleService {
 
         private int level() {
             return level;
+        }
+
+        private Appearance appearance() {
+            return appearance;
         }
 
         private int remainingHp() {

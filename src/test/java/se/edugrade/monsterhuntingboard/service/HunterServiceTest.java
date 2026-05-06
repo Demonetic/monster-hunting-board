@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,12 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.util.TestIds;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
 import se.edugrade.monsterhuntingboard.dto.UpdateAppearanceRequest;
-import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
+import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -52,8 +51,8 @@ class HunterServiceTest {
                 .level(1)
                 .exp(0)
                 .gold(0)
-                .baseHp(100)
-                .currentHp(100)
+                .baseHp(GameBalanceUtil.calculateBaseHp(1, Appearance.MAGE))
+                .currentHp(GameBalanceUtil.calculateBaseHp(1, Appearance.MAGE))
                 .userAccount(userAccount)
                 .build();
 
@@ -76,14 +75,21 @@ class HunterServiceTest {
     }
 
     @Test
-    void updateAppearanceWorksAndRejectsBard() {
+    void updateAppearanceRecalculatesBaseHpAndAllowsBard() {
         HunterResponse response = hunterService.updateAppearance(
                 username,
                 new UpdateAppearanceRequest(Appearance.PALADIN)
         );
 
         assertThat(response.appearance()).isEqualTo(Appearance.PALADIN);
-        assertThatThrownBy(() -> hunterService.updateAppearance(username, new UpdateAppearanceRequest(Appearance.BARD)))
-                .isInstanceOf(InvalidGameRuleException.class);
+        assertThat(response.baseHp()).isEqualTo(GameBalanceUtil.calculateBaseHp(1, Appearance.PALADIN));
+        assertThat(response.currentHp()).isEqualTo(GameBalanceUtil.calculateBaseHp(1, Appearance.PALADIN));
+
+        HunterResponse bardResponse = hunterService.updateAppearance(
+                username,
+                new UpdateAppearanceRequest(Appearance.BARD)
+        );
+        assertThat(bardResponse.appearance()).isEqualTo(Appearance.BARD);
+        assertThat(bardResponse.baseHp()).isEqualTo(GameBalanceUtil.calculateBaseHp(1, Appearance.BARD));
     }
 }

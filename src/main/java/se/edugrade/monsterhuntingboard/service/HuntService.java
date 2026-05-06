@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -335,21 +336,15 @@ public class HuntService {
         int previousLevel = hunter.getLevel();
         int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
 
-        RewardResult baseRewardResult = won
-                ? GameBalanceUtil.applyWinReward(hunt)
+        RewardResult rewardResult = won
+                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied)
                 : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
-        RewardResult rewardResult = expPotionApplied
-                ? new RewardResult(
-                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
-                        baseRewardResult.goldChange()
-                )
-                : baseRewardResult;
 
         int adjustedExp = hunter.getExp() + rewardResult.expChange();
         int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
         int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
         int newLevel = GameBalanceUtil.calculateLevel(newExp);
-        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
+        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel, hunter.getAppearance());
         int newCurrentHp = won
                 ? (newLevel > previousLevel ? newBaseHp : simulation.hunterRemainingHp())
                 : newBaseHp;
@@ -438,21 +433,15 @@ public class HuntService {
         int previousLevel = hunter.getLevel();
         int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
 
-        RewardResult baseRewardResult = won
-                ? GameBalanceUtil.applyWinReward(hunt)
+        RewardResult rewardResult = won
+                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied)
                 : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
-        RewardResult rewardResult = expPotionApplied
-                ? new RewardResult(
-                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
-                        baseRewardResult.goldChange()
-                )
-                : baseRewardResult;
 
         int adjustedExp = hunter.getExp() + rewardResult.expChange();
         int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
         int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
         int newLevel = GameBalanceUtil.calculateLevel(newExp);
-        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
+        int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel, hunter.getAppearance());
         int newCurrentHp = won
                 ? (newLevel > previousLevel ? newBaseHp : outcome.remainingHp())
                 : newBaseHp;
@@ -517,6 +506,24 @@ public class HuntService {
         if (hunter.getCurrentHp() <= 0) {
             throw new InvalidGameRuleException("Hunter has no HP left and must recover before fighting");
         }
+    }
+
+    private RewardResult calculateWinRewardForHunter(Hunt hunt, Hunter hunter, boolean expPotionApplied) {
+        RewardResult rewardResult = GameBalanceUtil.applyWinReward(hunt);
+        int expReward = GameBalanceUtil.applyAppearanceExpBonus(rewardResult.expChange(), hunter.getAppearance());
+        if (expPotionApplied) {
+            expReward = GameBalanceUtil.applyExpPotionBonus(expReward);
+        }
+
+        boolean fortuneSongTriggered = hunter.getAppearance() == se.edugrade.monsterhuntingboard.model.Appearance.BARD
+                && ThreadLocalRandom.current().nextInt(100) < 20;
+        int goldReward = GameBalanceUtil.applyAppearanceGoldBonus(
+                rewardResult.goldChange(),
+                hunter.getAppearance(),
+                fortuneSongTriggered
+        );
+
+        return new RewardResult(expReward, goldReward);
     }
 
     private void validateDifficultyMatchesType(HuntType type, Difficulty difficulty) {
