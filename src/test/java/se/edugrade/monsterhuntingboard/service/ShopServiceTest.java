@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import se.edugrade.monsterhuntingboard.dto.InventoryActionResponse;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemRequest;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemResponse;
 import se.edugrade.monsterhuntingboard.dto.ShopResponse;
@@ -125,5 +126,37 @@ class ShopServiceTest {
                 new PurchaseItemRequest(InventoryItemType.ENDURANCE_POTION)
         )).isInstanceOf(InvalidGameRuleException.class)
                 .hasMessageContaining("Not enough gold");
+    }
+
+    @Test
+    void potionsCanBeUsedOrDiscardedWithRulesEnforced() {
+        PurchaseItemResponse healthPurchase = shopService.purchaseItem(
+                username,
+                new PurchaseItemRequest(InventoryItemType.HEALTH_POTION)
+        );
+        PurchaseItemResponse expPurchase = shopService.purchaseItem(
+                username,
+                new PurchaseItemRequest(InventoryItemType.EXP_POTION)
+        );
+
+        assertThatThrownBy(() -> shopService.useInventoryItem(username, healthPurchase.purchasedItem().id()))
+                .isInstanceOf(InvalidGameRuleException.class)
+                .hasMessageContaining("max HP");
+
+        UserAccount account = userAccountRepository.findByUsername(username).orElseThrow();
+        account.getHunter().setCurrentHp(40);
+
+        InventoryActionResponse healthResponse = shopService.useInventoryItem(username, healthPurchase.purchasedItem().id());
+        assertThat(healthResponse.hunter().currentHp()).isEqualTo(90);
+
+        InventoryActionResponse expResponse = shopService.useInventoryItem(username, expPurchase.purchasedItem().id());
+        assertThat(expResponse.hunter().expPotionActive()).isTrue();
+
+        PurchaseItemResponse endurancePurchase = shopService.purchaseItem(
+                username,
+                new PurchaseItemRequest(InventoryItemType.ENDURANCE_POTION)
+        );
+        InventoryActionResponse discardResponse = shopService.discardInventoryItem(username, endurancePurchase.purchasedItem().id());
+        assertThat(discardResponse.message()).contains("discarded");
     }
 }

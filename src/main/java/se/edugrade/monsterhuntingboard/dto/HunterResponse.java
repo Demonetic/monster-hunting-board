@@ -14,6 +14,8 @@ public record HunterResponse(
         int gold,
         int baseHp,
         int currentHp,
+        boolean expPotionActive,
+        boolean endurancePotionActive,
         int inventoryCapacity,
         List<InventoryItemResponse> inventory
 ) {
@@ -27,6 +29,8 @@ public record HunterResponse(
                 hunter.getGold(),
                 hunter.getBaseHp(),
                 hunter.getCurrentHp(),
+                hunter.isExpPotionActive(),
+                hunter.isEndurancePotionActive(),
                 inventoryCapacity,
                 inventoryItems.stream().map(InventoryItemResponse::from).toList()
         );

@@ -32,4 +32,11 @@ public final class GameBalanceUtil {
     public static RewardResult applyLoss(Difficulty difficulty) {
         return new RewardResult(calculateLossExp(difficulty), 0);
     }
+
+    public static int applyExpPotionBonus(int expReward) {
+        if (expReward <= 0) {
+            return expReward;
+        }
+        return expReward + Math.max(1, Math.round(expReward * 0.1f));
+    }
 }

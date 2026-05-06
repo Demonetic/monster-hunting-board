@@ -141,6 +141,7 @@ public class HuntService {
             throw new InvalidGameRuleException("Only SOLO_HUNT missions can be started here");
         }
         validateSoloHuntIsActive(hunt);
+        validateHunterCanFight(hunter);
 
         HuntParticipation savedParticipation = huntParticipationRepository.save(createParticipation(hunter, hunt));
         boolean won = battleService.rollWin();
@@ -161,6 +162,7 @@ public class HuntService {
         if (participation.isCompleted()) {
             throw new InvalidHuntStateException("Hunt participation has already been completed");
         }
+        validateHunterCanFight(hunter);
 
         boolean won = battleService.rollWin();
         return applyResult(hunt, hunter, participation, won);
@@ -314,20 +316,33 @@ public class HuntService {
     }
 
     private HuntResultResponse applyResult(Hunt hunt, Hunter hunter, HuntParticipation participation, boolean won) {
-        RewardResult rewardResult = won
+        boolean expPotionApplied = hunter.isExpPotionActive() && won;
+        boolean endurancePotionApplied = hunter.isEndurancePotionActive();
+
+        RewardResult baseRewardResult = won
                 ? GameBalanceUtil.applyWinReward(hunt)
                 : GameBalanceUtil.applyLoss(hunt.getDifficulty());
+        RewardResult rewardResult = expPotionApplied
+                ? new RewardResult(
+                        GameBalanceUtil.applyExpPotionBonus(baseRewardResult.expChange()),
+                        baseRewardResult.goldChange()
+                )
+                : baseRewardResult;
 
         int newExp = Math.max(0, hunter.getExp() + rewardResult.expChange());
         int newGold = won ? hunter.getGold() + rewardResult.goldChange() : hunter.getGold();
         int newLevel = GameBalanceUtil.calculateLevel(newExp);
         int newBaseHp = GameBalanceUtil.calculateBaseHp(newLevel);
+        int damageTaken = battleService.calculateDamageTaken(hunt, won, endurancePotionApplied);
+        int newCurrentHp = Math.max(0, Math.min(newBaseHp, hunter.getCurrentHp() - damageTaken));
 
         hunter.setExp(newExp);
         hunter.setGold(newGold);
         hunter.setLevel(newLevel);
         hunter.setBaseHp(newBaseHp);
-        hunter.setCurrentHp(newBaseHp);
+        hunter.setCurrentHp(newCurrentHp);
+        hunter.setExpPotionActive(false);
+        hunter.setEndurancePotionActive(false);
 
         participation.setCompleted(true);
         participation.setWon(won);
@@ -341,7 +356,10 @@ public class HuntService {
                 hunter,
                 won,
                 rewardResult.expChange(),
-                rewardResult.goldChange()
+                rewardResult.goldChange(),
+                damageTaken,
+                expPotionApplied,
+                endurancePotionApplied
         );
     }
 
@@ -371,6 +389,12 @@ public class HuntService {
     private void validateSoloHuntIsActive(Hunt hunt) {
         if (hunt.getStatus() != HuntStatus.ACTIVE) {
             throw new InvalidHuntStateException("Solo hunt must be ACTIVE");
+        }
+    }
+
+    private void validateHunterCanFight(Hunter hunter) {
+        if (hunter.getCurrentHp() <= 0) {
+            throw new InvalidGameRuleException("Hunter has no HP left and must recover before fighting");
         }
     }
 

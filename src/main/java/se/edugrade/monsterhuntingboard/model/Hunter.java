@@ -61,6 +61,14 @@ public class Hunter {
     @Column(nullable = false)
     private int currentHp;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean expPotionActive = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean endurancePotionActive = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

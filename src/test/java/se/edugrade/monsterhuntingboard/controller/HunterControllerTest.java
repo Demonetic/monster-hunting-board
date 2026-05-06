@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import se.edugrade.monsterhuntingboard.config.SecurityConfig;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
+import se.edugrade.monsterhuntingboard.dto.InventoryActionResponse;
 import se.edugrade.monsterhuntingboard.dto.InventoryItemResponse;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemResponse;
 import se.edugrade.monsterhuntingboard.dto.ShopItemResponse;
@@ -54,7 +56,7 @@ class HunterControllerTest {
     @Test
     void getCurrentHunterWithTokenReturnsOk() throws Exception {
         when(hunterService.getCurrentHunter("aria")).thenReturn(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, 10, List.of())
+                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, false, false, 10, List.of())
         );
 
         mockMvc.perform(get("/api/hunters/me")
@@ -66,7 +68,7 @@ class HunterControllerTest {
     @Test
     void patchAppearanceReturnsOkAndBardIsRejected() throws Exception {
         when(hunterService.updateAppearance(eq("aria"), any())).thenReturn(
-                new HunterResponse(1L, "Aria", Appearance.PALADIN, 1, 0, 0, 100, 100, 10, List.of())
+                new HunterResponse(1L, "Aria", Appearance.PALADIN, 1, 0, 0, 100, 100, false, false, 10, List.of())
         );
 
         mockMvc.perform(patch("/api/hunters/me/appearance")
@@ -94,7 +96,7 @@ class HunterControllerTest {
     @Test
     void hunterAndGameMasterSeeCorrectHunterEndpointPermissions() throws Exception {
         when(hunterService.getAllHunters()).thenReturn(List.of(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, 10, List.of())
+                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, false, false, 10, List.of())
         ));
 
         mockMvc.perform(get("/api/hunters/me")
@@ -119,7 +121,7 @@ class HunterControllerTest {
                 List.of(ShopItemResponse.from(InventoryItemType.HEALTH_POTION))
         ));
         when(shopService.purchaseItem(eq("aria"), any())).thenReturn(new PurchaseItemResponse(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 100, 10, List.of()),
+                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 100, false, false, 10, List.of()),
                 new InventoryItemResponse(1L, 0, InventoryItemType.HEALTH_POTION, "Health Potion", "Restores lost HP after battle", 30, null),
                 90,
                 1,
@@ -144,5 +146,27 @@ class HunterControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.remainingGold").value(90))
                 .andExpect(jsonPath("$.purchasedItem.slotIndex").value(0));
+    }
+
+    @Test
+    void inventoryUseAndDiscardEndpointsReturnUpdatedHunter() throws Exception {
+        when(shopService.useInventoryItem("aria", 7L)).thenReturn(new InventoryActionResponse(
+                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 80, true, false, 10, List.of()),
+                "EXP Potion activated for the next hunt"
+        ));
+        when(shopService.discardInventoryItem("aria", 8L)).thenReturn(new InventoryActionResponse(
+                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 80, false, false, 10, List.of()),
+                "Health Potion discarded"
+        ));
+
+        mockMvc.perform(post("/api/hunters/me/inventory/7/use")
+                        .with(user("aria").roles("HUNTER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hunter.expPotionActive").value(true));
+
+        mockMvc.perform(delete("/api/hunters/me/inventory/8")
+                        .with(user("aria").roles("HUNTER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Health Potion discarded"));
     }
 }

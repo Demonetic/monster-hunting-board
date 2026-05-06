@@ -990,6 +990,36 @@ textarea:focus-visible {
   font-size: 0.84rem;
 }
 
+.inventory-slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.inventory-slot-button {
+  border: 1px solid rgba(72, 46, 24, 0.28);
+  background: rgba(255, 247, 228, 0.55);
+  color: #3b2a1a;
+  padding: 0.22rem 0.46rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inventory-slot-button.is-danger {
+  background: rgba(167, 76, 58, 0.18);
+  color: #7d251e;
+}
+
+.inventory-slot-button:disabled {
+  cursor: default;
+  opacity: 0.56;
+}
+
 .inventory-slot.is-empty {
   opacity: 0.78;
 }

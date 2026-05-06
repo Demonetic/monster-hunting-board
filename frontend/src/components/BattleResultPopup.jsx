@@ -48,6 +48,12 @@ function BattleResultPopup({ result, onClose }) {
               <p>
                 <span>New HP:</span> {result.newBaseHp}
               </p>
+              <p>
+                <span>Current HP:</span> {result.newCurrentHp}
+              </p>
+              <p>
+                <span>Damage taken:</span> {result.damageTaken}
+              </p>
             </>
           ) : (
             <>
@@ -63,7 +69,21 @@ function BattleResultPopup({ result, onClose }) {
               <p>
                 <span>Level:</span> {result.newLevel}
               </p>
+              <p>
+                <span>Current HP:</span> {result.newCurrentHp}
+              </p>
+              <p>
+                <span>Damage taken:</span> {result.damageTaken}
+              </p>
             </>
+          )}
+          {(result.expPotionApplied || result.endurancePotionApplied) && (
+            <p>
+              <span>Potions used:</span>{' '}
+              {[result.expPotionApplied ? 'EXP' : null, result.endurancePotionApplied ? 'Endurance' : null]
+                .filter(Boolean)
+                .join(', ')}
+            </p>
           )}
         </div>
 

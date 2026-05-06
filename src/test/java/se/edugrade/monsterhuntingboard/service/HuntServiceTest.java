@@ -2,6 +2,9 @@ package se.edugrade.monsterhuntingboard.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
@@ -72,6 +75,7 @@ class HuntServiceTest {
     @BeforeEach
     void setUp() {
         given(battleService.rollWin()).willReturn(true);
+        given(battleService.calculateDamageTaken(any(), anyBoolean(), anyBoolean())).willReturn(20);
 
         beast = beastRepository.save(Beast.builder()
                 .type(BeastType.GRIFFIN)
@@ -163,6 +167,8 @@ class HuntServiceTest {
         assertThat(response.goldChange()).isEqualTo(75);
         assertThat(response.newLevel()).isEqualTo(2);
         assertThat(response.newBaseHp()).isEqualTo(110);
+        assertThat(response.newCurrentHp()).isEqualTo(80);
+        assertThat(response.damageTaken()).isEqualTo(20);
     }
 
     @Test
@@ -181,6 +187,7 @@ class HuntServiceTest {
         assertThat(response.goldChange()).isEqualTo(0);
         assertThat(response.newLevel()).isEqualTo(1);
         assertThat(response.newBaseHp()).isEqualTo(100);
+        assertThat(response.newCurrentHp()).isEqualTo(80);
     }
 
     @Test
@@ -202,6 +209,7 @@ class HuntServiceTest {
         );
         assertThat(winResponse.won()).isTrue();
         assertThat(winResponse.expChange()).isEqualTo(50);
+        assertThat(winResponse.newCurrentHp()).isEqualTo(80);
 
         given(battleService.rollWin()).willReturn(false);
         Hunt hardSoloHunt = huntRepository.save(Hunt.builder()
@@ -221,6 +229,31 @@ class HuntServiceTest {
         );
         assertThat(lossResponse.won()).isFalse();
         assertThat(lossResponse.expChange()).isEqualTo(-50);
+    }
+
+    @Test
+    void activePotionsApplyToOneHuntAndAreConsumed() {
+        UserAccount userAccount = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow();
+        Hunter hunter = userAccount.getHunter();
+        hunter.setExpPotionActive(true);
+        hunter.setEndurancePotionActive(true);
+        given(battleService.calculateDamageTaken(any(), anyBoolean(), eq(true))).willReturn(14);
+
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+
+        HuntResultResponse response = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        assertThat(response.expPotionApplied()).isTrue();
+        assertThat(response.endurancePotionApplied()).isTrue();
+        assertThat(response.expChange()).isEqualTo(110);
+        assertThat(response.damageTaken()).isEqualTo(14);
+        assertThat(response.newCurrentHp()).isEqualTo(86);
+        assertThat(hunter.isExpPotionActive()).isFalse();
+        assertThat(hunter.isEndurancePotionActive()).isFalse();
     }
 
     @Test

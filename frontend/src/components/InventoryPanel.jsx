@@ -3,6 +3,8 @@ import {
   getCurrentHunter,
   getShop,
   purchaseShopItem,
+  useInventoryItem,
+  discardInventoryItem,
   updateAppearance,
 } from '../api/hunterApi'
 import { getRole } from '../api/authStorage'
@@ -37,6 +39,7 @@ function InventoryPanel({ onClose }) {
   const [shop, setShop] = useState(null)
   const [shopMessage, setShopMessage] = useState('')
   const [purchasingItemType, setPurchasingItemType] = useState('')
+  const [inventoryActionItemId, setInventoryActionItemId] = useState(null)
 
   useEffect(() => {
     if (isGameMaster) {
@@ -134,6 +137,67 @@ function InventoryPanel({ onClose }) {
     }
   }
 
+  const syncHunterFromInventoryAction = (updatedHunter) => {
+    setHunter(updatedHunter)
+    setShop((currentShop) => {
+      if (!currentShop) {
+        return currentShop
+      }
+
+      return {
+        ...currentShop,
+        hunterGold: updatedHunter.gold,
+        inventorySize: updatedHunter.inventory.length,
+      }
+    })
+  }
+
+  const handleUseItem = async (item) => {
+    setShopMessage('')
+    setSuccessMessage('')
+    setError('')
+    setInventoryActionItemId(item.id)
+
+    try {
+      const response = await useInventoryItem(item.id)
+      syncHunterFromInventoryAction(response.data.hunter)
+      setShopMessage(response.data.message)
+    } catch (actionError) {
+      setError(
+        actionError.response?.data?.message ?? 'Could not use item.',
+      )
+    } finally {
+      setInventoryActionItemId(null)
+    }
+  }
+
+  const handleDiscardItem = async (item) => {
+    const confirmed = window.confirm(
+      `${item.displayName} will be destroyed with no refund. Continue?`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setShopMessage('')
+    setSuccessMessage('')
+    setError('')
+    setInventoryActionItemId(item.id)
+
+    try {
+      const response = await discardInventoryItem(item.id)
+      syncHunterFromInventoryAction(response.data.hunter)
+      setShopMessage(response.data.message)
+    } catch (actionError) {
+      setError(
+        actionError.response?.data?.message ?? 'Could not discard item.',
+      )
+    } finally {
+      setInventoryActionItemId(null)
+    }
+  }
+
   const backpackSlots = useMemo(() => {
     const capacity = hunter?.inventoryCapacity ?? 10
     const inventoryBySlot = new Map(
@@ -210,6 +274,8 @@ function InventoryPanel({ onClose }) {
                 <p><span>Base HP:</span> {hunter.baseHp}</p>
                 <p><span>Current HP:</span> {hunter.currentHp}</p>
                 <p><span>Backpack:</span> {hunter.inventory.length} / {hunter.inventoryCapacity}</p>
+                <p><span>EXP Potion:</span> {hunter.expPotionActive ? 'Active for next hunt' : 'Inactive'}</p>
+                <p><span>Endurance:</span> {hunter.endurancePotionActive ? 'Active for next hunt' : 'Inactive'}</p>
               </div>
 
               <div className="inventory-editor">
@@ -248,6 +314,33 @@ function InventoryPanel({ onClose }) {
                         <>
                           <strong>{item.displayName}</strong>
                           <p>{item.description}</p>
+                          <div className="inventory-slot-actions">
+                            <button
+                              type="button"
+                              className="inventory-slot-button"
+                              onClick={() => handleUseItem(item)}
+                              disabled={
+                                inventoryActionItemId === item.id ||
+                                (item.itemType === 'HEALTH_POTION' && hunter.currentHp >= hunter.baseHp) ||
+                                (item.itemType === 'EXP_POTION' && hunter.expPotionActive) ||
+                                (item.itemType === 'ENDURANCE_POTION' && hunter.endurancePotionActive)
+                              }
+                            >
+                              {inventoryActionItemId === item.id
+                                ? 'Working...'
+                                : item.itemType === 'HEALTH_POTION'
+                                  ? 'Use'
+                                  : 'Activate'}
+                            </button>
+                            <button
+                              type="button"
+                              className="inventory-slot-button is-danger"
+                              onClick={() => handleDiscardItem(item)}
+                              disabled={inventoryActionItemId === item.id}
+                            >
+                              Discard
+                            </button>
+                          </div>
                         </>
                       ) : (
                         <p>Empty</p>

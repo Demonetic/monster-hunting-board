@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getCurrentUsername } from '../api/authStorage'
+import { getCurrentHunter } from '../api/hunterApi'
 import { getAllBeasts } from '../api/beastApi'
 import { completeHunt, deleteHunt, joinHunt, startSoloHunt, updateHunt } from '../api/huntApi'
 import BattleResultPopup from './BattleResultPopup'
@@ -264,6 +265,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
   const [updateForm, setUpdateForm] = useState(() => buildUpdateFormState(hunt))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [progressByHuntId, setProgressByHuntId] = useState(() => readHuntProgress(username))
+  const [hunterState, setHunterState] = useState(null)
 
   const setHuntProgress = (updater) => {
     setProgressByHuntId((current) => {
@@ -299,8 +301,42 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
     isSubmitting,
   })
 
+  useEffect(() => {
+    if (role !== 'HUNTER') {
+      return undefined
+    }
+
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const response = await getCurrentHunter()
+        if (!cancelled) {
+          setHunterState(response.data)
+        }
+      } catch {
+        if (!cancelled) {
+          setHunterState(null)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [role])
+
   const syncAfterAction = async () => {
     await onHuntChanged?.()
+
+    if (role === 'HUNTER') {
+      try {
+        const response = await getCurrentHunter()
+        setHunterState(response.data)
+      } catch {
+        setHunterState(null)
+      }
+    }
   }
 
   const getBattleOutcomeMessage = (won) => (won ? 'Victory!' : 'Defeat...')
@@ -341,6 +377,18 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
     }))
 
     setHuntResult(response.data)
+    setHunterState((current) => current
+      ? {
+          ...current,
+          currentHp: response.data.newCurrentHp,
+          baseHp: response.data.newBaseHp,
+          exp: response.data.newExp,
+          gold: response.data.newGold,
+          level: response.data.newLevel,
+          expPotionActive: false,
+          endurancePotionActive: false,
+        }
+      : current)
     const outcomeMessage = getBattleOutcomeMessage(response.data.won)
     showToast?.(outcomeMessage, response.data.won ? 'success' : 'error')
     await syncAfterAction()
@@ -360,6 +408,18 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
     }))
 
     setHuntResult(response.data)
+    setHunterState((current) => current
+      ? {
+          ...current,
+          currentHp: response.data.newCurrentHp,
+          baseHp: response.data.newBaseHp,
+          exp: response.data.newExp,
+          gold: response.data.newGold,
+          level: response.data.newLevel,
+          expPotionActive: false,
+          endurancePotionActive: false,
+        }
+      : current)
     const outcomeMessage = getBattleOutcomeMessage(response.data.won)
     showToast?.(outcomeMessage, response.data.won ? 'success' : 'error')
     await syncAfterAction()
@@ -593,6 +653,19 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
               <p>
                 <span>Primary Beast:</span> {firstBeast?.type ?? 'Unknown'}
               </p>
+              {role === 'HUNTER' && hunterState && (
+                <>
+                  <p>
+                    <span>Your HP:</span> {hunterState.currentHp} / {hunterState.baseHp}
+                  </p>
+                  <p>
+                    <span>EXP Potion:</span> {hunterState.expPotionActive ? 'Ready for this hunt' : 'Inactive'}
+                  </p>
+                  <p>
+                    <span>Endurance Potion:</span> {hunterState.endurancePotionActive ? 'Ready for this hunt' : 'Inactive'}
+                  </p>
+                </>
+              )}
             </div>
 
             {isSubmitting && <p className="hunt-action-state">{actionStateLabel}</p>}

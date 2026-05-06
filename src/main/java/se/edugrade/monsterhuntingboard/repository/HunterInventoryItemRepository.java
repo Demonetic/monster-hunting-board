@@ -6,4 +6,6 @@ import se.edugrade.monsterhuntingboard.model.HunterInventoryItem;
 
 public interface HunterInventoryItemRepository extends JpaRepository<HunterInventoryItem, Long> {
     List<HunterInventoryItem> findByHunterIdOrderBySlotIndexAsc(Long hunterId);
+
+    java.util.Optional<HunterInventoryItem> findByIdAndHunterId(Long id, Long hunterId);
 }

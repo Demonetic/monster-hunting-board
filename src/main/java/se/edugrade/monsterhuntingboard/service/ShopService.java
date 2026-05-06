@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
+import se.edugrade.monsterhuntingboard.dto.InventoryActionResponse;
 import se.edugrade.monsterhuntingboard.dto.InventoryItemResponse;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemRequest;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemResponse;
@@ -23,6 +24,7 @@ import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 @RequiredArgsConstructor
 public class ShopService {
     public static final int INVENTORY_CAPACITY = 10;
+    private static final int HEALTH_POTION_HEAL_AMOUNT = 50;
 
     private final HunterRepository hunterRepository;
     private final HunterInventoryItemRepository hunterInventoryItemRepository;
@@ -75,9 +77,77 @@ public class ShopService {
         );
     }
 
+    @Transactional
+    public InventoryActionResponse useInventoryItem(String username, Long itemId) {
+        Hunter hunter = getHunterOrThrow(username);
+        HunterInventoryItem inventoryItem = hunterInventoryItemRepository.findByIdAndHunterId(itemId, hunter.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+
+        String message = switch (inventoryItem.getItemType()) {
+            case HEALTH_POTION -> useHealthPotion(hunter, inventoryItem);
+            case EXP_POTION -> activateExpPotion(hunter, inventoryItem);
+            case ENDURANCE_POTION -> activateEndurancePotion(hunter, inventoryItem);
+        };
+
+        return new InventoryActionResponse(buildHunterResponse(hunter), message);
+    }
+
+    @Transactional
+    public InventoryActionResponse discardInventoryItem(String username, Long itemId) {
+        Hunter hunter = getHunterOrThrow(username);
+        HunterInventoryItem inventoryItem = hunterInventoryItemRepository.findByIdAndHunterId(itemId, hunter.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+
+        String displayName = inventoryItem.getItemType().getDisplayName();
+        hunterInventoryItemRepository.delete(inventoryItem);
+
+        return new InventoryActionResponse(
+                buildHunterResponse(hunter),
+                displayName + " discarded"
+        );
+    }
+
+    private String useHealthPotion(Hunter hunter, HunterInventoryItem inventoryItem) {
+        if (hunter.getCurrentHp() >= hunter.getBaseHp()) {
+            throw new InvalidGameRuleException("Health potion cannot be used at max HP");
+        }
+
+        hunter.setCurrentHp(Math.min(hunter.getBaseHp(), hunter.getCurrentHp() + HEALTH_POTION_HEAL_AMOUNT));
+        hunterInventoryItemRepository.delete(inventoryItem);
+        return "Health Potion restored 50 HP";
+    }
+
+    private String activateExpPotion(Hunter hunter, HunterInventoryItem inventoryItem) {
+        if (hunter.isExpPotionActive()) {
+            throw new InvalidGameRuleException("EXP potion is already active for your next hunt");
+        }
+
+        hunter.setExpPotionActive(true);
+        hunterInventoryItemRepository.delete(inventoryItem);
+        return "EXP Potion activated for the next hunt";
+    }
+
+    private String activateEndurancePotion(Hunter hunter, HunterInventoryItem inventoryItem) {
+        if (hunter.isEndurancePotionActive()) {
+            throw new InvalidGameRuleException("Endurance potion is already active for your next hunt");
+        }
+
+        hunter.setEndurancePotionActive(true);
+        hunterInventoryItemRepository.delete(inventoryItem);
+        return "Endurance Potion activated for the next hunt";
+    }
+
     private Hunter getHunterOrThrow(String username) {
         return hunterRepository.findByUserAccountUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
+    }
+
+    private HunterResponse buildHunterResponse(Hunter hunter) {
+        return HunterResponse.from(
+                hunter,
+                hunterInventoryItemRepository.findByHunterIdOrderBySlotIndexAsc(hunter.getId()),
+                INVENTORY_CAPACITY
+        );
     }
 
     private int findNextSlot(List<HunterInventoryItem> inventoryItems) {

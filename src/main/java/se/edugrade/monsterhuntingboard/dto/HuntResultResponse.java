@@ -12,14 +12,21 @@ public record HuntResultResponse(
         int newExp,
         int newGold,
         int newLevel,
-        int newBaseHp
+        int newBaseHp,
+        int newCurrentHp,
+        int damageTaken,
+        boolean expPotionApplied,
+        boolean endurancePotionApplied
 ) {
     public static HuntResultResponse from(
             Hunt hunt,
             Hunter hunter,
             boolean won,
             int expChange,
-            int goldChange
+            int goldChange,
+            int damageTaken,
+            boolean expPotionApplied,
+            boolean endurancePotionApplied
     ) {
         return new HuntResultResponse(
                 hunt.getId(),
@@ -30,7 +37,11 @@ public record HuntResultResponse(
                 hunter.getExp(),
                 hunter.getGold(),
                 hunter.getLevel(),
-                hunter.getBaseHp()
+                hunter.getBaseHp(),
+                hunter.getCurrentHp(),
+                damageTaken,
+                expPotionApplied,
+                endurancePotionApplied
         );
     }
 }
