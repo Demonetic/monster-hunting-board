@@ -71,7 +71,7 @@ Ni ska nu distribuera applikationen till en molntjänst, till exempel Hetzner me
 
 **Kriterier för VG**
 
-Ni ska lägga till en future i backend och frontend. Koppla er till Open Weather API SMHI API, eller andra liknande tjänster (det ska framgå vilken tjänst ni använder på er hemsida) för att hämta väderdata. Den kopplingen sker på backend. Det ni ska kunna göra är att hämta vädret för en stad, till exempel Göteborg, som standard. Man ska även kunna välja vilken stad man vill använda, till exempel Stockholm. Detta matar ni in i ett inputfält så att man kan välja vilken ort man vill. Sedan ska frontend visa **vädret** för staden just nu. Om ni vill, ska ni även lägga till kommande tre dagar.
+Ni ska lägga till en future i backend och frontend. Koppla er till Open Weather API, SMHI API, eller andra liknande vädertjänster (det ska framgå vilken tjänst ni använder på er hemsida) för att hämta väderdata. Den kopplingen sker på backend. Det ni ska kunna göra är att hämta vädret för en stad, till exempel Göteborg, som standard. Man ska även kunna välja vilken stad man vill använda, till exempel Stockholm. Detta matar ni in i ett inputfält så att man kan välja vilken ort man vill. Sedan ska frontend visa **vädret** för staden just nu. Om ni vill, ska ni även lägga till kommande tre dagar.
 
 - Backend sköter all hämtning av data från det externa API:et.
 - Frontenden har hand om visualisering och att man kan välja vilken stad man ska hämta data ifrån.
