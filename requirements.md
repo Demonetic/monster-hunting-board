@@ -79,7 +79,7 @@ Ni ska lägga till en future i backend och frontend. Koppla er till Open Weather
 
 ## Muntlig redovisning
 
-- Demo enligt tydligare instruktioner, och ni behöver visa att ni även har lagt till, eh, vädertjänsten om det är som så att ni har gått VG-vägen.
+- Demo enligt tidigare instruktioner, och ni behöver visa att ni även har lagt till, vädertjänsten om det är som så att ni har gått VG-vägen.
 - Ni ska demonstrera att tjänsten är i drift online.
 - Alla i mötet ska kunna accessa er webbsida och titta på den.
 - Om eran sida inte är i drift online, så blir det underkänt på uppgiften.
