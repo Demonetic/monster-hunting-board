@@ -54,7 +54,7 @@ function BattlePage() {
   const navigate = useNavigate()
   const battleResult = location.state?.battleResult ?? null
   const weatherEffect = location.state?.weatherEffect ?? null
-  const turns = battleResult?.turns ?? []
+  const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
 
   const [phase, setPhase] = useState('intro')
   const [playedTurnIndex, setPlayedTurnIndex] = useState(-1)
@@ -111,7 +111,10 @@ function BattlePage() {
     }
 
     const nextTurn = turns[nextTurnIndex]
-    setActingSide(nextTurn.attackerSide)
+
+    const startTimeoutId = window.setTimeout(() => {
+      setActingSide(nextTurn.attackerSide)
+    }, 0)
 
     const impactTimeoutId = window.setTimeout(() => {
       setDamagedSide(nextTurn.targetSide)
@@ -141,6 +144,7 @@ function BattlePage() {
     }, TURN_TOTAL_MS)
 
     return () => {
+      window.clearTimeout(startTimeoutId)
       window.clearTimeout(impactTimeoutId)
       window.clearTimeout(resolveTimeoutId)
     }

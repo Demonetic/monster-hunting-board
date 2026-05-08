@@ -106,12 +106,6 @@ function InventoryPanel({ onClose }) {
     [hunter, selectedItemId],
   )
 
-  useEffect(() => {
-    if (!selectedItem && selectedItemId !== null) {
-      setSelectedItemId(null)
-    }
-  }, [selectedItem, selectedItemId])
-
   const handleUseItem = async (item) => {
     setError('')
     setInventoryActionItemId(item.id)

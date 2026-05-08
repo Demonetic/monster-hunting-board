@@ -16,7 +16,7 @@ function MenuPanel({ onClose, showToast }) {
   const role = getRole()
   const isGameMaster = role === 'GAME_MASTER'
   const [hunter, setHunter] = useState(null)
-  const [loading, setLoading] = useState(!isGameMaster)
+  const [loading, setLoading] = useState(() => !isGameMaster)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [selectedAppearance, setSelectedAppearance] = useState('MAGE')
@@ -24,9 +24,7 @@ function MenuPanel({ onClose, showToast }) {
 
   useEffect(() => {
     if (isGameMaster) {
-      setLoading(false)
-      setError('')
-      return
+      return undefined
     }
 
     let cancelled = false

@@ -23,7 +23,6 @@ import buttonJoined from '../assets/button_joined.png'
 import buttonSave from '../assets/button_save.png'
 import buttonStart from '../assets/button_start.png'
 import buttonUpdate from '../assets/button_update.png'
-import { getBeastImage } from '../assets/beastVisuals'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
 const LOW_HP_WARNING_THRESHOLD = 20
@@ -48,16 +47,6 @@ function getHuntPanelImage(hunt) {
   }
 
   return huntPanelsByBeastType[firstBeast.type] ?? panelHuntDefault
-}
-
-function getMonsterImage(hunt) {
-  const firstBeast = getFirstBeast(hunt)
-
-  if (!firstBeast) {
-    return null
-  }
-
-  return getBeastImage(firstBeast.type)
 }
 
 function formatType(type) {
@@ -405,8 +394,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
       }
     }
   }
-
-  const getBattleOutcomeMessage = (won) => (won ? 'Victory!' : 'Defeat...')
 
   const openBattlePage = (result) => {
     navigate('/battle', {

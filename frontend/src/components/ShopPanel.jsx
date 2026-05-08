@@ -35,16 +35,14 @@ function ShopPanel({ onClose, role }) {
   const isGameMaster = role === 'GAME_MASTER'
   const [hunter, setHunter] = useState(null)
   const [shop, setShop] = useState(null)
-  const [loading, setLoading] = useState(!isGameMaster)
+  const [loading, setLoading] = useState(() => !isGameMaster)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [purchasingItemType, setPurchasingItemType] = useState('')
 
   useEffect(() => {
     if (isGameMaster) {
-      setLoading(false)
-      setError('')
-      return
+      return undefined
     }
 
     let cancelled = false
