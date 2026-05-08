@@ -1,0 +1,60 @@
+  services:
+    frontend:
+      build: ./frontend
+      container_name: monster-hunter-board-frontend
+      ports:
+        - '${FRONTEND_PORT}:80'
+      depends_on:
+        backend:
+          condition: service_healthy
+      networks:
+        - monster-network
+
+    backend:
+      build: .
+      container_name: monster-hunter-board-backend
+      ports:
+        - '${BACKEND_PORT}:8080'
+      environment:
+        DB_URL: ${DB_URL}
+        DB_USER: ${DB_USER}
+        DB_PASSWORD: ${DB_PASSWORD}
+        JWT_SECRET: ${JWT_SECRET}
+        SERVER_PORT: ${SERVER_PORT}
+      depends_on:
+        db:
+          condition: service_healthy
+      healthcheck:
+        test: ['CMD', 'curl', '-f', 'http://localhost:8080/swagger-ui.html']
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 30s
+      networks:
+        - monster-network
+
+    db:
+      image: mysql:8.4
+      container_name: monster-hunter-board-mysql
+      environment:
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      ports:
+        - "3306:3306"
+      volumes:
+        - mysql-data:/var/lib/mysql
+      healthcheck:
+        test: ["CMD-SHELL", "mysqladmin", "ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 20s
+      networks:
+        - monster-network
+
+  networks:
+    monster-network:
+      driver: bridge
+
+  volumes:
+    mysql-data:
