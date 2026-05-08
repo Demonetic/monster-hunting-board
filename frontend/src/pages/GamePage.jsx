@@ -7,6 +7,8 @@ import HuntModal from '../components/HuntModal'
 import HuntsPanel from '../components/HuntsPanel'
 import InventoryPanel from '../components/InventoryPanel'
 import ManagePanel from '../components/ManagePanel'
+import MenuPanel from '../components/MenuPanel'
+import ShopPanel from '../components/ShopPanel'
 import Toast from '../components/Toast'
 import titleImage from '../assets/monster_hunter_board.png'
 import BoardPage from './BoardPage'
@@ -107,9 +109,11 @@ function GamePage() {
 
   return (
     <div className="game-page-shell">
-      <div className="game-title" aria-hidden="true">
-        <img src={titleImage} alt="" />
-      </div>
+      {!authenticated && (
+        <div className="game-title" aria-hidden="true">
+          <img src={titleImage} alt="" />
+        </div>
+      )}
 
       <BoardPage
         hunts={hunts}
@@ -131,6 +135,17 @@ function GamePage() {
 
       {authenticated && activeOverlay === 'inventory' && (
         <InventoryPanel onClose={() => setActiveOverlay(null)} />
+      )}
+
+      {authenticated && activeOverlay === 'menu' && (
+        <MenuPanel
+          onClose={() => setActiveOverlay(null)}
+          showToast={showToast}
+        />
+      )}
+
+      {authenticated && activeOverlay === 'shop' && (
+        <ShopPanel onClose={() => setActiveOverlay(null)} role={role} />
       )}
 
       {authenticated && activeOverlay === 'hunts' && (
@@ -155,6 +170,8 @@ function GamePage() {
           activeOverlay={activeOverlay}
           onBoard={() => setActiveOverlay(null)}
           onInventory={() => setActiveOverlay('inventory')}
+          onMenu={() => setActiveOverlay('menu')}
+          onShop={() => setActiveOverlay('shop')}
           onHunts={() => setActiveOverlay('hunts')}
           onManage={() => setActiveOverlay('manage')}
           onLogout={handleLogout}

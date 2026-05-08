@@ -64,6 +64,7 @@ public class HuntGenerationService {
 
         Beast basilisk = beastRepository.findFirstByType(BeastType.BASILISK).orElse(null);
         Beast griffin = beastRepository.findFirstByType(BeastType.GRIFFIN).orElse(null);
+        Beast pegasus = beastRepository.findFirstByType(BeastType.PEGASUS).orElse(null);
         Beast chimera = beastRepository.findFirstByType(BeastType.CHIMERA).orElse(null);
         Beast phoenix = beastRepository.findFirstByType(BeastType.PHOENIX).orElse(null);
         Beast dragon = beastRepository.findFirstByType(BeastType.DRAGON).orElse(null);
@@ -78,6 +79,11 @@ public class HuntGenerationService {
             templates.add(buildTemplate("Griffin Sky Trial", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 110, 70, null, List.of(griffin)));
             templates.add(buildTemplate("Ridge Recon Sweep", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 120, 75, null, List.of(griffin)));
             templates.add(buildTemplate("Feathered Menace Bounty", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 120, 80, null, List.of(griffin)));
+        }
+        if (pegasus != null) {
+            templates.add(buildTemplate("Pegasus Sky Run", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 105, 65, null, List.of(pegasus)));
+            templates.add(buildTemplate("Cloudwake Escort", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 115, 72, null, List.of(pegasus)));
+            templates.add(buildTemplate("Silver Mane Bounty", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 125, 82, null, List.of(pegasus)));
         }
         if (chimera != null) {
             templates.add(buildTemplate("Chimera Fang Contract", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 190, 130, null, List.of(chimera)));

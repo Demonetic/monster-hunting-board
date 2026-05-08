@@ -344,6 +344,7 @@ public class HuntService {
             HuntParticipation participation,
             SoloBattleSimulation simulation
     ) {
+        int initialHunterMaxHp = hunter.getBaseHp();
         boolean won = simulation.hunterWon();
         boolean expPotionApplied = hunter.isExpPotionActive() && won;
         boolean endurancePotionApplied = hunter.isEndurancePotionActive();
@@ -384,6 +385,10 @@ public class HuntService {
         return HuntResultResponse.from(
                 hunt,
                 hunter,
+                simulation.initialHunterHp(),
+                initialHunterMaxHp,
+                simulation.initialMonsterHp(),
+                simulation.initialMonsterHp(),
                 won,
                 rewardResult.expChange(),
                 rewardResult.goldChange(),
@@ -419,6 +424,9 @@ public class HuntService {
                     partyHunter,
                     participationsByHunterId.get(partyHunter.getId()),
                     outcome,
+                    partyHunter.getCurrentHp(),
+                    partyHunter.getBaseHp(),
+                    simulation.initialBossHp(),
                     won,
                     completedAt,
                     simulation.turns()
@@ -441,6 +449,9 @@ public class HuntService {
             Hunter hunter,
             HuntParticipation participation,
             HunterBattleOutcome outcome,
+            int initialHunterHp,
+            int initialHunterMaxHp,
+            int initialBossHp,
             boolean won,
             LocalDateTime completedAt,
             List<BattleTurnResponse> turns
@@ -483,6 +494,10 @@ public class HuntService {
         return HuntResultResponse.from(
                 hunt,
                 hunter,
+                initialHunterHp,
+                initialHunterMaxHp,
+                initialBossHp,
+                initialBossHp,
                 won,
                 rewardResult.expChange(),
                 rewardResult.goldChange(),

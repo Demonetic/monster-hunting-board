@@ -1,21 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createBeast, deleteBeast, getAllBeasts } from '../api/beastApi'
 import { createHunt, deleteHunt, getAllHunts, updateHunt } from '../api/huntApi'
-import panelImage from '../assets/parchment_new.png'
-import buttonImage from '../assets/button_new.png'
-import dragonIcon from '../assets/icon_dragon.png'
-import phoenixIcon from '../assets/icon_phoenix.png'
-import griffinIcon from '../assets/icon_griffin.png'
-import chimeraIcon from '../assets/icon_chimera.png'
-import basiliskIcon from '../assets/icon_basilisk.png'
-
-const beastIcons = {
-  DRAGON: dragonIcon,
-  PHOENIX: phoenixIcon,
-  GRIFFIN: griffinIcon,
-  CHIMERA: chimeraIcon,
-  BASILISK: basiliskIcon,
-}
+import panelImage from '../assets/panel_information.png'
+import buttonCancel from '../assets/button_cancel.png'
+import buttonClose from '../assets/button_close.png'
+import buttonCreateBeast from '../assets/button_create_beast.png'
+import buttonCreateHunt from '../assets/button_create_hunt.png'
+import buttonDelete from '../assets/button_delete.png'
+import buttonUpdate from '../assets/button_update.png'
+import { getBeastImage } from '../assets/beastVisuals'
 
 const huntTypeOptions = [
   { value: 'HUNT', label: 'Group Hunt' },
@@ -24,7 +17,7 @@ const huntTypeOptions = [
 
 const difficultyOptions = ['EASY', 'MEDIUM', 'HARD', 'BOSS']
 const statusOptions = ['SCHEDULED', 'ACTIVE']
-const beastTypeOptions = ['DRAGON', 'PHOENIX', 'GRIFFIN', 'CHIMERA', 'BASILISK']
+const beastTypeOptions = ['DRAGON', 'PHOENIX', 'GRIFFIN', 'PEGASUS', 'CHIMERA', 'BASILISK']
 
 const initialHuntForm = {
   id: null,
@@ -324,8 +317,7 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
         aria-label="Manage panel"
       >
         <button type="button" className="manage-panel-close" onClick={onClose}>
-          <img src={buttonImage} alt="" />
-          <span>Close</span>
+          <img src={buttonClose} alt="" />
         </button>
 
         <div className="manage-panel-content">
@@ -455,11 +447,19 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                 </div>
 
                 <div className="manage-form-actions">
-                  <button type="submit" className="manage-inline-button" disabled={isSubmittingHunt}>
-                    {isSubmittingHunt ? 'Saving...' : huntFormMode === 'create' ? 'Create Hunt' : 'Update Hunt'}
+                  <button
+                    type="submit"
+                    className="manage-inline-button"
+                    disabled={isSubmittingHunt}
+                    aria-label={huntFormMode === 'create' ? 'Create hunt' : 'Update hunt'}
+                  >
+                    <img
+                      src={huntFormMode === 'create' ? buttonCreateHunt : buttonUpdate}
+                      alt=""
+                    />
                   </button>
-                  <button type="button" className="manage-inline-button" onClick={resetHuntForm}>
-                    Cancel
+                  <button type="button" className="manage-inline-button" onClick={resetHuntForm} aria-label="Cancel">
+                    <img src={buttonCancel} alt="" />
                   </button>
                 </div>
               </form>
@@ -471,8 +471,7 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
               <div className="manage-panel-section-header">
                 <h3>Hunts Management</h3>
                 <button type="button" className="manage-panel-button" onClick={openCreateHunt}>
-                  <img src={buttonImage} alt="" />
-                  <span>Create Hunt</span>
+                  <img src={buttonCreateHunt} alt="" />
                 </button>
               </div>
 
@@ -489,11 +488,11 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                         <p>Beast: {hunt.beasts?.map((beast) => beast.type).join(', ') || 'Unknown'}</p>
                       </div>
                       <div className="manage-list-actions">
-                        <button type="button" className="manage-inline-button" onClick={() => openUpdateHunt(hunt)}>
-                          Update
+                        <button type="button" className="manage-inline-button" onClick={() => openUpdateHunt(hunt)} aria-label="Update hunt">
+                          <img src={buttonUpdate} alt="" />
                         </button>
-                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteHunt(hunt.id)}>
-                          Delete
+                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteHunt(hunt.id)} aria-label="Delete hunt">
+                          <img src={buttonDelete} alt="" />
                         </button>
                       </div>
                     </div>
@@ -507,8 +506,7 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
               <div className="manage-panel-section-header">
                 <h3>Beast Management</h3>
                 <button type="button" className="manage-panel-button" onClick={() => setBeastFormOpen(true)}>
-                  <img src={buttonImage} alt="" />
-                  <span>Create Beast</span>
+                  <img src={buttonCreateBeast} alt="" />
                 </button>
               </div>
 
@@ -519,15 +517,15 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                   beasts.map((beast) => (
                     <div key={beast.id} className="manage-list-row">
                       <div className="manage-list-copy manage-list-copy-beast">
-                        <img className="manage-beast-icon" src={beastIcons[beast.type]} alt={beast.type} />
+                        <img className="manage-beast-icon" src={getBeastImage(beast.type)} alt={beast.type} />
                         <div>
                           <h4>{beast.type}</h4>
                           <p>{beast.difficulty}</p>
                         </div>
                       </div>
                       <div className="manage-list-actions">
-                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteBeast(beast.id)}>
-                          Delete
+                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteBeast(beast.id)} aria-label="Delete beast">
+                          <img src={buttonDelete} alt="" />
                         </button>
                       </div>
                     </div>
@@ -613,11 +611,11 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                 </div>
 
                 <div className="manage-form-actions">
-                  <button type="submit" className="manage-inline-button" disabled={isSubmittingBeast}>
-                    {isSubmittingBeast ? 'Saving...' : 'Create Beast'}
+                  <button type="submit" className="manage-inline-button" disabled={isSubmittingBeast} aria-label="Create beast">
+                    <img src={buttonCreateBeast} alt="" />
                   </button>
-                  <button type="button" className="manage-inline-button" onClick={resetBeastForm}>
-                    Cancel
+                  <button type="button" className="manage-inline-button" onClick={resetBeastForm} aria-label="Cancel">
+                    <img src={buttonCancel} alt="" />
                   </button>
                 </div>
               </form>

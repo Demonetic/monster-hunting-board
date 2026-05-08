@@ -1,19 +1,7 @@
 import { useMemo, useState } from 'react'
-import panelImage from '../assets/parchment_new.png'
-import buttonImage from '../assets/button_new.png'
-import dragonIcon from '../assets/icon_dragon.png'
-import phoenixIcon from '../assets/icon_phoenix.png'
-import griffinIcon from '../assets/icon_griffin.png'
-import chimeraIcon from '../assets/icon_chimera.png'
-import basiliskIcon from '../assets/icon_basilisk.png'
-
-const beastIcons = {
-  DRAGON: dragonIcon,
-  PHOENIX: phoenixIcon,
-  GRIFFIN: griffinIcon,
-  CHIMERA: chimeraIcon,
-  BASILISK: basiliskIcon,
-}
+import panelImage from '../assets/panel_information.png'
+import buttonClose from '../assets/button_close.png'
+import { getBeastImage } from '../assets/beastVisuals'
 
 function matchesFilter(hunt, filter) {
   if (filter === 'GROUP') {
@@ -49,8 +37,7 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
         aria-label="Hunts panel"
       >
         <button type="button" className="hunts-panel-close" onClick={onClose}>
-          <img src={buttonImage} alt="" />
-          <span>Close</span>
+          <img src={buttonClose} alt="" />
         </button>
 
         <div className="hunts-panel-header">
@@ -79,7 +66,7 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
         <div className="hunts-list">
           {filteredHunts.map((hunt) => {
             const firstBeast = hunt.beasts?.[0]
-            const beastIcon = firstBeast ? beastIcons[firstBeast.type] : null
+            const beastIcon = firstBeast ? getBeastImage(firstBeast.type) : null
 
             return (
               <div key={hunt.id} className="hunt-list-row">

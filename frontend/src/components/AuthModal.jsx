@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { login, register } from '../api/authApi'
 import { saveRole, saveToken } from '../api/authStorage'
-import panelParchment from '../assets/panel_new.png'
-import buttonImage from '../assets/button_new.png'
+import panelParchment from '../assets/panel_information.png'
+import buttonLogin from '../assets/button_login.png'
+import buttonRegister from '../assets/button_register.png'
 
 const initialLoginForm = {
   username: '',
@@ -16,7 +17,7 @@ const initialRegisterForm = {
   appearance: 'MAGE',
 }
 
-const appearanceOptions = ['MAGE', 'RANGER', 'KNIGHT', 'PALADIN', 'HUNTER']
+const appearanceOptions = ['BARD', 'MAGE', 'RANGER', 'KNIGHT', 'PALADIN', 'HUNTER']
 
 function AuthModal({ onAuthSuccess, showToast }) {
   const [mode, setMode] = useState('login')
@@ -26,6 +27,7 @@ function AuthModal({ onAuthSuccess, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const activeForm = mode === 'login' ? loginForm : registerForm
+  const submitButtonImage = mode === 'login' ? buttonLogin : buttonRegister
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -157,17 +159,13 @@ function AuthModal({ onAuthSuccess, showToast }) {
 
           {errorMessage && <p className="auth-error">{errorMessage}</p>}
 
-          <button type="submit" className="auth-submit" disabled={isSubmitting}>
-            <img src={buttonImage} alt="" />
-            <span>
-              {isSubmitting
-                ? mode === 'login'
-                  ? 'Logging in...'
-                  : 'Registering...'
-                : mode === 'login'
-                  ? 'Login'
-                  : 'Register'}
-            </span>
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={isSubmitting}
+            aria-label={mode === 'login' ? 'Login' : 'Register'}
+          >
+            <img src={submitButtonImage} alt="" />
           </button>
         </form>
       </section>

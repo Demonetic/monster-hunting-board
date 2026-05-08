@@ -1,12 +1,16 @@
-import buttonCharacter from '../assets/button_character.png'
+import buttonInventory from '../assets/button_inventory.png'
 import buttonHunts from '../assets/button_hunts.png'
-import buttonManage from '../assets/button_manage.png'
 import buttonLogout from '../assets/button_logout.png'
-import buttonMap from '../assets/button_map.png'
+import buttonManage from '../assets/button_manage.png'
+import buttonMenu from '../assets/buttons_menu.png'
+import buttonShop from '../assets/button_shop.png'
+import buttonWorldMap from '../assets/button_worldmap.png'
 
 function BottomNav({
   onBoard,
   onInventory,
+  onMenu,
+  onShop,
   onHunts,
   onManage,
   onLogout,
@@ -20,17 +24,35 @@ function BottomNav({
       className: 'bottom-nav-button bottom-nav-button-map',
       label: 'Map',
       ariaLabel: 'Map',
-      image: buttonMap,
+      image: buttonWorldMap,
       onClick: 'onBoard',
     },
     {
       key: 'inventory',
       active: (overlay) => overlay === 'inventory',
       className: 'bottom-nav-button bottom-nav-button-character',
-      label: 'Character',
-      ariaLabel: 'Character',
-      image: buttonCharacter,
+      label: 'Inventory',
+      ariaLabel: 'Inventory',
+      image: buttonInventory,
       onClick: 'onInventory',
+    },
+    {
+      key: 'menu',
+      active: (overlay) => overlay === 'menu',
+      className: 'bottom-nav-button bottom-nav-button-menu',
+      label: 'Menu',
+      ariaLabel: 'Menu',
+      image: buttonMenu,
+      onClick: 'onMenu',
+    },
+    {
+      key: 'shop',
+      active: (overlay) => overlay === 'shop',
+      className: 'bottom-nav-button bottom-nav-button-shop',
+      label: 'Shop',
+      ariaLabel: 'Shop',
+      image: buttonShop,
+      onClick: 'onShop',
     },
     {
       key: 'hunts',
@@ -68,6 +90,8 @@ function BottomNav({
   const handlers = {
     onBoard,
     onInventory,
+    onMenu,
+    onShop,
     onHunts,
     onManage,
     onLogout,

@@ -1,31 +1,39 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  getCurrentHunter,
-  getShop,
-  purchaseShopItem,
   activateInventoryItem,
   discardInventoryItem,
-  updateAppearance,
+  getCurrentHunter,
 } from '../api/hunterApi'
 import { getRole } from '../api/authStorage'
-import panelImage from '../assets/panel_new.png'
-import buttonImage from '../assets/button_new.png'
-import bardImage from '../assets/appearance_bard.png'
-import mageImage from '../assets/appearance_mage.png'
-import rangerImage from '../assets/appearance_ranger.png'
-import knightImage from '../assets/appearance_knight.png'
-import paladinImage from '../assets/appearance_paladin.png'
-import hunterImage from '../assets/appearance_hunter.png'
+import buttonActivate from '../assets/button_activate.png'
+import buttonClose from '../assets/button_close.png'
+import buttonDiscard from '../assets/button_discard.png'
+import buttonUse from '../assets/button_use.png'
+import characterBard from '../assets/character_bard.png'
+import characterHunter from '../assets/character_hunter.png'
+import characterKnight from '../assets/character_knight.png'
+import characterMage from '../assets/character_mage.png'
+import characterPaladin from '../assets/character_paladin.png'
+import characterRanger from '../assets/character_ranger.png'
+import endurancePotionImage from '../assets/endurance_potion.png'
+import expPotionImage from '../assets/exp_potion.png'
+import healthPotionImage from '../assets/health_potion.png'
+import inventoryPanelImage from '../assets/inventory_panel.png'
 
-const appearanceImages = {
-  MAGE: mageImage,
-  RANGER: rangerImage,
-  KNIGHT: knightImage,
-  PALADIN: paladinImage,
-  HUNTER: hunterImage,
+const appearanceCharacters = {
+  BARD: characterBard,
+  MAGE: characterMage,
+  RANGER: characterRanger,
+  KNIGHT: characterKnight,
+  PALADIN: characterPaladin,
+  HUNTER: characterHunter,
 }
 
-const appearanceOptions = ['MAGE', 'RANGER', 'KNIGHT', 'PALADIN', 'HUNTER']
+const itemTypeImages = {
+  HEALTH_POTION: healthPotionImage,
+  EXP_POTION: expPotionImage,
+  ENDURANCE_POTION: endurancePotionImage,
+}
 
 function InventoryPanel({ onClose }) {
   const role = getRole()
@@ -33,13 +41,8 @@ function InventoryPanel({ onClose }) {
   const [hunter, setHunter] = useState(null)
   const [loading, setLoading] = useState(!isGameMaster)
   const [error, setError] = useState('')
-  const [selectedAppearance, setSelectedAppearance] = useState('MAGE')
-  const [successMessage, setSuccessMessage] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [shop, setShop] = useState(null)
-  const [shopMessage, setShopMessage] = useState('')
-  const [purchasingItemType, setPurchasingItemType] = useState('')
   const [inventoryActionItemId, setInventoryActionItemId] = useState(null)
+  const [selectedItemId, setSelectedItemId] = useState(null)
 
   useEffect(() => {
     if (isGameMaster) {
@@ -53,15 +56,10 @@ function InventoryPanel({ onClose }) {
       setError('')
 
       try {
-        const [hunterResponse, shopResponse] = await Promise.all([
-          getCurrentHunter(),
-          getShop(),
-        ])
+        const hunterResponse = await getCurrentHunter()
 
         if (!cancelled) {
           setHunter(hunterResponse.data)
-          setSelectedAppearance(hunterResponse.data.appearance)
-          setShop(shopResponse.data)
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -83,85 +81,45 @@ function InventoryPanel({ onClose }) {
     }
   }, [isGameMaster])
 
-  const previewImage = useMemo(
-    () => appearanceImages[selectedAppearance] ?? mageImage,
-    [selectedAppearance],
+  const characterImage = useMemo(() => {
+    if (isGameMaster) {
+      return characterBard
+    }
+
+    return appearanceCharacters[hunter?.appearance] ?? characterHunter
+  }, [hunter?.appearance, isGameMaster])
+
+  const backpackSlots = useMemo(() => {
+    const capacity = hunter?.inventoryCapacity ?? 10
+    const inventoryBySlot = new Map(
+      (hunter?.inventory ?? []).map((item) => [item.slotIndex, item]),
+    )
+
+    return Array.from({ length: capacity }, (_, slotIndex) => ({
+      slotIndex,
+      item: inventoryBySlot.get(slotIndex) ?? null,
+    }))
+  }, [hunter])
+
+  const selectedItem = useMemo(
+    () => (hunter?.inventory ?? []).find((item) => item.id === selectedItemId) ?? null,
+    [hunter, selectedItemId],
   )
 
-  const handleSaveAppearance = async () => {
-    setSuccessMessage('')
-    setError('')
-    setIsSaving(true)
-
-    try {
-      const response = await updateAppearance(selectedAppearance)
-      setHunter(response.data)
-      setSelectedAppearance(response.data.appearance)
-      setSuccessMessage('Appearance updated.')
-    } catch (saveError) {
-      setError(
-        saveError.response?.data?.message ?? 'Could not update appearance.',
-      )
-    } finally {
-      setIsSaving(false)
+  useEffect(() => {
+    if (!selectedItem && selectedItemId !== null) {
+      setSelectedItemId(null)
     }
-  }
-
-  const handlePurchase = async (itemType) => {
-    setShopMessage('')
-    setSuccessMessage('')
-    setError('')
-    setPurchasingItemType(itemType)
-
-    try {
-      const response = await purchaseShopItem(itemType)
-      setHunter(response.data.hunter)
-      setShop((currentShop) => {
-        if (!currentShop) {
-          return currentShop
-        }
-
-        return {
-          ...currentShop,
-          hunterGold: response.data.remainingGold,
-          inventorySize: response.data.inventorySize,
-        }
-      })
-      setShopMessage(response.data.message)
-    } catch (purchaseError) {
-      setError(
-        purchaseError.response?.data?.message ?? 'Could not buy item.',
-      )
-    } finally {
-      setPurchasingItemType('')
-    }
-  }
-
-  const syncHunterFromInventoryAction = (updatedHunter) => {
-    setHunter(updatedHunter)
-    setShop((currentShop) => {
-      if (!currentShop) {
-        return currentShop
-      }
-
-      return {
-        ...currentShop,
-        hunterGold: updatedHunter.gold,
-        inventorySize: updatedHunter.inventory.length,
-      }
-    })
-  }
+  }, [selectedItem, selectedItemId])
 
   const handleUseItem = async (item) => {
-    setShopMessage('')
-    setSuccessMessage('')
     setError('')
     setInventoryActionItemId(item.id)
 
     try {
       const response = await activateInventoryItem(item.id)
-      syncHunterFromInventoryAction(response.data.hunter)
-      setShopMessage(response.data.message)
+      setHunter(response.data.hunter)
+      setSelectedItemId(null)
     } catch (actionError) {
       setError(
         actionError.response?.data?.message ?? 'Could not use item.',
@@ -180,15 +138,13 @@ function InventoryPanel({ onClose }) {
       return
     }
 
-    setShopMessage('')
-    setSuccessMessage('')
     setError('')
     setInventoryActionItemId(item.id)
 
     try {
       const response = await discardInventoryItem(item.id)
-      syncHunterFromInventoryAction(response.data.hunter)
-      setShopMessage(response.data.message)
+      setHunter(response.data.hunter)
+      setSelectedItemId(null)
     } catch (actionError) {
       setError(
         actionError.response?.data?.message ?? 'Could not discard item.',
@@ -198,23 +154,11 @@ function InventoryPanel({ onClose }) {
     }
   }
 
-  const backpackSlots = useMemo(() => {
-    const capacity = hunter?.inventoryCapacity ?? 10
-    const inventoryBySlot = new Map(
-      (hunter?.inventory ?? []).map((item) => [item.slotIndex, item]),
-    )
-
-    return Array.from({ length: capacity }, (_, slotIndex) => ({
-      slotIndex,
-      item: inventoryBySlot.get(slotIndex) ?? null,
-    }))
-  }, [hunter])
-
   return (
     <div className="game-overlay-layer">
       <section
         className="inventory-panel"
-        style={{ backgroundImage: `url(${panelImage})` }}
+        style={{ backgroundImage: `url(${inventoryPanelImage})` }}
         role="dialog"
         aria-modal="true"
         aria-label="Inventory panel"
@@ -223,181 +167,98 @@ function InventoryPanel({ onClose }) {
           type="button"
           className="inventory-panel-close"
           onClick={onClose}
+          aria-label="Close inventory"
         >
-          <img src={buttonImage} alt="" />
-          <span>Close</span>
+          <img src={buttonClose} alt="" />
         </button>
 
-        {loading && <p className="inventory-state">Loading hunter...</p>}
-        {!loading && error && <p className="inventory-state inventory-error">{error}</p>}
+        {loading && <p className="inventory-state inventory-state-overlay">Loading hunter...</p>}
+        {!loading && error && <p className="inventory-state inventory-error inventory-state-overlay">{error}</p>}
 
-        {!loading && isGameMaster && (
-          <div className="inventory-content inventory-content-game-master">
-            <div className="inventory-visual">
-              <img
-                className="inventory-character-image"
-                src={bardImage}
-                alt="Game Master"
-              />
-            </div>
-
-            <div className="inventory-details inventory-details-game-master">
-              <div className="inventory-stats">
-                <h2 className="inventory-title">GAMEMASTER</h2>
-                <p><span>Role:</span> Guild Master</p>
-                <p><span>Rank:</span> Hunt Keeper</p>
-                <p><span>Duty:</span> Create and manage hunts</p>
-                <p><span>Specialty:</span> Monster records and rewards</p>
-                <p><span>Status:</span> Watching over the board</p>
-              </div>
-            </div>
+        <div className="inventory-stage">
+          <div className="inventory-character-stage">
+            <img
+              className="inventory-character-image"
+              src={characterImage}
+              alt={isGameMaster ? 'Gamemaster' : hunter?.appearance ?? 'Hunter'}
+            />
           </div>
-        )}
 
-        {!loading && hunter && (
-          <div className="inventory-content">
-            <div className="inventory-visual">
-              <img
-                className="inventory-character-image"
-                src={previewImage}
-                alt={selectedAppearance}
-              />
-            </div>
+          {!isGameMaster && (
+            <>
+              <div className="inventory-slot-grid-overlay" aria-label="Inventory slots">
+                {backpackSlots.map(({ slotIndex, item }) => {
+                  const itemImage = item ? itemTypeImages[item.itemType] ?? null : null
 
-            <div className="inventory-details">
-              <div className="inventory-stats">
-                <h2 className="inventory-title">{hunter.displayName}</h2>
-                <p><span>Appearance:</span> {hunter.appearance}</p>
-                <p><span>Level:</span> {hunter.level}</p>
-                <p><span>EXP:</span> {hunter.exp}</p>
-                <p><span>Gold:</span> {hunter.gold}</p>
-                <p><span>Base HP:</span> {hunter.baseHp}</p>
-                <p><span>Current HP:</span> {hunter.currentHp}</p>
-                <p><span>Backpack:</span> {hunter.inventory.length} / {hunter.inventoryCapacity}</p>
-                <p><span>EXP Potion:</span> {hunter.expPotionActive ? 'Active for next hunt' : 'Inactive'}</p>
-                <p><span>Endurance:</span> {hunter.endurancePotionActive ? 'Active for next hunt' : 'Inactive'}</p>
-              </div>
-
-              <div className="inventory-editor">
-                <h3>Edit Appearance</h3>
-                <select
-                  value={selectedAppearance}
-                  onChange={(event) => setSelectedAppearance(event.target.value)}
-                >
-                  {appearanceOptions.map((appearance) => (
-                    <option key={appearance} value={appearance}>
-                      {appearance}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="inventory-feedback">
-                {successMessage && (
-                  <p className="inventory-success">{successMessage}</p>
-                )}
-                {shopMessage && (
-                  <p className="inventory-success">{shopMessage}</p>
-                )}
-              </div>
-
-              <div className="inventory-backpack">
-                <h3>Backpack</h3>
-                <div className="inventory-slot-grid">
-                  {backpackSlots.map(({ slotIndex, item }) => (
-                    <div
+                  return (
+                    <button
                       key={slotIndex}
-                      className={`inventory-slot ${item ? 'is-filled' : 'is-empty'}`}
+                      type="button"
+                      className={`inventory-slot-hitbox ${item ? 'is-filled' : 'is-empty'} ${selectedItem?.id === item?.id ? 'is-selected' : ''}`.trim()}
+                      onClick={() => item && setSelectedItemId(item.id)}
+                      disabled={!item}
+                      aria-label={item ? item.displayName : `Empty slot ${slotIndex + 1}`}
                     >
-                      <span className="inventory-slot-number">{slotIndex + 1}</span>
-                      {item ? (
-                        <>
-                          <strong>{item.displayName}</strong>
-                          <p>{item.description}</p>
-                          <div className="inventory-slot-actions">
-                            <button
-                              type="button"
-                              className="inventory-slot-button"
-                              onClick={() => handleUseItem(item)}
-                              disabled={
-                                inventoryActionItemId === item.id ||
-                                (item.itemType === 'HEALTH_POTION' && hunter.currentHp >= hunter.baseHp) ||
-                                (item.itemType === 'EXP_POTION' && hunter.expPotionActive) ||
-                                (item.itemType === 'ENDURANCE_POTION' && hunter.endurancePotionActive)
-                              }
-                            >
-                              {inventoryActionItemId === item.id
-                                ? 'Working...'
-                                : item.itemType === 'HEALTH_POTION'
-                                  ? 'Use'
-                                  : 'Activate'}
-                            </button>
-                            <button
-                              type="button"
-                              className="inventory-slot-button is-danger"
-                              onClick={() => handleDiscardItem(item)}
-                              disabled={inventoryActionItemId === item.id}
-                            >
-                              Discard
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <p>Empty</p>
+                      {itemImage && (
+                        <img
+                          className={`inventory-slot-potion inventory-slot-potion-${item.itemType.toLowerCase()}`}
+                          src={itemImage}
+                          alt={item.displayName}
+                        />
                       )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="inventory-selection-stage">
+                {selectedItem && (
+                  <>
+                    <div className="inventory-selection-preview">
+                      <img
+                        className="inventory-selection-preview-image"
+                        src={itemTypeImages[selectedItem.itemType]}
+                        alt={selectedItem.displayName}
+                      />
                     </div>
-                  ))}
-                </div>
+
+                    <div className="inventory-selection-actions">
+                      <button
+                        type="button"
+                        className="inventory-slot-button"
+                        onClick={() => handleUseItem(selectedItem)}
+                        aria-label={
+                          selectedItem.itemType === 'HEALTH_POTION' ? 'Use item' : 'Activate item'
+                        }
+                        disabled={
+                          inventoryActionItemId === selectedItem.id ||
+                          (selectedItem.itemType === 'HEALTH_POTION' && hunter.currentHp >= hunter.baseHp) ||
+                          (selectedItem.itemType === 'EXP_POTION' && hunter.expPotionActive) ||
+                          (selectedItem.itemType === 'ENDURANCE_POTION' && hunter.endurancePotionActive)
+                        }
+                      >
+                        <img
+                          src={selectedItem.itemType === 'HEALTH_POTION' ? buttonUse : buttonActivate}
+                          alt=""
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="inventory-slot-button is-danger"
+                        onClick={() => handleDiscardItem(selectedItem)}
+                        aria-label="Discard item"
+                        disabled={inventoryActionItemId === selectedItem.id}
+                      >
+                        <img src={buttonDiscard} alt="" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-
-              {shop && (
-                <div className="inventory-shop">
-                  <div className="inventory-shop-header">
-                    <h3>Shop</h3>
-                    <p>Gold: {shop.hunterGold}</p>
-                  </div>
-
-                  <div className="inventory-shop-list">
-                    {shop.items.map((item) => (
-                      <div key={item.itemType} className="inventory-shop-item">
-                        <div className="inventory-shop-copy">
-                          <strong>{item.displayName}</strong>
-                          <p>{item.description}</p>
-                          <span>{item.price} gold</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="inventory-shop-button"
-                          onClick={() => handlePurchase(item.itemType)}
-                          disabled={
-                            purchasingItemType === item.itemType ||
-                            hunter.inventory.length >= hunter.inventoryCapacity ||
-                            hunter.gold < item.price
-                          }
-                        >
-                          {purchasingItemType === item.itemType ? 'Buying...' : 'Buy'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="inventory-actions">
-                <button
-                  type="button"
-                  className="inventory-save-button"
-                  onClick={handleSaveAppearance}
-                  disabled={isSaving}
-                >
-                  <img src={buttonImage} alt="" />
-                  <span>{isSaving ? 'Saving' : 'Save'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </section>
     </div>
   )

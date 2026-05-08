@@ -5,6 +5,7 @@ import java.util.Map;
 import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
 
 public record GroupBattleSimulation(
+        int initialBossHp,
         boolean huntersWon,
         int bossRemainingHp,
         List<BattleTurnResponse> turns,

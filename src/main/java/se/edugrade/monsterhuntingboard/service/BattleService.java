@@ -53,6 +53,11 @@ public class BattleService {
     public SoloBattleSimulation simulateSoloBattle(Hunt hunt, Hunter hunter) {
         int hunterHp = hunter.getCurrentHp();
         int monsterHp = calculateScaledMonsterHp(hunt, hunter.getLevel());
+        int initialHunterHp = hunterHp;
+        int initialMonsterHp = monsterHp;
+        String beastName = hunt.getBeasts().isEmpty()
+                ? "Beast"
+                : hunt.getBeasts().getFirst().getType().name();
         boolean hunterTurn = ThreadLocalRandom.current().nextBoolean();
         int turnNumber = 1;
         int totalDamageTaken = 0;
@@ -65,9 +70,18 @@ public class BattleService {
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
                         hunter.getDisplayName(),
-                        "Boss",
+                        "hunter",
+                        beastName,
+                        "beast",
                         hunterDamage,
+                        monsterHp,
+                        hunterHp,
+                        monsterHp,
+                        "%s takes %d damage".formatted(toDisplayName(beastName), hunterDamage),
                         "Hunter HP: %d, Boss HP: %d".formatted(hunterHp, monsterHp)
+                        ,
+                        false,
+                        false
                 ));
             } else {
                 int monsterDamage = rollMonsterDamage(hunt, hunter.getLevel());
@@ -79,17 +93,26 @@ public class BattleService {
                 totalDamageTaken += monsterDamage;
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
-                        "Boss",
+                        toDisplayName(beastName),
+                        "beast",
                         hunter.getDisplayName(),
+                        "hunter",
                         monsterDamage,
+                        hunterHp,
+                        hunterHp,
+                        monsterHp,
+                        "%s takes %d damage".formatted(hunter.getDisplayName(), monsterDamage),
                         "Hunter HP: %d, Boss HP: %d".formatted(hunterHp, monsterHp)
+                        ,
+                        false,
+                        false
                 ));
             }
 
             hunterTurn = !hunterTurn;
         }
 
-        return new SoloBattleSimulation(hunterHp > 0, totalDamageTaken, hunterHp, turns);
+        return new SoloBattleSimulation(initialHunterHp, initialMonsterHp, hunterHp > 0, totalDamageTaken, hunterHp, turns);
     }
 
     public GroupBattleSimulation simulateGroupBossBattle(Hunt hunt, List<HuntParticipation> participations) {
@@ -117,6 +140,10 @@ public class BattleService {
                         .orElse(1)
         ));
         int bossHp = calculateScaledBossHp(hunt, averageHunterLevel, orderedParticipations.size());
+        int initialBossHp = bossHp;
+        String beastName = hunt.getBeasts().isEmpty()
+                ? "Beast"
+                : hunt.getBeasts().getFirst().getType().name();
         int turnNumber = 1;
         List<BattleTurnResponse> turns = new ArrayList<>();
 
@@ -132,9 +159,18 @@ public class BattleService {
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
                         attacker.displayName(),
-                        "Boss",
+                        "hunter",
+                        beastName,
+                        "beast",
                         hunterDamage,
+                        bossHp,
+                        attacker.remainingHp(),
+                        bossHp,
+                        "%s takes %d damage".formatted(toDisplayName(beastName), hunterDamage),
                         formatGroupBattleState(hunterStates, bossHp)
+                        ,
+                        false,
+                        false
                 ));
             }
 
@@ -154,10 +190,19 @@ public class BattleService {
             target.applyDamage(bossDamage);
             turns.add(new BattleTurnResponse(
                     turnNumber++,
-                    "Boss",
+                    toDisplayName(beastName),
+                    "beast",
                     target.displayName(),
+                    "hunter",
                     bossDamage,
+                    target.remainingHp(),
+                    target.remainingHp(),
+                    bossHp,
+                    "%s takes %d damage".formatted(target.displayName(), bossDamage),
                     formatGroupBattleState(hunterStates, bossHp)
+                    ,
+                    false,
+                    false
             ));
         }
 
@@ -167,7 +212,11 @@ public class BattleService {
                         new HunterBattleOutcome(state.remainingHp(), state.damageTaken())
                 ), Map::putAll);
 
-        return new GroupBattleSimulation(bossHp <= 0, bossHp, turns, outcomes);
+        return new GroupBattleSimulation(initialBossHp, bossHp <= 0, bossHp, turns, outcomes);
+    }
+
+    private String toDisplayName(String rawName) {
+        return rawName.charAt(0) + rawName.substring(1).toLowerCase();
     }
 
     private int calculateScaledMonsterHp(Hunt hunt, int hunterLevel) {

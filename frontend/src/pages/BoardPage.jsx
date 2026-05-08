@@ -72,18 +72,18 @@ function getPinType(hunt) {
   }
 
   if (hunt.sourceType === 'REPEATABLE') {
-    return 'solo'
+    return 'normal'
   }
 
   if (hunt.sourceType === 'DAILY_BOUNTY' || hunt.sourceType === 'WEEKLY_CONTRACT') {
-    return 'group'
+    return 'daily'
   }
 
   if (hunt.type === 'SOLO_HUNT') {
-    return 'solo'
+    return 'normal'
   }
 
-  return 'group'
+  return 'daily'
 }
 
 function BoardPage({ hunts, loading, error, onSelectHunt }) {
@@ -98,6 +98,7 @@ function BoardPage({ hunts, loading, error, onSelectHunt }) {
         return {
           ...hunt,
           ...position,
+          primaryBeastType: hunt.beasts?.[0]?.type ?? null,
           pinType: getPinType(hunt),
         }
       })
@@ -119,6 +120,7 @@ function BoardPage({ hunts, loading, error, onSelectHunt }) {
           x={hunt.x}
           y={hunt.y}
           type={hunt.pinType}
+          beastType={hunt.primaryBeastType}
           onClick={() => onSelectHunt(hunt)}
         />
       ))}

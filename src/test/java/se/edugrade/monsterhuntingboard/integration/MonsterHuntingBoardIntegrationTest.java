@@ -78,9 +78,24 @@ class MonsterHuntingBoardIntegrationTest {
             Long hunterId = participations.getFirst().getHunter().getId();
 
             return new GroupBattleSimulation(
+                    15,
                     true,
                     0,
-                    List.of(new BattleTurnResponse(1, "Integration Hunter", "Boss", 15, "Integration Hunter: 88 HP | Boss HP: 0")),
+                    List.of(new BattleTurnResponse(
+                            1,
+                            "Integration Hunter",
+                            "hunter",
+                            "GRIFFIN",
+                            "beast",
+                            15,
+                            0,
+                            88,
+                            0,
+                            "Griffin takes 15 damage",
+                            "Integration Hunter: 88 HP | Boss HP: 0",
+                            false,
+                            false
+                    )),
                     Map.of(hunterId, new HunterBattleOutcome(88, 12))
             );
         });

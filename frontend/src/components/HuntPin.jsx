@@ -1,15 +1,7 @@
-import groupPin from '../assets/pin_group.png'
-import glowingPin from '../assets/pin_glowing.png'
-import monsterPin from '../assets/pin_monster.png'
+import { getPinImage } from '../assets/beastVisuals'
 
-const pinImages = {
-  group: groupPin,
-  solo: glowingPin,
-  boss: monsterPin,
-}
-
-function HuntPin({ x, y, type, onClick }) {
-  const pinImage = pinImages[type] ?? groupPin
+function HuntPin({ x, y, type, beastType, onClick }) {
+  const pinImage = getPinImage(type, beastType)
 
   return (
     <button
@@ -17,7 +9,7 @@ function HuntPin({ x, y, type, onClick }) {
       className="hunt-pin"
       style={{ left: `${x}%`, top: `${y}%` }}
       onClick={onClick}
-      aria-label={`${type} hunt`}
+      aria-label={`${type} ${beastType?.toLowerCase() ?? 'hunt'} hunt`}
     >
       <img src={pinImage} alt="" />
     </button>

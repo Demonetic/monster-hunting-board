@@ -1,30 +1,53 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getCurrentUsername } from '../api/authStorage'
 import { getCurrentHunter } from '../api/hunterApi'
 import { getAllBeasts } from '../api/beastApi'
 import { completeHunt, deleteHunt, joinHunt, startSoloHunt, updateHunt } from '../api/huntApi'
-import BattleResultPopup from './BattleResultPopup'
-import panelParchment from '../assets/panel_new.png'
-import dragonIcon from '../assets/icon_dragon.png'
-import phoenixIcon from '../assets/icon_phoenix.png'
-import griffinIcon from '../assets/icon_griffin.png'
-import chimeraIcon from '../assets/icon_chimera.png'
-import basiliskIcon from '../assets/icon_basilisk.png'
-import buttonImage from '../assets/button_new.png'
+import panelHuntDefault from '../assets/panel_hunt.png'
+import panelHuntBasilisk from '../assets/panel_hunt_basilisk.png'
+import panelHuntChimera from '../assets/panel_hunt_chimera.png'
+import panelHuntDragon from '../assets/panel_hunt_dragon.png'
+import panelHuntGriffin from '../assets/panel_hunt_griffin.png'
+import panelHuntPegasus from '../assets/panel_hunt_pegasus.png'
+import panelHuntPhoenix from '../assets/panel_hunt_phoenix.png'
+import buttonCancel from '../assets/button_cancel.png'
+import buttonCompleteHunt from '../assets/button_complete_hunt.png'
+import buttonClose from '../assets/button_close.png'
+import buttonCompleted from '../assets/button_completed.png'
+import buttonDelete from '../assets/button_delete.png'
+import buttonHuntFull from '../assets/button_hunt_full.png'
+import buttonInProgress from '../assets/buttons_in_progress.png'
+import buttonJoin from '../assets/button_join.png'
+import buttonJoined from '../assets/button_joined.png'
+import buttonSave from '../assets/button_save.png'
+import buttonStart from '../assets/button_start.png'
+import buttonUpdate from '../assets/button_update.png'
+import { getBeastImage } from '../assets/beastVisuals'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
 const LOW_HP_WARNING_THRESHOLD = 20
-
-const monsterImages = {
-  dragon: dragonIcon,
-  phoenix: phoenixIcon,
-  griffin: griffinIcon,
-  chimera: chimeraIcon,
-  basilisk: basiliskIcon,
+const huntPanelsByBeastType = {
+  BASILISK: panelHuntBasilisk,
+  CHIMERA: panelHuntChimera,
+  DRAGON: panelHuntDragon,
+  GRIFFIN: panelHuntGriffin,
+  PEGASUS: panelHuntPegasus,
+  PHOENIX: panelHuntPhoenix,
 }
 
 function getFirstBeast(hunt) {
   return hunt.beasts?.[0] ?? null
+}
+
+function getHuntPanelImage(hunt) {
+  const firstBeast = getFirstBeast(hunt)
+
+  if (!firstBeast) {
+    return panelHuntDefault
+  }
+
+  return huntPanelsByBeastType[firstBeast.type] ?? panelHuntDefault
 }
 
 function getMonsterImage(hunt) {
@@ -34,8 +57,7 @@ function getMonsterImage(hunt) {
     return null
   }
 
-  const beastKey = firstBeast.type.toLowerCase()
-  return monsterImages[beastKey] ?? null
+  return getBeastImage(firstBeast.type)
 }
 
 function formatType(type) {
@@ -250,15 +272,59 @@ function getActionConfig({
   }
 }
 
+function getActionImage(actionConfig) {
+  if (!actionConfig) {
+    return null
+  }
+
+  if (actionConfig.action === 'update') {
+    return buttonUpdate
+  }
+
+  if (actionConfig.action === 'delete') {
+    return buttonDelete
+  }
+
+  if (actionConfig.action === 'solo') {
+    return buttonStart
+  }
+
+  if (actionConfig.action === 'join') {
+    return buttonJoin
+  }
+
+  if (actionConfig.label === 'Completed') {
+    return buttonCompleted
+  }
+
+  if (actionConfig.label === 'Complete Hunt') {
+    return buttonCompleteHunt
+  }
+
+  if (actionConfig.label === 'Hunt Full') {
+    return buttonHuntFull
+  }
+
+  if (actionConfig.label === 'Joined') {
+    return buttonJoined
+  }
+
+  if (actionConfig.label === 'In Progress') {
+    return buttonInProgress
+  }
+
+  return null
+}
+
 function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
+  const navigate = useNavigate()
   const firstBeast = getFirstBeast(hunt)
-  const monsterImage = getMonsterImage(hunt)
+  const panelParchment = getHuntPanelImage(hunt)
   const username = getCurrentUsername()
   const huntSignature = buildHuntSignature(hunt)
   const [actionMessage, setActionMessage] = useState('')
   const [actionError, setActionError] = useState('')
   const [actionStateLabel, setActionStateLabel] = useState('')
-  const [huntResult, setHuntResult] = useState(null)
   const [isUpdateFormOpen, setIsUpdateFormOpen] = useState(false)
   const [isSavingUpdate, setIsSavingUpdate] = useState(false)
   const [isLoadingBeasts, setIsLoadingBeasts] = useState(false)
@@ -342,8 +408,19 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
 
   const getBattleOutcomeMessage = (won) => (won ? 'Victory!' : 'Defeat...')
 
+  const openBattlePage = (result) => {
+    navigate('/battle', {
+      state: {
+        battleResult: result,
+        weatherEffect: null,
+      },
+    })
+  }
+
   const primaryAction = actionConfig?.primary ?? null
   const secondaryAction = actionConfig?.secondary ?? null
+  const primaryActionImage = getActionImage(primaryAction)
+  const secondaryActionImage = getActionImage(secondaryAction)
 
   const handleJoin = async () => {
     const response = await joinHunt(hunt.id)
@@ -391,7 +468,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
       },
     }))
 
-    setHuntResult(response.data)
     setHunterState((current) => current
       ? {
           ...current,
@@ -404,9 +480,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
           endurancePotionActive: false,
         }
       : current)
-    const outcomeMessage = getBattleOutcomeMessage(response.data.won)
-    showToast?.(outcomeMessage, response.data.won ? 'success' : 'error')
-    await syncAfterAction()
+    openBattlePage(response.data)
   }
 
   const handleComplete = async () => {
@@ -422,7 +496,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
       },
     }))
 
-    setHuntResult(response.data)
     setHunterState((current) => current
       ? {
           ...current,
@@ -435,9 +508,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
           endurancePotionActive: false,
         }
       : current)
-    const outcomeMessage = getBattleOutcomeMessage(response.data.won)
-    showToast?.(outcomeMessage, response.data.won ? 'success' : 'error')
-    await syncAfterAction()
+    openBattlePage(response.data)
   }
 
   const handleDelete = async () => {
@@ -495,7 +566,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
         ? secondaryAction?.label ?? ''
         : primaryAction?.label ?? '',
     )
-    setHuntResult(null)
     setIsSubmitting(true)
 
     try {
@@ -625,14 +695,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="hunt-modal-content-wrap">
-          {monsterImage && (
-            <img
-              className="hunt-modal-monster"
-              src={monsterImage}
-              alt={firstBeast?.type ?? 'monster'}
-            />
-          )}
-
           <div className="hunt-modal-content">
             <h2 className="hunt-modal-title">{hunt.title}</h2>
 
@@ -703,8 +765,11 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
               onClick={() => handleAction(primaryAction.action)}
               disabled={primaryAction.disabled}
             >
-              <img src={buttonImage} alt="" />
-              <span>{primaryAction.label}</span>
+              {primaryActionImage ? (
+                <img src={primaryActionImage} alt="" />
+              ) : (
+                <span className="hunt-action-button-fallback">{primaryAction.label}</span>
+              )}
             </button>
           )}
 
@@ -715,8 +780,11 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
               onClick={() => handleAction(secondaryAction.action)}
               disabled={secondaryAction.disabled}
             >
-              <img src={buttonImage} alt="" />
-              <span>{secondaryAction.label}</span>
+              {secondaryActionImage ? (
+                <img src={secondaryActionImage} alt="" />
+              ) : (
+                <span className="hunt-action-button-fallback">{secondaryAction.label}</span>
+              )}
             </button>
           )}
 
@@ -726,8 +794,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
             onClick={onClose}
             aria-label="Close hunt details"
           >
-            <img src={buttonImage} alt="" />
-            <span>Close</span>
+            <img src={buttonClose} alt="" />
           </button>
         </div>
 
@@ -860,26 +927,21 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
                   type="submit"
                   className="hunt-update-inline-button"
                   disabled={isSavingUpdate}
+                  aria-label="Save hunt update"
                 >
-                  {isSavingUpdate ? 'Saving...' : 'Save'}
+                  <img src={buttonSave} alt="" />
                 </button>
                 <button
                   type="button"
                   className="hunt-update-inline-button"
                   onClick={() => setIsUpdateFormOpen(false)}
+                  aria-label="Cancel hunt update"
                 >
-                  Cancel
+                  <img src={buttonCancel} alt="" />
                 </button>
               </div>
             </form>
           </div>
-        )}
-
-        {huntResult && (
-          <BattleResultPopup
-            result={huntResult}
-            onClose={() => setHuntResult(null)}
-          />
         )}
       </section>
     </div>

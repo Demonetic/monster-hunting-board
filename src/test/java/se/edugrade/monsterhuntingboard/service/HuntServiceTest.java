@@ -81,7 +81,7 @@ class HuntServiceTest {
     @BeforeEach
     void setUp() {
         given(battleService.simulateSoloBattle(any(), any())).willReturn(
-                new SoloBattleSimulation(true, 10, 90, List.of())
+                new SoloBattleSimulation(100, 180, true, 10, 90, List.of())
         );
 
         beast = beastRepository.save(Beast.builder()
@@ -261,7 +261,7 @@ class HuntServiceTest {
                 .rewardGold(25)
                 .build());
         given(battleService.simulateSoloBattle(eq(hardSoloHunt), any())).willReturn(
-                new SoloBattleSimulation(false, 100, 0, List.of())
+                new SoloBattleSimulation(100, 180, false, 100, 0, List.of())
         );
 
         HuntResultResponse lossResponse = huntService.startSoloHunt(
@@ -286,6 +286,7 @@ class HuntServiceTest {
         huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
         given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
                 new GroupBattleSimulation(
+                        180,
                         true,
                         0,
                         List.of(),
@@ -321,6 +322,7 @@ class HuntServiceTest {
         huntService.joinHunt(activeHunt.getId(), mageUsername);
         given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
                 new GroupBattleSimulation(
+                        180,
                         true,
                         0,
                         List.of(),
@@ -379,6 +381,7 @@ class HuntServiceTest {
 
         given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
                 new GroupBattleSimulation(
+                        180,
                         true,
                         0,
                         List.of(),
@@ -484,12 +487,13 @@ class HuntServiceTest {
         Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
 
         return new GroupBattleSimulation(
+                300,
                 true,
                 0,
                 List.of(
-                        new BattleTurnResponse(1, "Aria", "Boss", 15, "Aria: 100 HP, Rowan: 100 HP | Boss HP: 285"),
-                        new BattleTurnResponse(2, "Rowan", "Boss", 13, "Aria: 100 HP, Rowan: 100 HP | Boss HP: 272"),
-                        new BattleTurnResponse(3, "Boss", "Aria", 18, "Aria: 82 HP, Rowan: 100 HP | Boss HP: 272")
+                        createTurn(1, "Aria", "hunter", "GRIFFIN", "beast", 15, 285, 100, 285, "Griffin takes 15 damage", "Aria: 100 HP, Rowan: 100 HP | Boss HP: 285"),
+                        createTurn(2, "Rowan", "hunter", "GRIFFIN", "beast", 13, 272, 100, 272, "Griffin takes 13 damage", "Aria: 100 HP, Rowan: 100 HP | Boss HP: 272"),
+                        createTurn(3, "Griffin", "beast", "Aria", "hunter", 18, 82, 82, 272, "Aria takes 18 damage", "Aria: 82 HP, Rowan: 100 HP | Boss HP: 272")
                 ),
                 Map.of(
                         firstHunter.getId(), new HunterBattleOutcome(82, 18),
@@ -503,12 +507,13 @@ class HuntServiceTest {
         Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
 
         return new GroupBattleSimulation(
+                320,
                 false,
                 120,
                 List.of(
-                        new BattleTurnResponse(1, "Boss", "Aria", 55, "Aria: 45 HP, Rowan: 100 HP | Boss HP: 320"),
-                        new BattleTurnResponse(2, "Boss", "Rowan", 100, "Aria: 45 HP, Rowan: 0 HP (down) | Boss HP: 320"),
-                        new BattleTurnResponse(3, "Boss", "Aria", 45, "Aria: 0 HP (down), Rowan: 0 HP (down) | Boss HP: 320")
+                        createTurn(1, "Griffin", "beast", "Aria", "hunter", 55, 45, 45, 320, "Aria takes 55 damage", "Aria: 45 HP, Rowan: 100 HP | Boss HP: 320"),
+                        createTurn(2, "Griffin", "beast", "Rowan", "hunter", 100, 0, 0, 320, "Rowan takes 100 damage", "Aria: 45 HP, Rowan: 0 HP (down) | Boss HP: 320"),
+                        createTurn(3, "Griffin", "beast", "Aria", "hunter", 45, 0, 0, 320, "Aria takes 45 damage", "Aria: 0 HP (down), Rowan: 0 HP (down) | Boss HP: 320")
                 ),
                 Map.of(
                         firstHunter.getId(), new HunterBattleOutcome(0, 100),
@@ -523,5 +528,35 @@ class HuntServiceTest {
 
     private LocalDateTime futureStockholmTime(int hoursAhead) {
         return currentStockholmTime().plusHours(hoursAhead);
+    }
+
+    private BattleTurnResponse createTurn(
+            int turnNumber,
+            String attacker,
+            String attackerSide,
+            String target,
+            String targetSide,
+            int damage,
+            int targetHpAfter,
+            int hunterHpAfter,
+            int beastHpAfter,
+            String message,
+            String battleState
+    ) {
+        return new BattleTurnResponse(
+                turnNumber,
+                attacker,
+                attackerSide,
+                target,
+                targetSide,
+                damage,
+                targetHpAfter,
+                hunterHpAfter,
+                beastHpAfter,
+                message,
+                battleState,
+                false,
+                false
+        );
     }
 }

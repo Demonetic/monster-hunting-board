@@ -54,6 +54,7 @@ INSERT INTO beasts (id, type, difficulty, hp, attack_power, reward_exp, reward_g
 VALUES
     (1, 'BASILISK', 'EASY', 110, 18, 60, 30),
     (2, 'GRIFFIN', 'MEDIUM', 180, 32, 110, 70),
-    (3, 'CHIMERA', 'HARD', 260, 48, 190, 130),
-    (4, 'PHOENIX', 'HARD', 320, 58, 240, 180),
-    (5, 'DRAGON', 'BOSS', 520, 82, 420, 520);
+    (3, 'PEGASUS', 'MEDIUM', 165, 28, 100, 60),
+    (4, 'CHIMERA', 'HARD', 260, 48, 190, 130),
+    (5, 'PHOENIX', 'HARD', 320, 58, 240, 180),
+    (6, 'DRAGON', 'BOSS', 520, 82, 420, 520);

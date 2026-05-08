@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import panelParchment from '../assets/parchment_new.png'
-import buttonImage from '../assets/button_new.png'
+import panelParchment from '../assets/panel_information.png'
+import buttonClose from '../assets/button_close.png'
 
 function BattleResultPopup({ result, onClose }) {
   useEffect(() => {
@@ -28,7 +28,7 @@ function BattleResultPopup({ result, onClose }) {
           onClick={onClose}
           aria-label="Close battle result"
         >
-          X
+          <img src={buttonClose} alt="" />
         </button>
 
         <h3 className="battle-result-title">{title}</h3>
@@ -106,9 +106,9 @@ function BattleResultPopup({ result, onClose }) {
           type="button"
           className="battle-result-dismiss"
           onClick={onClose}
+          aria-label="Close battle result"
         >
-          <img src={buttonImage} alt="" />
-          <span>Close</span>
+          <img src={buttonClose} alt="" />
         </button>
       </section>
     </div>
