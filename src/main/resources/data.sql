@@ -16,8 +16,8 @@ ON DUPLICATE KEY UPDATE
     password = VALUES(password),
     role = VALUES(role);
 
-INSERT INTO hunters (display_name, appearance, city, country, latitude, longitude, level, exp, gold, base_hp, current_hp, created_at, user_account_id)
-SELECT 'Aria', 'MAGE', 'Stockholm', 'Sweden', 59.3293, 18.0686, 1, 0, 0, 100, 100, NOW(6),
+INSERT INTO hunters (display_name, appearance, city, country, latitude, longitude, level, exp, gold, base_hp, current_hp, exp_potion_active, endurance_potion_active, created_at, user_account_id)
+SELECT 'Aria', 'MAGE', 'Stockholm', 'Sweden', 59.3293, 18.0686, 1, 0, 0, 100, 100, false, false, NOW(6),
        (SELECT id FROM user_accounts WHERE username = 'hunter1')
 WHERE NOT EXISTS (
     SELECT 1
@@ -25,8 +25,8 @@ WHERE NOT EXISTS (
     WHERE user_account_id = (SELECT id FROM user_accounts WHERE username = 'hunter1')
 );
 
-INSERT INTO hunters (display_name, appearance, city, country, latitude, longitude, level, exp, gold, base_hp, current_hp, created_at, user_account_id)
-SELECT 'Rowan', 'RANGER', 'Stockholm', 'Sweden', 59.3293, 18.0686, 1, 0, 0, 100, 100, NOW(6),
+INSERT INTO hunters (display_name, appearance, city, country, latitude, longitude, level, exp, gold, base_hp, current_hp, exp_potion_active, endurance_potion_active, created_at, user_account_id)
+SELECT 'Rowan', 'RANGER', 'Stockholm', 'Sweden', 59.3293, 18.0686, 1, 0, 0, 100, 100, false, false, NOW(6),
        (SELECT id FROM user_accounts WHERE username = 'hunter2')
 WHERE NOT EXISTS (
     SELECT 1
