@@ -2,13 +2,21 @@
 target/
 build/
 out/
+/frontend/dist/
+/frontend/dist-ssr/
+/src/main/resources/static/assets/
+/src/main/resources/static/index.html
 
-# Maven
-.mvn/
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-mvnw
-mvnw.cmd
+# Frontend dependencies and caches
+/frontend/node_modules/
+/frontend/.vite/
+/frontend/.cache/
+/frontend/.eslintcache
+/frontend/*.tsbuildinfo
+
+# Maven wrapper generated/downloaded files
+/.mvn/apache-maven/
+/.mvn/wrapper/*.zip
 
 # Logs
 logs/
@@ -92,8 +100,3 @@ jacoco.exec
 # Misc
 *.orig
 .ai/
-
-# Bundled frontend build output copied into Spring static resources
-src/main/resources/static/index.html
-src/main/resources/static/assets/index-*.css
-src/main/resources/static/assets/index-*.js
