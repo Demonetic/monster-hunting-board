@@ -305,7 +305,7 @@ function getActionImage(actionConfig) {
   return null
 }
 
-function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
+function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
   const navigate = useNavigate()
   const firstBeast = getFirstBeast(hunt)
   const panelParchment = getHuntPanelImage(hunt)
@@ -717,6 +717,16 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast }) {
               <p>
                 <span>Primary Beast:</span> {firstBeast?.type ?? 'Unknown'}
               </p>
+              {weather && (
+                <>
+                  <p>
+                    <span>Weather:</span> {weather.displayName}
+                  </p>
+                  <p>
+                    <span>Effects:</span> {weather.activeEffects.join(' / ')}
+                  </p>
+                </>
+              )}
               {role === 'HUNTER' && hunterState && (
                 <>
                   <p>

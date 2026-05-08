@@ -17,6 +17,7 @@ import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
 import se.edugrade.monsterhuntingboard.exception.DuplicateResourceException;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.ResolvedLocation;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
@@ -32,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final WeatherService weatherService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -45,11 +47,16 @@ public class AuthService {
                 .role(Role.HUNTER)
                 .build();
 
+        ResolvedLocation location = weatherService.resolveRegistrationLocation(request.city());
         int baseHp = GameBalanceUtil.calculateBaseHp(1, request.appearance());
 
         Hunter hunter = Hunter.builder()
                 .displayName(request.displayName())
                 .appearance(request.appearance())
+                .city(location.city())
+                .country(location.country())
+                .latitude(location.latitude())
+                .longitude(location.longitude())
                 .level(1)
                 .exp(0)
                 .gold(0)

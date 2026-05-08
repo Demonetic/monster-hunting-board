@@ -5,29 +5,17 @@ import {
   getCurrentHunter,
 } from '../api/hunterApi'
 import { getRole } from '../api/authStorage'
+import { getCurrentWeather } from '../api/weatherApi'
 import buttonActivate from '../assets/button_activate.png'
 import buttonClose from '../assets/button_close.png'
 import buttonDiscard from '../assets/button_discard.png'
 import buttonUse from '../assets/button_use.png'
-import characterBard from '../assets/character_bard.png'
-import characterHunter from '../assets/character_hunter.png'
-import characterKnight from '../assets/character_knight.png'
-import characterMage from '../assets/character_mage.png'
-import characterPaladin from '../assets/character_paladin.png'
-import characterRanger from '../assets/character_ranger.png'
 import endurancePotionImage from '../assets/endurance_potion.png'
 import expPotionImage from '../assets/exp_potion.png'
 import healthPotionImage from '../assets/health_potion.png'
 import inventoryPanelImage from '../assets/inventory_panel.png'
-
-const appearanceCharacters = {
-  BARD: characterBard,
-  MAGE: characterMage,
-  RANGER: characterRanger,
-  KNIGHT: characterKnight,
-  PALADIN: characterPaladin,
-  HUNTER: characterHunter,
-}
+import PlayerSummary from './PlayerSummary'
+import { getAppearanceCharacterImage } from '../constants/appearanceVisuals'
 
 const itemTypeImages = {
   HEALTH_POTION: healthPotionImage,
@@ -43,6 +31,8 @@ function InventoryPanel({ onClose }) {
   const [error, setError] = useState('')
   const [inventoryActionItemId, setInventoryActionItemId] = useState(null)
   const [selectedItemId, setSelectedItemId] = useState(null)
+  const [weather, setWeather] = useState(null)
+  const [weatherLoading, setWeatherLoading] = useState(!isGameMaster)
 
   useEffect(() => {
     if (isGameMaster) {
@@ -56,10 +46,23 @@ function InventoryPanel({ onClose }) {
       setError('')
 
       try {
-        const hunterResponse = await getCurrentHunter()
+        const [hunterResponse, weatherResponse] = await Promise.allSettled([
+          getCurrentHunter(),
+          getCurrentWeather(),
+        ])
 
         if (!cancelled) {
-          setHunter(hunterResponse.data)
+          if (hunterResponse.status === 'fulfilled') {
+            setHunter(hunterResponse.value.data)
+          } else {
+            throw hunterResponse.reason
+          }
+
+          if (weatherResponse.status === 'fulfilled') {
+            setWeather(weatherResponse.value.data)
+          } else {
+            setWeather(null)
+          }
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -70,6 +73,7 @@ function InventoryPanel({ onClose }) {
       } finally {
         if (!cancelled) {
           setLoading(false)
+          setWeatherLoading(false)
         }
       }
     }
@@ -83,10 +87,10 @@ function InventoryPanel({ onClose }) {
 
   const characterImage = useMemo(() => {
     if (isGameMaster) {
-      return characterBard
+      return getAppearanceCharacterImage('BARD')
     }
 
-    return appearanceCharacters[hunter?.appearance] ?? characterHunter
+    return getAppearanceCharacterImage(hunter?.appearance)
   }, [hunter?.appearance, isGameMaster])
 
   const backpackSlots = useMemo(() => {
@@ -170,6 +174,15 @@ function InventoryPanel({ onClose }) {
         {!loading && error && <p className="inventory-state inventory-error inventory-state-overlay">{error}</p>}
 
         <div className="inventory-stage">
+          {!isGameMaster && (
+            <PlayerSummary
+              className="inventory-player-summary"
+              hunter={hunter}
+              weather={weather}
+              weatherLoading={weatherLoading}
+            />
+          )}
+
           <div className="inventory-character-stage">
             <img
               className="inventory-character-image"

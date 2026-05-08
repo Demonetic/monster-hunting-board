@@ -19,6 +19,7 @@ import se.edugrade.monsterhuntingboard.dto.PurchaseItemRequest;
 import se.edugrade.monsterhuntingboard.dto.PurchaseItemResponse;
 import se.edugrade.monsterhuntingboard.dto.ShopResponse;
 import se.edugrade.monsterhuntingboard.dto.UpdateAppearanceRequest;
+import se.edugrade.monsterhuntingboard.dto.UpdateLocationRequest;
 import se.edugrade.monsterhuntingboard.service.HunterService;
 import se.edugrade.monsterhuntingboard.service.ShopService;
 
@@ -47,6 +48,15 @@ public class HunterController {
             @Valid @RequestBody UpdateAppearanceRequest request
     ) {
         return ResponseEntity.ok(hunterService.updateAppearance(principal.getName(), request));
+    }
+
+    @PostMapping("/me/location")
+    @PreAuthorize("hasRole('HUNTER')")
+    public ResponseEntity<HunterResponse> updateLocation(
+            Principal principal,
+            @Valid @RequestBody UpdateLocationRequest request
+    ) {
+        return ResponseEntity.ok(hunterService.updateLocation(principal.getName(), request));
     }
 
     @GetMapping("/admin/all")

@@ -22,7 +22,9 @@ import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResultResponse;
 import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
+import se.edugrade.monsterhuntingboard.dto.ParticipantWeatherResponse;
 import se.edugrade.monsterhuntingboard.dto.UpdateHuntRequest;
+import se.edugrade.monsterhuntingboard.dto.WeatherResponse;
 import se.edugrade.monsterhuntingboard.exception.DuplicateResourceException;
 import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.exception.InvalidHuntStateException;
@@ -37,6 +39,8 @@ import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.HunterGeneratedHuntProgress;
+import se.edugrade.monsterhuntingboard.model.WeatherContext;
+import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HunterGeneratedHuntProgressRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
@@ -57,6 +61,7 @@ public class HuntService {
     private final HuntParticipationRepository huntParticipationRepository;
     private final HunterGeneratedHuntProgressRepository hunterGeneratedHuntProgressRepository;
     private final BattleService battleService;
+    private final WeatherService weatherService;
 
     @Transactional
     public HuntResponse createHunt(CreateHuntRequest request) {
@@ -158,8 +163,9 @@ public class HuntService {
         validateHunterCanFight(hunter);
 
         HuntParticipation savedParticipation = huntParticipationRepository.save(getOrCreateSoloParticipation(hunter, hunt));
-        SoloBattleSimulation simulation = battleService.simulateSoloBattle(hunt, hunter);
-        return applySoloResult(hunt, hunter, savedParticipation, simulation);
+        WeatherContext weatherContext = weatherService.getCurrentWeatherForHunter(hunter);
+        SoloBattleSimulation simulation = battleService.simulateSoloBattle(hunt, hunter, weatherContext.effect());
+        return applySoloResult(hunt, hunter, savedParticipation, simulation, weatherContext);
     }
 
     @Transactional
@@ -184,8 +190,9 @@ public class HuntService {
         }
 
         List<HuntParticipation> participations = huntParticipationRepository.findByHuntIdOrderByJoinedAtAscIdAsc(hunt.getId());
-        GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(hunt, participations);
-        return applyGroupResult(hunt, participations, hunter.getId(), simulation);
+        Map<Long, GroupParticipantBattleContext> participantWeatherContexts = buildParticipantWeatherContexts(participations);
+        GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(hunt, participations, participantWeatherContexts);
+        return applyGroupResult(hunt, participations, hunter.getId(), simulation, participantWeatherContexts);
     }
 
     @Transactional
@@ -342,7 +349,8 @@ public class HuntService {
             Hunt hunt,
             Hunter hunter,
             HuntParticipation participation,
-            SoloBattleSimulation simulation
+            SoloBattleSimulation simulation,
+            WeatherContext weatherContext
     ) {
         int initialHunterMaxHp = hunter.getBaseHp();
         boolean won = simulation.hunterWon();
@@ -350,10 +358,11 @@ public class HuntService {
         boolean endurancePotionApplied = hunter.isEndurancePotionActive();
         int previousLevel = hunter.getLevel();
         int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
+        WeatherEffect weatherEffect = weatherContext.effect();
 
         RewardResult rewardResult = won
-                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied)
-                : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
+                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied, weatherEffect)
+                : new RewardResult(calculateLossPenalty(previousLevel, weatherEffect), 0);
 
         int adjustedExp = hunter.getExp() + rewardResult.expChange();
         int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
@@ -395,6 +404,12 @@ public class HuntService {
                 simulation.damageTaken(),
                 expPotionApplied,
                 endurancePotionApplied,
+                WeatherResponse.from(weatherContext),
+                List.of(ParticipantWeatherResponse.from(new GroupParticipantBattleContext(
+                        hunter.getId(),
+                        hunter.getDisplayName(),
+                        weatherContext
+                ))),
                 simulation.turns()
         );
     }
@@ -403,13 +418,17 @@ public class HuntService {
             Hunt hunt,
             List<HuntParticipation> participations,
             Long currentHunterId,
-            GroupBattleSimulation simulation
+            GroupBattleSimulation simulation,
+            Map<Long, GroupParticipantBattleContext> participantWeatherContexts
     ) {
         boolean won = simulation.huntersWon();
         LocalDateTime completedAt = getCurrentTime();
         Map<Long, HunterBattleOutcome> outcomes = simulation.hunterOutcomes();
         Map<Long, HuntParticipation> participationsByHunterId = participations.stream()
                 .collect(Collectors.toMap(participation -> participation.getHunter().getId(), Function.identity()));
+        List<ParticipantWeatherResponse> participantWeather = participantWeatherContexts.values().stream()
+                .map(ParticipantWeatherResponse::from)
+                .toList();
 
         HuntResultResponse currentHunterResponse = null;
         for (HuntParticipation partyParticipation : participations) {
@@ -417,6 +436,10 @@ public class HuntService {
             HunterBattleOutcome outcome = outcomes.get(partyHunter.getId());
             if (outcome == null) {
                 throw new InvalidGameRuleException("Missing battle outcome for hunter " + partyHunter.getDisplayName());
+            }
+            GroupParticipantBattleContext participantWeatherContext = participantWeatherContexts.get(partyHunter.getId());
+            if (participantWeatherContext == null) {
+                throw new InvalidGameRuleException("Missing weather context for hunter " + partyHunter.getDisplayName());
             }
 
             HuntResultResponse hunterResult = applyGroupHunterOutcome(
@@ -429,6 +452,8 @@ public class HuntService {
                     simulation.initialBossHp(),
                     won,
                     completedAt,
+                    participantWeatherContext,
+                    participantWeather,
                     simulation.turns()
             );
             if (partyHunter.getId().equals(currentHunterId)) {
@@ -454,16 +479,19 @@ public class HuntService {
             int initialBossHp,
             boolean won,
             LocalDateTime completedAt,
+            GroupParticipantBattleContext participantWeatherContext,
+            List<ParticipantWeatherResponse> participantWeather,
             List<BattleTurnResponse> turns
     ) {
         boolean expPotionApplied = hunter.isExpPotionActive() && won;
         boolean endurancePotionApplied = hunter.isEndurancePotionActive();
         int previousLevel = hunter.getLevel();
         int currentLevelFloorExp = GameBalanceUtil.getLevelFloorExp(previousLevel);
+        WeatherEffect weatherEffect = participantWeatherContext.weatherEffect();
 
         RewardResult rewardResult = won
-                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied)
-                : new RewardResult(-GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel), 0);
+                ? calculateWinRewardForHunter(hunt, hunter, expPotionApplied, weatherEffect)
+                : new RewardResult(calculateLossPenalty(previousLevel, weatherEffect), 0);
 
         int adjustedExp = hunter.getExp() + rewardResult.expChange();
         int newExp = won ? Math.max(0, adjustedExp) : Math.max(currentLevelFloorExp, adjustedExp);
@@ -504,8 +532,25 @@ public class HuntService {
                 outcome.damageTaken(),
                 expPotionApplied,
                 endurancePotionApplied,
+                WeatherResponse.from(participantWeatherContext.weatherContext()),
+                participantWeather,
                 turns
         );
+    }
+
+    private Map<Long, GroupParticipantBattleContext> buildParticipantWeatherContexts(List<HuntParticipation> participations) {
+        return participations.stream()
+                .map(HuntParticipation::getHunter)
+                .collect(Collectors.toMap(
+                        Hunter::getId,
+                        hunter -> new GroupParticipantBattleContext(
+                                hunter.getId(),
+                                hunter.getDisplayName(),
+                                weatherService.getCurrentWeatherForHunter(hunter)
+                        ),
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new
+                ));
     }
 
     private HuntParticipation createParticipation(Hunter hunter, Hunt hunt) {
@@ -600,22 +645,41 @@ public class HuntService {
         hunterGeneratedHuntProgressRepository.save(progress);
     }
 
-    private RewardResult calculateWinRewardForHunter(Hunt hunt, Hunter hunter, boolean expPotionApplied) {
+    private RewardResult calculateWinRewardForHunter(
+            Hunt hunt,
+            Hunter hunter,
+            boolean expPotionApplied,
+            WeatherEffect weatherEffect
+    ) {
         RewardResult rewardResult = GameBalanceUtil.applyWinReward(hunt);
-        int expReward = GameBalanceUtil.applyAppearanceExpBonus(rewardResult.expChange(), hunter.getAppearance());
+        int expReward = applyMultiplier(rewardResult.expChange(), weatherEffect.getExpRewardMultiplier());
+        expReward = GameBalanceUtil.applyAppearanceExpBonus(expReward, hunter.getAppearance());
         if (expPotionApplied) {
             expReward = GameBalanceUtil.applyExpPotionBonus(expReward);
         }
 
         boolean fortuneSongTriggered = hunter.getAppearance() == se.edugrade.monsterhuntingboard.model.Appearance.BARD
                 && ThreadLocalRandom.current().nextInt(100) < 20;
-        int goldReward = GameBalanceUtil.applyAppearanceGoldBonus(
-                rewardResult.goldChange(),
+        int goldReward = applyMultiplier(rewardResult.goldChange(), weatherEffect.getGoldRewardMultiplier());
+        goldReward = GameBalanceUtil.applyAppearanceGoldBonus(
+                goldReward,
                 hunter.getAppearance(),
                 fortuneSongTriggered
         );
 
         return new RewardResult(expReward, goldReward);
+    }
+
+    private int calculateLossPenalty(int previousLevel, WeatherEffect weatherEffect) {
+        int basePenalty = GameBalanceUtil.calculateLevelScaledExpLoss(previousLevel);
+        return -applyMultiplier(basePenalty, weatherEffect.defeatPenaltyMultiplier());
+    }
+
+    private int applyMultiplier(int baseValue, double multiplier) {
+        if (baseValue <= 0) {
+            return baseValue;
+        }
+        return Math.max(1, (int) Math.round(baseValue * multiplier));
     }
 
     private void validateDifficultyMatchesType(HuntType type, Difficulty difficulty) {

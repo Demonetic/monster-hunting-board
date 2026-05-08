@@ -9,6 +9,7 @@ public record GroupBattleSimulation(
         boolean huntersWon,
         int bossRemainingHp,
         List<BattleTurnResponse> turns,
-        Map<Long, HunterBattleOutcome> hunterOutcomes
+        Map<Long, HunterBattleOutcome> hunterOutcomes,
+        Map<Long, GroupParticipantBattleContext> participantWeatherContexts
 ) {
 }

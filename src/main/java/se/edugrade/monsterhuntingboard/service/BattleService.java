@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
 import se.edugrade.monsterhuntingboard.model.Appearance;
+import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntParticipation;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 
 @Service
 public class BattleService {
@@ -25,7 +27,7 @@ public class BattleService {
         return won;
     }
 
-    public int calculateDamageTaken(Hunt hunt, boolean won, boolean endurancePotionActive) {
+    public int calculateDamageTaken(Hunt hunt, boolean won, boolean endurancePotionActive, WeatherEffect weatherEffect) {
         int baseDamage = hunt.getBeasts()
                 .stream()
                 .mapToInt(beast -> beast.getAttackPower())
@@ -46,11 +48,14 @@ public class BattleService {
             scaledDamage = Math.max(0, Math.round(scaledDamage * 0.7f));
         }
 
+        scaledDamage = applyWeatherOutgoingDamage(scaledDamage, hunt.getDifficulty(), weatherEffect);
+        scaledDamage = applyWeatherIncomingDamage(scaledDamage, weatherEffect);
+
         log.debug("Calculated damage taken for hunt {}: {}", hunt.getId(), scaledDamage);
         return scaledDamage;
     }
 
-    public SoloBattleSimulation simulateSoloBattle(Hunt hunt, Hunter hunter) {
+    public SoloBattleSimulation simulateSoloBattle(Hunt hunt, Hunter hunter, WeatherEffect weatherEffect) {
         int hunterHp = hunter.getCurrentHp();
         int monsterHp = calculateScaledMonsterHp(hunt, hunter.getLevel());
         int initialHunterHp = hunterHp;
@@ -65,7 +70,7 @@ public class BattleService {
 
         while (hunterHp > 0 && monsterHp > 0) {
             if (hunterTurn) {
-                int hunterDamage = rollHunterDamage(hunter.getLevel(), hunter.getAppearance());
+                int hunterDamage = rollHunterDamage(hunter.getLevel(), hunter.getAppearance(), weatherEffect);
                 monsterHp = Math.max(0, monsterHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
@@ -84,11 +89,15 @@ public class BattleService {
                         false
                 ));
             } else {
-                int monsterDamage = rollMonsterDamage(hunt, hunter.getLevel());
-                if (hunter.isEndurancePotionActive()) {
-                    monsterDamage = Math.max(1, monsterDamage - calculateEnduranceReduction(hunter.getLevel()));
-                }
-                monsterDamage = applyPassiveDamageReduction(monsterDamage, hunter.getAppearance());
+                int monsterDamage = rollMonsterDamage(hunt, hunter.getLevel(), weatherEffect);
+                monsterDamage = adjustBeastDamageAgainstHunter(
+                        monsterDamage,
+                        hunt.getDifficulty(),
+                        hunter.getLevel(),
+                        hunter.isEndurancePotionActive(),
+                        hunter.getAppearance(),
+                        weatherEffect
+                );
                 hunterHp = Math.max(0, hunterHp - monsterDamage);
                 totalDamageTaken += monsterDamage;
                 turns.add(new BattleTurnResponse(
@@ -112,10 +121,32 @@ public class BattleService {
             hunterTurn = !hunterTurn;
         }
 
-        return new SoloBattleSimulation(initialHunterHp, initialMonsterHp, hunterHp > 0, totalDamageTaken, hunterHp, turns);
+        WeatherFatigueResult fatigueResult = applyWeatherFatigue(
+                weatherEffect,
+                hunter.getDisplayName(),
+                beastName,
+                turnNumber,
+                hunterHp,
+                monsterHp,
+                totalDamageTaken,
+                turns
+        );
+
+        return new SoloBattleSimulation(
+                initialHunterHp,
+                initialMonsterHp,
+                fatigueResult.remainingHp() > 0 && monsterHp <= 0,
+                fatigueResult.totalDamageTaken(),
+                fatigueResult.remainingHp(),
+                turns
+        );
     }
 
-    public GroupBattleSimulation simulateGroupBossBattle(Hunt hunt, List<HuntParticipation> participations) {
+    public GroupBattleSimulation simulateGroupBossBattle(
+            Hunt hunt,
+            List<HuntParticipation> participations,
+            Map<Long, GroupParticipantBattleContext> participantWeatherContexts
+    ) {
         List<HuntParticipation> orderedParticipations = participations.stream()
                 .sorted(Comparator.comparing(HuntParticipation::getJoinedAt).thenComparing(HuntParticipation::getId))
                 .toList();
@@ -154,7 +185,12 @@ public class BattleService {
                     continue;
                 }
 
-                int hunterDamage = rollHunterDamage(attacker.level(), attacker.appearance());
+                GroupParticipantBattleContext attackerContext = participantWeatherContexts.get(attacker.hunterId());
+                WeatherEffect attackerWeather = attackerContext != null
+                        ? attackerContext.weatherEffect()
+                        : WeatherEffect.neutral();
+
+                int hunterDamage = rollHunterDamage(attacker.level(), attacker.appearance(), attackerWeather);
                 bossHp = Math.max(0, bossHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
@@ -182,11 +218,19 @@ public class BattleService {
                     .filter(HunterBattleState::isAlive)
                     .toList();
             HunterBattleState target = livingHunters.get(ThreadLocalRandom.current().nextInt(livingHunters.size()));
+            GroupParticipantBattleContext targetContext = participantWeatherContexts.get(target.hunterId());
+            WeatherEffect targetWeather = targetContext != null
+                    ? targetContext.weatherEffect()
+                    : WeatherEffect.neutral();
             int bossDamage = rollBossDamage(averageHunterLevel, orderedParticipations.size());
-            if (target.endurancePotionActive()) {
-                bossDamage = Math.max(1, bossDamage - calculateEnduranceReduction(target.level()));
-            }
-            bossDamage = applyPassiveDamageReduction(bossDamage, target.appearance());
+            bossDamage = adjustBeastDamageAgainstHunter(
+                    bossDamage,
+                    hunt.getDifficulty(),
+                    target.level(),
+                    target.endurancePotionActive(),
+                    target.appearance(),
+                    targetWeather
+            );
             target.applyDamage(bossDamage);
             turns.add(new BattleTurnResponse(
                     turnNumber++,
@@ -206,13 +250,37 @@ public class BattleService {
             ));
         }
 
+        int turnNumberAfterBattle = turnNumber;
+        for (HunterBattleState state : hunterStates.values()) {
+            GroupParticipantBattleContext context = participantWeatherContexts.get(state.hunterId());
+            WeatherEffect stateWeather = context != null
+                    ? context.weatherEffect()
+                    : WeatherEffect.neutral();
+            if (stateWeather.enduranceCostMultiplier() > 1.0) {
+                WeatherFatigueResult fatigueResult = applyWeatherFatigue(
+                        stateWeather,
+                        state.displayName(),
+                        beastName,
+                        turnNumberAfterBattle,
+                        state.remainingHp(),
+                        bossHp,
+                        state.damageTaken(),
+                        turns
+                );
+                turnNumberAfterBattle += fatigueResult.turnsAdded();
+                if (fatigueResult.extraDamage() > 0) {
+                    state.applyDamage(fatigueResult.extraDamage());
+                }
+            }
+        }
+
         Map<Long, HunterBattleOutcome> outcomes = hunterStates.values().stream()
                 .collect(LinkedHashMap::new, (result, state) -> result.put(
                         state.hunterId(),
                         new HunterBattleOutcome(state.remainingHp(), state.damageTaken())
                 ), Map::putAll);
 
-        return new GroupBattleSimulation(initialBossHp, bossHp <= 0, bossHp, turns, outcomes);
+        return new GroupBattleSimulation(initialBossHp, bossHp <= 0, bossHp, turns, outcomes, participantWeatherContexts);
     }
 
     private String toDisplayName(String rawName) {
@@ -238,7 +306,7 @@ public class BattleService {
         return baseHp + 120 + levelScaling + partyScaling;
     }
 
-    private int rollHunterDamage(int hunterLevel, Appearance appearance) {
+    private int rollHunterDamage(int hunterLevel, Appearance appearance, WeatherEffect weatherEffect) {
         int minDamage = 8 + (hunterLevel * 2);
         int maxDamage = 14 + (hunterLevel * 3);
         if (appearance == Appearance.HUNTER) {
@@ -250,10 +318,12 @@ public class BattleService {
                 return rollBetween(midpoint, maxDamage);
             }
         }
-        return rollBetween(minDamage, maxDamage);
+        int rolledDamage = rollBetween(minDamage, maxDamage);
+        rolledDamage = Math.max(1, Math.round(rolledDamage * (float) weatherEffect.getHunterAttackRollMultiplier(appearance)));
+        return Math.max(1, Math.round(rolledDamage / (float) weatherEffect.beastResistanceMultiplier()));
     }
 
-    private int rollMonsterDamage(Hunt hunt, int hunterLevel) {
+    private int rollMonsterDamage(Hunt hunt, int hunterLevel, WeatherEffect weatherEffect) {
         int baseDamage = switch (hunt.getDifficulty()) {
             case EASY -> 6 + hunterLevel;
             case MEDIUM -> 10 + hunterLevel;
@@ -261,7 +331,8 @@ public class BattleService {
             case BOSS -> 20 + (hunterLevel * 2);
         };
 
-        return rollBetween(Math.max(1, baseDamage - 2), baseDamage + 3);
+        int rolledDamage = rollBetween(Math.max(1, baseDamage - 2), baseDamage + 3);
+        return applyWeatherOutgoingDamage(rolledDamage, hunt.getDifficulty(), weatherEffect);
     }
 
     private int rollBossDamage(int averageHunterLevel, int partySize) {
@@ -278,6 +349,22 @@ public class BattleService {
             return Math.max(1, damage - 2);
         }
         return damage;
+    }
+
+    int adjustBeastDamageAgainstHunter(
+            int rolledDamage,
+            Difficulty difficulty,
+            int hunterLevel,
+            boolean endurancePotionActive,
+            Appearance appearance,
+            WeatherEffect weatherEffect
+    ) {
+        int adjustedDamage = applyWeatherOutgoingDamage(rolledDamage, difficulty, weatherEffect);
+        if (endurancePotionActive) {
+            adjustedDamage = Math.max(1, adjustedDamage - calculateEnduranceReduction(hunterLevel));
+        }
+        adjustedDamage = applyPassiveDamageReduction(adjustedDamage, appearance);
+        return applyWeatherIncomingDamage(adjustedDamage, weatherEffect);
     }
 
     private boolean hasLivingHunters(Map<Long, HunterBattleState> hunterStates) {
@@ -298,6 +385,60 @@ public class BattleService {
 
     private int rollBetween(int minInclusive, int maxInclusive) {
         return ThreadLocalRandom.current().nextInt(minInclusive, maxInclusive + 1);
+    }
+
+    private int applyWeatherOutgoingDamage(int damage, Difficulty difficulty, WeatherEffect weatherEffect) {
+        return Math.max(1, Math.round(damage * (float) weatherEffect.getBeastDamageMultiplier(difficulty)));
+    }
+
+    private int applyWeatherIncomingDamage(int damage, WeatherEffect weatherEffect) {
+        return Math.max(1, Math.round(damage * (float) weatherEffect.hunterDamageTakenMultiplier()));
+    }
+
+    private WeatherFatigueResult applyWeatherFatigue(
+            WeatherEffect weatherEffect,
+            String hunterName,
+            String beastName,
+            int turnNumber,
+            int hunterHp,
+            int beastHp,
+            int damageTaken,
+            List<BattleTurnResponse> turns
+    ) {
+        if (weatherEffect.enduranceCostMultiplier() <= 1.0 || damageTaken <= 0 || hunterHp <= 0) {
+            return new WeatherFatigueResult(hunterHp, damageTaken, 0, 0);
+        }
+
+        int fatigueDamage = Math.max(
+                1,
+                Math.round(damageTaken * (float) (weatherEffect.enduranceCostMultiplier() - 1.0))
+        );
+        int newHunterHp = Math.max(0, hunterHp - fatigueDamage);
+        int newTotalDamageTaken = damageTaken + fatigueDamage;
+        turns.add(new BattleTurnResponse(
+                turnNumber,
+                weatherEffect.displayName(),
+                "weather",
+                hunterName,
+                "hunter",
+                fatigueDamage,
+                newHunterHp,
+                newHunterHp,
+                beastHp,
+                "%s drains %d extra HP from %s".formatted(weatherEffect.displayName(), fatigueDamage, hunterName),
+                "Hunter HP: %d, Boss HP: %d".formatted(newHunterHp, beastHp),
+                false,
+                false
+        ));
+        return new WeatherFatigueResult(newHunterHp, newTotalDamageTaken, fatigueDamage, 1);
+    }
+
+    private record WeatherFatigueResult(
+            int remainingHp,
+            int totalDamageTaken,
+            int extraDamage,
+            int turnsAdded
+    ) {
     }
 
     private static final class HunterBattleState {

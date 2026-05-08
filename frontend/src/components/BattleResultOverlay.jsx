@@ -9,8 +9,8 @@ function BattleResultOverlay({ result, weatherEffect, onContinue }) {
         {result.won ? 'Victory' : 'Defeat'}
       </h2>
 
-      {weatherEffect?.label && (
-        <p className="battle-result-weather">{weatherEffect.label}</p>
+      {weatherEffect?.displayName && (
+        <p className="battle-result-weather">{weatherEffect.displayName}</p>
       )}
 
       <div className="battle-result-grid">

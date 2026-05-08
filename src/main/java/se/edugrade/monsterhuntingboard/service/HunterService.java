@@ -7,9 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.HunterResponse;
+import se.edugrade.monsterhuntingboard.dto.UpdateLocationRequest;
 import se.edugrade.monsterhuntingboard.dto.UpdateAppearanceRequest;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.ResolvedLocation;
 import se.edugrade.monsterhuntingboard.repository.HunterInventoryItemRepository;
 import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 import se.edugrade.monsterhuntingboard.util.GameBalanceUtil;
@@ -21,6 +23,7 @@ public class HunterService {
 
     private final HunterRepository hunterRepository;
     private final HunterInventoryItemRepository hunterInventoryItemRepository;
+    private final WeatherService weatherService;
 
     @Transactional(readOnly = true)
     public HunterResponse getCurrentHunter(String username) {
@@ -45,6 +48,25 @@ public class HunterService {
         hunter.setBaseHp(newBaseHp);
         hunter.setCurrentHp(Math.max(0, newBaseHp - damageTaken));
         log.info("Updated hunter appearance: {} -> {}", username, hunter.getAppearance());
+        return HunterResponse.from(
+                hunter,
+                hunterInventoryItemRepository.findByHunterIdOrderBySlotIndexAsc(hunter.getId()),
+                ShopService.INVENTORY_CAPACITY
+        );
+    }
+
+    @Transactional
+    public HunterResponse updateLocation(String username, UpdateLocationRequest request) {
+        Hunter hunter = hunterRepository.findByUserAccountUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Hunter not found for username: " + username));
+
+        ResolvedLocation location = weatherService.resolveCity(request.city());
+        hunter.setCity(location.city());
+        hunter.setCountry(location.country());
+        hunter.setLatitude(location.latitude());
+        hunter.setLongitude(location.longitude());
+        log.info("Updated hunter location: {} -> {}, {}", username, location.city(), location.country());
+
         return HunterResponse.from(
                 hunter,
                 hunterInventoryItemRepository.findByHunterIdOrderBySlotIndexAsc(hunter.getId()),

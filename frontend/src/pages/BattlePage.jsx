@@ -53,7 +53,7 @@ function BattlePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const battleResult = location.state?.battleResult ?? null
-  const weatherEffect = location.state?.weatherEffect ?? null
+  const weather = battleResult?.weather ?? location.state?.weatherEffect ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
 
   const [phase, setPhase] = useState('intro')
@@ -176,12 +176,17 @@ function BattlePage() {
           />
         </div>
 
-        {weatherEffect?.label && (
-          <p className="battle-weather-badge">{weatherEffect.label}</p>
+        {weather?.displayName && (
+          <div className="battle-weather-badge">
+            <strong>{weather.displayName}</strong>
+            <span>{weather.activeEffects?.[0] ?? 'No weather effects'}</span>
+          </div>
         )}
 
         {phase === 'intro' && (
-          <p className="battle-intro-banner">Battle begins...</p>
+          <p className="battle-intro-banner">
+            {weather?.displayName ? `Battle begins under ${weather.displayName}` : 'Battle begins...'}
+          </p>
         )}
 
         {floatingTexts.map((entry, index) => (
@@ -214,7 +219,7 @@ function BattlePage() {
       {phase === 'finished' && (
         <BattleResultOverlay
           result={battleResult}
-          weatherEffect={weatherEffect}
+          weatherEffect={weather}
           onContinue={() => navigate('/')}
         />
       )}

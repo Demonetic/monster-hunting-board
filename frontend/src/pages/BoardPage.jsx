@@ -86,7 +86,7 @@ function getPinType(hunt) {
   return 'daily'
 }
 
-function BoardPage({ hunts, loading, error, onSelectHunt }) {
+function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
   const mappedHunts = useMemo(
     () => {
       const placedPositions = []
@@ -111,6 +111,14 @@ function BoardPage({ hunts, loading, error, onSelectHunt }) {
       className="board-page"
       style={{ backgroundImage: `url(${worldMap})` }}
     >
+      {weather && (
+        <section className="board-weather-card" aria-label="Current weather">
+          <strong>{weather.displayName}</strong>
+          <span>{weather.city}{weather.country ? `, ${weather.country}` : ''}</span>
+          <p>{weather.activeEffects[0] ?? 'No weather effects'}</p>
+        </section>
+      )}
+
       {loading && <p className="board-status">Loading hunts...</p>}
       {!loading && error && <p className="board-status board-status-error">{error}</p>}
 

@@ -2,11 +2,13 @@ package se.edugrade.monsterhuntingboard.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,7 +45,7 @@ class AuthControllerTest {
 
     @Test
     void postRegisterReturnsCreated() throws Exception {
-        AuthResponse response = new AuthResponse("token-123", "testhunter", Role.HUNTER);
+        AuthResponse response = new AuthResponse("token-123", "testhunter", Role.HUNTER, List.of());
         when(authService.register(any())).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/register")
@@ -63,7 +65,7 @@ class AuthControllerTest {
 
     @Test
     void postLoginReturnsOkAndToken() throws Exception {
-        AuthResponse response = new AuthResponse("token-456", "loginhunter", Role.HUNTER);
+        AuthResponse response = new AuthResponse("token-456", "loginhunter", Role.HUNTER, List.of());
         when(authService.login(any())).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/login")
@@ -92,5 +94,14 @@ class AuthControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAppearanceOptionsReturnsPassiveMetadata() throws Exception {
+        mockMvc.perform(get("/api/auth/appearance-options"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].appearance").exists())
+                .andExpect(jsonPath("$[0].passiveSkillName").exists())
+                .andExpect(jsonPath("$[0].passiveSkillDescription").exists());
     }
 }

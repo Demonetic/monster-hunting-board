@@ -26,11 +26,16 @@ import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResultResponse;
 import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
+import se.edugrade.monsterhuntingboard.dto.ParticipantWeatherResponse;
+import se.edugrade.monsterhuntingboard.dto.WeatherResponse;
 import se.edugrade.monsterhuntingboard.model.BeastType;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntType;
+import se.edugrade.monsterhuntingboard.model.WeatherCategory;
+import se.edugrade.monsterhuntingboard.model.WeatherContext;
+import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 import se.edugrade.monsterhuntingboard.security.CustomUserDetailsService;
 import se.edugrade.monsterhuntingboard.security.JwtAuthenticationFilter;
 import se.edugrade.monsterhuntingboard.security.JwtService;
@@ -261,6 +266,32 @@ class HuntControllerTest {
                 damageTaken,
                 false,
                 endurancePotionApplied,
+                WeatherResponse.from(new WeatherContext(
+                        "Stockholm",
+                        "Sweden",
+                        59.3293,
+                        18.0686,
+                        0,
+                        8.0,
+                        false,
+                        WeatherCategory.SUNNY_CLEAR,
+                        WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
+                )),
+                List.of(new ParticipantWeatherResponse(
+                        10L,
+                        "Aria",
+                        WeatherResponse.from(new WeatherContext(
+                                "Stockholm",
+                                "Sweden",
+                                59.3293,
+                                18.0686,
+                                0,
+                                8.0,
+                                false,
+                                WeatherCategory.SUNNY_CLEAR,
+                                WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
+                        ))
+                )),
                 List.of()
         );
     }

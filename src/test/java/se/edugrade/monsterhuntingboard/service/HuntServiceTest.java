@@ -3,6 +3,7 @@ package se.edugrade.monsterhuntingboard.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
@@ -37,6 +38,9 @@ import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
+import se.edugrade.monsterhuntingboard.model.WeatherCategory;
+import se.edugrade.monsterhuntingboard.model.WeatherContext;
+import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
@@ -73,6 +77,9 @@ class HuntServiceTest {
     @MockitoBean
     private BattleService battleService;
 
+    @MockitoBean
+    private WeatherService weatherService;
+
     private Beast beast;
     private Hunt activeHunt;
     private String hunterOneUsername;
@@ -80,7 +87,9 @@ class HuntServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(battleService.simulateSoloBattle(any(), any())).willReturn(
+        given(weatherService.getCurrentWeatherForHunter(any(Hunter.class))).willReturn(cloudyWeather());
+
+        given(battleService.simulateSoloBattle(any(), any(), any())).willReturn(
                 new SoloBattleSimulation(100, 180, true, 10, 90, List.of())
         );
 
@@ -109,7 +118,7 @@ class HuntServiceTest {
         hunterTwoUsername = "h2-" + TestIds.shortId();
         saveHunter(hunterOneUsername, "Aria", Appearance.KNIGHT);
         saveHunter(hunterTwoUsername, "Rowan", Appearance.RANGER);
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupWinSimulation());
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(defaultGroupWinSimulation());
     }
 
     @Test
@@ -210,10 +219,43 @@ class HuntServiceTest {
     }
 
     @Test
+    void sunnyWeatherAddsTenPercentGoldReward() {
+        given(weatherService.getCurrentWeatherForHunter(any(Hunter.class))).willReturn(sunnyWeather());
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+
+        HuntResultResponse response = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        assertThat(response.goldChange()).isEqualTo(83);
+        assertThat(response.weather().category()).isEqualTo("SUNNY_CLEAR");
+    }
+
+    @Test
+    void extremeWeatherBoostsWinRewards() {
+        given(weatherService.getCurrentWeatherForHunter(any(Hunter.class))).willReturn(extremeWeather());
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+
+        HuntResultResponse response = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        assertThat(response.expChange()).isEqualTo(125);
+        assertThat(response.goldChange()).isEqualTo(94);
+        assertThat(response.weather().category()).isEqualTo("EXTREME_WEATHER");
+    }
+
+    @Test
     void completeHuntWithLossRollGivesPenalty() {
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
         huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupLossSimulation());
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(defaultGroupLossSimulation());
 
         HuntResultResponse response = huntService.completeHuntForCurrentHunter(
                 activeHunt.getId(),
@@ -260,7 +302,7 @@ class HuntServiceTest {
                 .rewardExp(50)
                 .rewardGold(25)
                 .build());
-        given(battleService.simulateSoloBattle(eq(hardSoloHunt), any())).willReturn(
+        given(battleService.simulateSoloBattle(eq(hardSoloHunt), any(), any())).willReturn(
                 new SoloBattleSimulation(100, 180, false, 100, 0, List.of())
         );
 
@@ -284,7 +326,7 @@ class HuntServiceTest {
 
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
         huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(
                 new GroupBattleSimulation(
                         180,
                         true,
@@ -293,7 +335,8 @@ class HuntServiceTest {
                         Map.of(
                                 hunter.getId(), new HunterBattleOutcome(86, 14),
                                 secondHunter.getId(), new HunterBattleOutcome(90, 10)
-                        )
+                        ),
+                        participantWeatherContexts(hunter, secondHunter)
                 )
         );
 
@@ -320,13 +363,14 @@ class HuntServiceTest {
         saveHunter(mageUsername, "Lyra", Appearance.MAGE);
         Hunter mageHunter = userAccountRepository.findByUsername(mageUsername).orElseThrow().getHunter();
         huntService.joinHunt(activeHunt.getId(), mageUsername);
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(
                 new GroupBattleSimulation(
                         180,
                         true,
                         0,
                         List.of(),
-                        Map.of(mageHunter.getId(), new HunterBattleOutcome(90, 10))
+                        Map.of(mageHunter.getId(), new HunterBattleOutcome(90, 10)),
+                        participantWeatherContexts(mageHunter)
                 )
         );
 
@@ -379,7 +423,7 @@ class HuntServiceTest {
         Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
         Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
 
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(
                 new GroupBattleSimulation(
                         180,
                         true,
@@ -388,7 +432,8 @@ class HuntServiceTest {
                         Map.of(
                                 firstHunter.getId(), new HunterBattleOutcome(84, 16),
                                 secondHunter.getId(), new HunterBattleOutcome(0, 100)
-                        )
+                        ),
+                        participantWeatherContexts(firstHunter, secondHunter)
                 )
         );
 
@@ -408,7 +453,7 @@ class HuntServiceTest {
     void groupLossPenalizesAllParticipantsAndFailsHunt() {
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
         huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
-        given(battleService.simulateGroupBossBattle(eq(activeHunt), any())).willReturn(defaultGroupLossSimulation());
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(defaultGroupLossSimulation());
 
         huntService.completeHuntForCurrentHunter(activeHunt.getId(), hunterOneUsername, new CompleteHuntRequest(true));
 
@@ -419,6 +464,55 @@ class HuntServiceTest {
         assertThat(firstHunter.getCurrentHp()).isEqualTo(100);
         assertThat(secondHunter.getCurrentHp()).isEqualTo(100);
         assertThat(huntRepository.findById(activeHunt.getId()).orElseThrow().getStatus()).isEqualTo(HuntStatus.FAILED);
+    }
+
+    @Test
+    void groupHuntRewardsUsePersonalWeatherPerParticipant() {
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        given(weatherService.getCurrentWeatherForHunter(firstHunter)).willReturn(rainWeather());
+        given(weatherService.getCurrentWeatherForHunter(secondHunter)).willReturn(sunnyWeather());
+        given(battleService.simulateGroupBossBattle(eq(activeHunt), any(), anyMap())).willReturn(
+                new GroupBattleSimulation(
+                        300,
+                        true,
+                        0,
+                        List.of(),
+                        Map.of(
+                                firstHunter.getId(), new HunterBattleOutcome(82, 18),
+                                secondHunter.getId(), new HunterBattleOutcome(100, 0)
+                        ),
+                        Map.of(
+                                firstHunter.getId(), new GroupParticipantBattleContext(firstHunter.getId(), firstHunter.getDisplayName(), rainWeather()),
+                                secondHunter.getId(), new GroupParticipantBattleContext(secondHunter.getId(), secondHunter.getDisplayName(), sunnyWeather())
+                        )
+                )
+        );
+
+        HuntResultResponse response = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        Hunter refreshedFirstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter refreshedSecondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        assertThat(response.weather().category()).isEqualTo("RAIN");
+        assertThat(response.expChange()).isEqualTo(110);
+        assertThat(response.goldChange()).isEqualTo(75);
+        assertThat(response.participantWeather()).hasSize(2);
+        assertThat(response.participantWeather())
+                .extracting(participant -> participant.hunterName() + ":" + participant.weather().category())
+                .containsExactlyInAnyOrder("Aria:RAIN", "Rowan:SUNNY_CLEAR");
+        assertThat(refreshedFirstHunter.getExp()).isEqualTo(110);
+        assertThat(refreshedFirstHunter.getGold()).isEqualTo(75);
+        assertThat(refreshedSecondHunter.getExp()).isEqualTo(100);
+        assertThat(refreshedSecondHunter.getGold()).isEqualTo(83);
     }
 
     @Test
@@ -469,6 +563,10 @@ class HuntServiceTest {
         Hunter hunter = Hunter.builder()
                 .displayName(displayName)
                 .appearance(appearance)
+                .city("Stockholm")
+                .country("Sweden")
+                .latitude(59.3293)
+                .longitude(18.0686)
                 .level(1)
                 .exp(0)
                 .gold(0)
@@ -498,7 +596,8 @@ class HuntServiceTest {
                 Map.of(
                         firstHunter.getId(), new HunterBattleOutcome(82, 18),
                         secondHunter.getId(), new HunterBattleOutcome(100, 0)
-                )
+                ),
+                participantWeatherContexts(firstHunter, secondHunter)
         );
     }
 
@@ -518,8 +617,21 @@ class HuntServiceTest {
                 Map.of(
                         firstHunter.getId(), new HunterBattleOutcome(0, 100),
                         secondHunter.getId(), new HunterBattleOutcome(0, 100)
-                )
+                ),
+                participantWeatherContexts(firstHunter, secondHunter)
         );
+    }
+
+    private Map<Long, GroupParticipantBattleContext> participantWeatherContexts(Hunter... hunters) {
+        return java.util.Arrays.stream(hunters)
+                .collect(java.util.stream.Collectors.toMap(
+                        Hunter::getId,
+                        hunter -> new GroupParticipantBattleContext(
+                                hunter.getId(),
+                                hunter.getDisplayName(),
+                                cloudyWeather()
+                        )
+                ));
     }
 
     private LocalDateTime currentStockholmTime() {
@@ -528,6 +640,62 @@ class HuntServiceTest {
 
     private LocalDateTime futureStockholmTime(int hoursAhead) {
         return currentStockholmTime().plusHours(hoursAhead);
+    }
+
+    private WeatherContext sunnyWeather() {
+        return new WeatherContext(
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                0,
+                6.0,
+                false,
+                WeatherCategory.SUNNY_CLEAR,
+                WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
+        );
+    }
+
+    private WeatherContext cloudyWeather() {
+        return new WeatherContext(
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                3,
+                6.0,
+                false,
+                WeatherCategory.CLOUDY_OVERCAST,
+                WeatherEffect.fromCategory(WeatherCategory.CLOUDY_OVERCAST)
+        );
+    }
+
+    private WeatherContext rainWeather() {
+        return new WeatherContext(
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                63,
+                14.0,
+                false,
+                WeatherCategory.RAIN,
+                WeatherEffect.fromCategory(WeatherCategory.RAIN)
+        );
+    }
+
+    private WeatherContext extremeWeather() {
+        return new WeatherContext(
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                99,
+                80.0,
+                false,
+                WeatherCategory.EXTREME_WEATHER,
+                WeatherEffect.fromCategory(WeatherCategory.EXTREME_WEATHER)
+        );
     }
 
     private BattleTurnResponse createTurn(

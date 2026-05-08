@@ -3,13 +3,16 @@ package se.edugrade.monsterhuntingboard.controller;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import se.edugrade.monsterhuntingboard.dto.AuthResponse;
+import se.edugrade.monsterhuntingboard.dto.AppearanceOptionResponse;
 import se.edugrade.monsterhuntingboard.dto.LoginRequest;
 import se.edugrade.monsterhuntingboard.dto.RegisterRequest;
+import se.edugrade.monsterhuntingboard.model.Appearance;
 import se.edugrade.monsterhuntingboard.service.AuthService;
 
 @RestController
@@ -30,5 +33,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/appearance-options")
+    public ResponseEntity<java.util.List<AppearanceOptionResponse>> getAppearanceOptions() {
+        return ResponseEntity.ok(java.util.Arrays.stream(Appearance.values()).map(AppearanceOptionResponse::from).toList());
     }
 }

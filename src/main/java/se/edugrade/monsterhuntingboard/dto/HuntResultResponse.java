@@ -25,6 +25,8 @@ public record HuntResultResponse(
         int damageTaken,
         boolean expPotionApplied,
         boolean endurancePotionApplied,
+        WeatherResponse weather,
+        List<ParticipantWeatherResponse> participantWeather,
         List<BattleTurnResponse> turns
 ) {
     public static HuntResultResponse from(
@@ -40,6 +42,8 @@ public record HuntResultResponse(
             int damageTaken,
             boolean expPotionApplied,
             boolean endurancePotionApplied,
+            WeatherResponse weather,
+            List<ParticipantWeatherResponse> participantWeather,
             List<BattleTurnResponse> turns
     ) {
         return new HuntResultResponse(
@@ -63,6 +67,8 @@ public record HuntResultResponse(
                 damageTaken,
                 expPotionApplied,
                 endurancePotionApplied,
+                weather,
+                participantWeather,
                 turns
         );
     }

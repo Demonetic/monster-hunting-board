@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getAppearanceOptions } from '../api/authApi'
 import { getCurrentUsername, getRole } from '../api/authStorage'
-import { getCurrentHunter, updateAppearance } from '../api/hunterApi'
+import { getCurrentHunter, updateAppearance, updateLocation } from '../api/hunterApi'
+import { getCurrentWeather } from '../api/weatherApi'
 import buttonClose from '../assets/button_close.png'
 import buttonSave from '../assets/button_save.png'
 import panelImage from '../assets/panel_information.png'
-
-const appearanceOptions = ['BARD', 'MAGE', 'RANGER', 'KNIGHT', 'PALADIN', 'HUNTER']
+import AppearanceOptionSelector from './AppearanceOptionSelector'
+import PassiveSkillSummary from './PassiveSkillSummary'
+import WeatherEffectSummary from './WeatherEffectSummary'
 
 function formatToggleState(value) {
   return value ? 'Active' : 'Inactive'
 }
 
-function MenuPanel({ onClose, showToast }) {
+function MenuPanel({ onClose, showToast, onLocationUpdated }) {
   const username = getCurrentUsername()
   const role = getRole()
   const isGameMaster = role === 'GAME_MASTER'
@@ -21,6 +24,11 @@ function MenuPanel({ onClose, showToast }) {
   const [message, setMessage] = useState('')
   const [selectedAppearance, setSelectedAppearance] = useState('MAGE')
   const [isSavingAppearance, setIsSavingAppearance] = useState(false)
+  const [selectedCity, setSelectedCity] = useState('Stockholm')
+  const [isSavingLocation, setIsSavingLocation] = useState(false)
+  const [weather, setWeather] = useState(null)
+  const [appearanceOptions, setAppearanceOptions] = useState([])
+  const [previewAppearance, setPreviewAppearance] = useState('MAGE')
 
   useEffect(() => {
     if (isGameMaster) {
@@ -34,11 +42,28 @@ function MenuPanel({ onClose, showToast }) {
       setError('')
 
       try {
-        const response = await getCurrentHunter()
+        const [hunterResponse, weatherResponse, appearanceOptionsResponse] = await Promise.allSettled([
+          getCurrentHunter(),
+          getCurrentWeather(),
+          getAppearanceOptions(),
+        ])
 
         if (!cancelled) {
-          setHunter(response.data)
-          setSelectedAppearance(response.data.appearance ?? 'MAGE')
+          if (hunterResponse.status !== 'fulfilled') {
+            throw hunterResponse.reason
+          }
+
+          const hunterData = hunterResponse.value.data
+          setHunter(hunterData)
+          setSelectedAppearance(hunterData.appearance ?? 'MAGE')
+          setPreviewAppearance(hunterData.appearance ?? 'MAGE')
+          setSelectedCity(hunterData.city ?? 'Stockholm')
+          setWeather(weatherResponse.status === 'fulfilled' ? weatherResponse.value.data : null)
+          setAppearanceOptions(
+            appearanceOptionsResponse.status === 'fulfilled'
+              ? appearanceOptionsResponse.value.data ?? []
+              : [],
+          )
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -58,6 +83,13 @@ function MenuPanel({ onClose, showToast }) {
     }
   }, [isGameMaster])
 
+  const selectedAppearanceOption = useMemo(
+    () => appearanceOptions.find((option) => option.appearance === previewAppearance)
+      ?? appearanceOptions.find((option) => option.appearance === selectedAppearance)
+      ?? null,
+    [appearanceOptions, previewAppearance, selectedAppearance],
+  )
+
   const infoRows = useMemo(() => {
     if (isGameMaster) {
       return [
@@ -75,9 +107,11 @@ function MenuPanel({ onClose, showToast }) {
       { label: 'Username', value: username || '-' },
       { label: 'Role', value: role === 'HUNTER' ? 'Hunter' : role || '-' },
       { label: 'Level', value: hunter.level ?? '-' },
+      { label: 'Appearance', value: hunter.appearanceDisplayName ?? hunter.appearance ?? '-' },
       { label: 'Gold', value: hunter.gold ?? 0 },
       { label: 'EXP', value: hunter.exp ?? 0 },
       { label: 'HP', value: `${hunter.currentHp ?? 0} / ${hunter.baseHp ?? 0}` },
+      { label: 'City', value: hunter.city ?? 'Stockholm' },
       {
         label: 'Inventory',
         value: `${hunter.inventory?.length ?? 0} / ${hunter.inventoryCapacity ?? 0}`,
@@ -103,6 +137,7 @@ function MenuPanel({ onClose, showToast }) {
       const response = await updateAppearance(selectedAppearance)
       setHunter(response.data)
       setSelectedAppearance(response.data.appearance ?? selectedAppearance)
+      setPreviewAppearance(response.data.appearance ?? selectedAppearance)
       setMessage('Appearance updated')
       showToast?.('Appearance updated', 'success')
     } catch (saveError) {
@@ -111,6 +146,37 @@ function MenuPanel({ onClose, showToast }) {
       showToast?.(nextError, 'error')
     } finally {
       setIsSavingAppearance(false)
+    }
+  }
+
+  const handleSaveLocation = async () => {
+    if (!hunter || isSavingLocation || selectedCity.trim() === (hunter.city ?? '').trim()) {
+      return
+    }
+
+    setMessage('')
+    setError('')
+    setIsSavingLocation(true)
+
+    try {
+      const response = await updateLocation(selectedCity)
+      setHunter(response.data)
+      setSelectedCity(response.data.city ?? selectedCity)
+      try {
+        const weatherResponse = await getCurrentWeather()
+        setWeather(weatherResponse.data)
+      } catch {
+        setWeather(null)
+      }
+      setMessage('Location updated')
+      showToast?.('Location updated', 'success')
+      onLocationUpdated?.()
+    } catch (saveError) {
+      const nextError = saveError.response?.data?.message ?? 'Could not update location.'
+      setError(nextError)
+      showToast?.(nextError, 'error')
+    } finally {
+      setIsSavingLocation(false)
     }
   }
 
@@ -155,31 +221,75 @@ function MenuPanel({ onClose, showToast }) {
               </div>
 
               {!isGameMaster && hunter && (
-                <div className="menu-panel-appearance">
-                  <label className="menu-panel-appearance-field">
-                    <span>Appearance</span>
-                    <select
-                      value={selectedAppearance}
-                      onChange={(event) => setSelectedAppearance(event.target.value)}
-                    >
-                      {appearanceOptions.map((appearance) => (
-                        <option key={appearance} value={appearance}>
-                          {appearance}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <>
+                  <WeatherEffectSummary className="menu-panel-weather" weather={weather} />
 
-                  <button
-                    type="button"
-                    className="menu-panel-save-button"
-                    onClick={handleSaveAppearance}
-                    disabled={isSavingAppearance || selectedAppearance === hunter.appearance}
-                    aria-label="Save appearance"
-                  >
-                    <img src={buttonSave} alt="" />
-                  </button>
-                </div>
+                  <PassiveSkillSummary
+                    className="menu-panel-passive"
+                    appearanceName={hunter.appearanceDisplayName ?? hunter.appearance}
+                    passiveSkillName={hunter.passiveSkillName}
+                    passiveSkillDescription={hunter.passiveSkillDescription}
+                    title="Current passive"
+                  />
+
+                  <div className="menu-panel-settings-grid">
+                    <div className="menu-panel-setting-block">
+                      <div className="menu-panel-setting-heading">Change appearance</div>
+                      <AppearanceOptionSelector
+                        className="menu-panel-appearance-selector"
+                        options={appearanceOptions}
+                        value={selectedAppearance}
+                        previewValue={previewAppearance}
+                        onChange={(appearance) => {
+                          setSelectedAppearance(appearance)
+                          setPreviewAppearance(appearance)
+                        }}
+                        onPreviewChange={setPreviewAppearance}
+                      />
+
+                      {selectedAppearanceOption && (
+                        <PassiveSkillSummary
+                          className="menu-panel-passive menu-panel-passive-preview"
+                          appearanceName={selectedAppearanceOption.displayName}
+                          passiveSkillName={selectedAppearanceOption.passiveSkillName}
+                          passiveSkillDescription={selectedAppearanceOption.passiveSkillDescription}
+                          title="Selected passive"
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        className="menu-panel-save-button"
+                        onClick={handleSaveAppearance}
+                        disabled={isSavingAppearance || selectedAppearance === hunter.appearance}
+                        aria-label="Save appearance"
+                      >
+                        <img src={buttonSave} alt="" />
+                      </button>
+                    </div>
+
+                    <div className="menu-panel-appearance">
+                      <label className="menu-panel-appearance-field">
+                        <span>Location</span>
+                        <input
+                          value={selectedCity}
+                          onChange={(event) => setSelectedCity(event.target.value)}
+                          placeholder="Stockholm"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        className="menu-panel-save-button"
+                        onClick={handleSaveLocation}
+                        disabled={isSavingLocation || selectedCity.trim() === (hunter.city ?? '').trim()}
+                        aria-label="Save location"
+                      >
+                        <img src={buttonSave} alt="" />
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>

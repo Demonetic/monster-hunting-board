@@ -1,9 +1,12 @@
-import { useState } from 'react'
-import { login, register } from '../api/authApi'
+import { useEffect, useMemo, useState } from 'react'
+import { getAppearanceOptions, login, register } from '../api/authApi'
 import { saveRole, saveToken } from '../api/authStorage'
 import panelParchment from '../assets/panel_information.png'
+import panelHunt from '../assets/panel_hunt.png'
 import buttonLogin from '../assets/button_login.png'
 import buttonRegister from '../assets/button_register.png'
+import AppearanceOptionSelector from './AppearanceOptionSelector'
+import PassiveSkillSummary from './PassiveSkillSummary'
 
 const initialLoginForm = {
   username: '',
@@ -14,10 +17,9 @@ const initialRegisterForm = {
   username: '',
   password: '',
   displayName: '',
+  city: '',
   appearance: 'MAGE',
 }
-
-const appearanceOptions = ['BARD', 'MAGE', 'RANGER', 'KNIGHT', 'PALADIN', 'HUNTER']
 
 function AuthModal({ onAuthSuccess, showToast }) {
   const [mode, setMode] = useState('login')
@@ -25,9 +27,59 @@ function AuthModal({ onAuthSuccess, showToast }) {
   const [registerForm, setRegisterForm] = useState(initialRegisterForm)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [appearanceOptions, setAppearanceOptions] = useState([])
+  const [appearanceLoading, setAppearanceLoading] = useState(false)
+  const [appearancePreview, setAppearancePreview] = useState(initialRegisterForm.appearance)
 
   const activeForm = mode === 'login' ? loginForm : registerForm
   const submitButtonImage = mode === 'login' ? buttonLogin : buttonRegister
+  const panelImage = mode === 'login' ? panelParchment : panelHunt
+  const previewedAppearance = useMemo(
+    () => appearanceOptions.find((option) => option.appearance === appearancePreview)
+      ?? appearanceOptions.find((option) => option.appearance === registerForm.appearance)
+      ?? null,
+    [appearanceOptions, appearancePreview, registerForm.appearance],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchAppearanceOptions = async () => {
+      setAppearanceLoading(true)
+
+      try {
+        const response = await getAppearanceOptions()
+        if (!cancelled) {
+          setAppearanceOptions(response.data)
+          if (response.data.length > 0) {
+            const fallbackAppearance = response.data.some((option) => option.appearance === initialRegisterForm.appearance)
+              ? initialRegisterForm.appearance
+              : response.data[0].appearance
+            setRegisterForm((current) => (
+              current.appearance === fallbackAppearance
+                ? current
+                : { ...current, appearance: fallbackAppearance }
+            ))
+            setAppearancePreview(fallbackAppearance)
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setAppearanceOptions([])
+        }
+      } finally {
+        if (!cancelled) {
+          setAppearanceLoading(false)
+        }
+      }
+    }
+
+    fetchAppearanceOptions()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -43,6 +95,12 @@ function AuthModal({ onAuthSuccess, showToast }) {
   const switchMode = (nextMode) => {
     setMode(nextMode)
     setErrorMessage('')
+    setAppearancePreview(registerForm.appearance)
+  }
+
+  const handleAppearanceChange = (appearance) => {
+    setRegisterForm((current) => ({ ...current, appearance }))
+    setAppearancePreview(appearance)
   }
 
   const handleSubmit = async (event) => {
@@ -76,7 +134,7 @@ function AuthModal({ onAuthSuccess, showToast }) {
     <div className="auth-modal-overlay">
       <section
         className={`auth-modal ${mode === 'register' ? 'is-register' : ''}`.trim()}
-        style={{ backgroundImage: `url(${panelParchment})` }}
+        style={{ backgroundImage: `url(${panelImage})` }}
       >
         <div className="auth-modal-copy">
           <h1 className="auth-modal-title">
@@ -140,19 +198,44 @@ function AuthModal({ onAuthSuccess, showToast }) {
                 />
               </label>
 
-              <label className="auth-field">
-                <span>Appearance</span>
-                <select
-                  name="appearance"
+              <div className="auth-appearance-field" aria-label="Starting appearance">
+                <span className="auth-appearance-label">Starting Appearance</span>
+                <AppearanceOptionSelector
+                  options={appearanceOptions}
                   value={registerForm.appearance}
+                  previewValue={appearancePreview}
+                  onChange={handleAppearanceChange}
+                  onPreviewChange={setAppearancePreview}
+                />
+
+                {appearanceLoading && (
+                  <p className="auth-appearance-state">Loading appearances...</p>
+                )}
+
+                {!appearanceLoading && appearanceOptions.length === 0 && (
+                  <p className="auth-appearance-state">Appearances unavailable right now.</p>
+                )}
+
+                {previewedAppearance && (
+                  <PassiveSkillSummary
+                    className="auth-passive-preview"
+                    appearanceName={previewedAppearance.displayName}
+                    passiveSkillName={previewedAppearance.passiveSkillName}
+                    passiveSkillDescription={previewedAppearance.passiveSkillDescription}
+                    title="Starting passive"
+                  />
+                )}
+              </div>
+
+              <label className="auth-field">
+                <span>City</span>
+                <input
+                  name="city"
+                  value={registerForm.city}
                   onChange={handleChange}
-                >
-                  {appearanceOptions.map((appearance) => (
-                    <option key={appearance} value={appearance}>
-                      {appearance}
-                    </option>
-                  ))}
-                </select>
+                  autoComplete="address-level2"
+                  placeholder="Stockholm"
+                />
               </label>
             </>
           )}
@@ -161,7 +244,7 @@ function AuthModal({ onAuthSuccess, showToast }) {
 
           <button
             type="submit"
-            className="auth-submit"
+            className={`auth-submit ${mode === 'login' ? 'is-login' : 'is-register'}`.trim()}
             disabled={isSubmitting}
             aria-label={mode === 'login' ? 'Login' : 'Register'}
           >

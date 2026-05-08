@@ -18,6 +18,9 @@ public record RegisterRequest(
         @Size(min = 2, max = 40)
         String displayName,
 
+        @Size(max = 120)
+        String city,
+
         @NotNull
         Appearance appearance
 ) {

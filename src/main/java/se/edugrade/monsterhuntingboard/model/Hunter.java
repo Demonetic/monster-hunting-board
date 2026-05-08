@@ -32,6 +32,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Hunter {
+    public static final String DEFAULT_CITY = "Stockholm";
+    public static final String DEFAULT_COUNTRY = "Sweden";
+    public static final double DEFAULT_LATITUDE = 59.3293;
+    public static final double DEFAULT_LONGITUDE = 18.0686;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,6 +67,22 @@ public class Hunter {
 
     @Column(nullable = false)
     @Builder.Default
+    private String city = DEFAULT_CITY;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private String country = DEFAULT_COUNTRY;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private double latitude = DEFAULT_LATITUDE;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private double longitude = DEFAULT_LONGITUDE;
+
+    @Column(nullable = false)
+    @Builder.Default
     private boolean expPotionActive = false;
 
     @Column(nullable = false)
@@ -88,6 +108,18 @@ public class Hunter {
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (city == null || city.isBlank()) {
+            city = DEFAULT_CITY;
+        }
+        if (country == null || country.isBlank()) {
+            country = DEFAULT_COUNTRY;
+        }
+        if (latitude == 0d) {
+            latitude = DEFAULT_LATITUDE;
+        }
+        if (longitude == 0d) {
+            longitude = DEFAULT_LONGITUDE;
         }
     }
 }

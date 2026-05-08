@@ -7,3 +7,7 @@ export function login(credentials) {
 export function register(data) {
   return apiClient.post('/auth/register', data)
 }
+
+export function getAppearanceOptions() {
+  return apiClient.get('/auth/appearance-options')
+}

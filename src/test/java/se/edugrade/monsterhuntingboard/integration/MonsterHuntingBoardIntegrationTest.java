@@ -41,12 +41,18 @@ import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.HuntParticipation;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
+import se.edugrade.monsterhuntingboard.model.ResolvedLocation;
 import se.edugrade.monsterhuntingboard.model.Role;
 import se.edugrade.monsterhuntingboard.model.UserAccount;
+import se.edugrade.monsterhuntingboard.model.WeatherCategory;
+import se.edugrade.monsterhuntingboard.model.WeatherContext;
+import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 import se.edugrade.monsterhuntingboard.repository.UserAccountRepository;
 import se.edugrade.monsterhuntingboard.service.BattleService;
 import se.edugrade.monsterhuntingboard.service.GroupBattleSimulation;
+import se.edugrade.monsterhuntingboard.service.GroupParticipantBattleContext;
 import se.edugrade.monsterhuntingboard.service.HunterBattleOutcome;
+import se.edugrade.monsterhuntingboard.service.WeatherService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -68,13 +74,33 @@ class MonsterHuntingBoardIntegrationTest {
     @MockitoBean
     private BattleService battleService;
 
+    @MockitoBean
+    private WeatherService weatherService;
+
     private String baseUrl;
 
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port;
-        given(battleService.simulateGroupBossBattle(any(), any())).willAnswer(invocation -> {
+        given(weatherService.resolveRegistrationLocation(any())).willReturn(
+                new ResolvedLocation("Stockholm", "Sweden", 59.3293, 18.0686)
+        );
+        given(weatherService.getCurrentWeatherForHunter(any())).willReturn(new WeatherContext(
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                0,
+                8.0,
+                false,
+                WeatherCategory.SUNNY_CLEAR,
+                WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
+        ));
+
+        given(battleService.simulateGroupBossBattle(any(), any(), any())).willAnswer(invocation -> {
             List<HuntParticipation> participations = invocation.getArgument(1);
+            @SuppressWarnings("unchecked")
+            Map<Long, GroupParticipantBattleContext> participantWeatherContexts = invocation.getArgument(2);
             Long hunterId = participations.getFirst().getHunter().getId();
 
             return new GroupBattleSimulation(
@@ -96,7 +122,8 @@ class MonsterHuntingBoardIntegrationTest {
                             false,
                             false
                     )),
-                    Map.of(hunterId, new HunterBattleOutcome(88, 12))
+                    Map.of(hunterId, new HunterBattleOutcome(88, 12)),
+                    participantWeatherContexts
             );
         });
     }
@@ -108,6 +135,7 @@ class MonsterHuntingBoardIntegrationTest {
                 hunterUsername,
                 "password123",
                 "Integration Hunter",
+                null,
                 Appearance.KNIGHT
         );
 
@@ -202,7 +230,7 @@ class MonsterHuntingBoardIntegrationTest {
         String hunterUsername = "h-" + TestIds.shortId();
         restTemplate.postForEntity(
                 baseUrl + "/api/auth/register",
-                new RegisterRequest(hunterUsername, "password123", "Restricted Hunter", Appearance.RANGER),
+                new RegisterRequest(hunterUsername, "password123", "Restricted Hunter", null, Appearance.RANGER),
                 AuthResponse.class
         );
         String hunterToken = restTemplate.postForEntity(

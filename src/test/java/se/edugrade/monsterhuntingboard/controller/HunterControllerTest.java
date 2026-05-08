@@ -56,7 +56,7 @@ class HunterControllerTest {
     @Test
     void getCurrentHunterWithTokenReturnsOk() throws Exception {
         when(hunterService.getCurrentHunter("aria")).thenReturn(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, false, false, 10, List.of())
+                hunterResponse(Appearance.MAGE, false, false)
         );
 
         mockMvc.perform(get("/api/hunters/me")
@@ -68,7 +68,7 @@ class HunterControllerTest {
     @Test
     void patchAppearanceReturnsOkAndBardIsRejected() throws Exception {
         when(hunterService.updateAppearance(eq("aria"), any())).thenReturn(
-                new HunterResponse(1L, "Aria", Appearance.PALADIN, 1, 0, 0, 100, 100, false, false, 10, List.of())
+                hunterResponse(Appearance.PALADIN, false, false)
         );
 
         mockMvc.perform(patch("/api/hunters/me/appearance")
@@ -96,7 +96,7 @@ class HunterControllerTest {
     @Test
     void hunterAndGameMasterSeeCorrectHunterEndpointPermissions() throws Exception {
         when(hunterService.getAllHunters()).thenReturn(List.of(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 0, 100, 100, false, false, 10, List.of())
+                hunterResponse(Appearance.MAGE, false, false)
         ));
 
         mockMvc.perform(get("/api/hunters/me")
@@ -121,7 +121,7 @@ class HunterControllerTest {
                 List.of(ShopItemResponse.from(InventoryItemType.HEALTH_POTION))
         ));
         when(shopService.purchaseItem(eq("aria"), any())).thenReturn(new PurchaseItemResponse(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 100, false, false, 10, List.of()),
+                hunterResponseWithLocation(Appearance.MAGE, false, false, "Stockholm", "Sweden", 59.3293, 18.0686, 90, 100, 100),
                 new InventoryItemResponse(1L, 0, InventoryItemType.HEALTH_POTION, "Health Potion", "Restores lost HP after battle", 30, null),
                 90,
                 1,
@@ -151,11 +151,11 @@ class HunterControllerTest {
     @Test
     void inventoryUseAndDiscardEndpointsReturnUpdatedHunter() throws Exception {
         when(shopService.useInventoryItem("aria", 7L)).thenReturn(new InventoryActionResponse(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 80, true, false, 10, List.of()),
+                hunterResponseWithLocation(Appearance.MAGE, true, false, "Stockholm", "Sweden", 59.3293, 18.0686, 90, 100, 80),
                 "EXP Potion activated for the next hunt"
         ));
         when(shopService.discardInventoryItem("aria", 8L)).thenReturn(new InventoryActionResponse(
-                new HunterResponse(1L, "Aria", Appearance.MAGE, 1, 0, 90, 100, 80, false, false, 10, List.of()),
+                hunterResponseWithLocation(Appearance.MAGE, false, false, "Stockholm", "Sweden", 59.3293, 18.0686, 90, 100, 80),
                 "Health Potion discarded"
         ));
 
@@ -168,5 +168,74 @@ class HunterControllerTest {
                         .with(user("aria").roles("HUNTER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Health Potion discarded"));
+    }
+
+    @Test
+    void updateLocationReturnsUpdatedHunter() throws Exception {
+        when(hunterService.updateLocation(eq("aria"), any())).thenReturn(
+                hunterResponseWithLocation(Appearance.MAGE, false, false, "Berlin", "Germany", 52.52, 13.40, 0, 100, 100)
+        );
+
+        mockMvc.perform(post("/api/hunters/me/location")
+                        .with(user("aria").roles("HUNTER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "city": "Berlin"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.city").value("Berlin"))
+                .andExpect(jsonPath("$.country").value("Germany"));
+    }
+
+    private HunterResponse hunterResponse(Appearance appearance, boolean expPotionActive, boolean endurancePotionActive) {
+        return hunterResponseWithLocation(
+                appearance,
+                expPotionActive,
+                endurancePotionActive,
+                "Stockholm",
+                "Sweden",
+                59.3293,
+                18.0686,
+                0,
+                100,
+                100
+        );
+    }
+
+    private HunterResponse hunterResponseWithLocation(
+            Appearance appearance,
+            boolean expPotionActive,
+            boolean endurancePotionActive,
+            String city,
+            String country,
+            double latitude,
+            double longitude,
+            int gold,
+            int baseHp,
+            int currentHp
+    ) {
+        return new HunterResponse(
+                1L,
+                "Aria",
+                appearance,
+                appearance.getDisplayName(),
+                appearance.getPassiveSkillName(),
+                appearance.getPassiveSkillDescription(),
+                city,
+                country,
+                latitude,
+                longitude,
+                1,
+                0,
+                gold,
+                baseHp,
+                currentHp,
+                expPotionActive,
+                endurancePotionActive,
+                10,
+                List.of()
+        );
     }
 }
