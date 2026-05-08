@@ -15,7 +15,6 @@ The backend source code is located under `src/main/java`, and runtime configurat
 
 - Java 21
 - A running MySQL instance for normal application startup
-- Docker Desktop or another Docker engine for containerized startup
 
 ## Run the Backend
 
@@ -29,30 +28,6 @@ Default URL:
 
 - Application root: `http://localhost:8080/`
 - API base: `http://localhost:8080/api`
-
-## Run the Backend with Docker Compose
-
-From the repository root:
-
-```powershell
-docker compose up --build
-```
-
-This starts:
-
-- the Spring Boot application
-- a MySQL database container used by the application
-
-The backend is then available through:
-
-- `http://localhost:8080/`
-- `http://localhost:8080/api`
-
-Stop the stack with:
-
-```powershell
-docker compose down
-```
 
 ## Run Tests
 
@@ -78,10 +53,6 @@ Sensitive or environment-specific values are read through environment variables,
 - `DB_PASSWORD`
 - `JWT_SECRET`
 - `SERVER_PORT`
-
-In Docker Compose, these values are supplied directly through `docker-compose.yml`. The backend connects to MySQL with:
-
-- `DB_URL=jdbc:mysql://db:3306/monster_hunting_board`
 
 ## API Endpoints
 

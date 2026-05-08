@@ -7,8 +7,6 @@ The frontend is a React application built with Vite. It communicates with the ba
 - local development with the Vite dev server
 - bundled production builds served by Spring Boot
 
-For Docker-based startup, the frontend is not run as a separate container. It is built and bundled into the Spring Boot application through the root-level `Dockerfile`.
-
 ## Prerequisites
 
 - Node.js
@@ -57,20 +55,6 @@ After building, start the backend from the repository root and open:
 
 - `http://localhost:8080`
 
-## Frontend in Docker Mode
-
-When starting the application with:
-
-```powershell
-docker compose up --build
-```
-
-the frontend is built during the Docker image build and then served by Spring Boot on:
-
-- `http://localhost:8080`
-
-In that mode, you do not need to run Vite separately.
-
 ## Environment Variables
 
 Frontend environment variables use the Vite `VITE_` prefix.
@@ -95,7 +79,6 @@ That fallback works for:
 
 - bundled mode in Spring Boot
 - local development through the Vite proxy
-- Docker mode, where the frontend is served from the same origin as the backend
 
 ## Available Scripts
 
