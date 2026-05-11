@@ -17,8 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.BattleTurnResponse;
+import se.edugrade.monsterhuntingboard.dto.BattleParticipantResponse;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
+import se.edugrade.monsterhuntingboard.dto.GroupLobbyParticipantResponse;
+import se.edugrade.monsterhuntingboard.dto.GroupLobbyResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResultResponse;
 import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
@@ -54,6 +57,7 @@ import se.edugrade.monsterhuntingboard.util.RewardResult;
 public class HuntService {
     private static final Logger log = LoggerFactory.getLogger(HuntService.class);
     private static final ZoneId STOCKHOLM_ZONE = ZoneId.of("Europe/Stockholm");
+    private static final long GROUP_LOBBY_WINDOW_MINUTES = 10L;
 
     private final HuntRepository huntRepository;
     private final BeastRepository beastRepository;
@@ -103,6 +107,38 @@ public class HuntService {
         Hunt hunt = getHuntOrThrow(id);
         updateHuntStatusIfNeeded(hunt);
         return HuntResponse.from(hunt, Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId())));
+    }
+
+    @Transactional
+    public GroupLobbyResponse getGroupLobby(Long huntId, String username) {
+        Hunt hunt = getHuntOrThrow(huntId);
+        updateHuntStatusIfNeeded(hunt);
+
+        if (hunt.getType() != HuntType.HUNT) {
+            throw new InvalidGameRuleException("Only group hunts have a lobby");
+        }
+
+        Hunter hunter = getHunterOrThrow(username);
+        List<HuntParticipation> participations = huntParticipationRepository.findByHuntIdOrderByJoinedAtAscIdAsc(hunt.getId());
+        boolean joined = participations.stream()
+                .anyMatch(participation -> participation.getHunter().getId().equals(hunter.getId()));
+        if (!joined) {
+            throw new InvalidHuntStateException("Join the hunt before entering the lobby");
+        }
+        if (hunt.getStartTime() != null) {
+            LocalDateTime lobbyOpensAt = hunt.getStartTime().minusMinutes(GROUP_LOBBY_WINDOW_MINUTES);
+            LocalDateTime now = getCurrentTime();
+            if (hunt.getStatus() == HuntStatus.SCHEDULED && now.isBefore(lobbyOpensAt)) {
+                throw new InvalidHuntStateException("Lobby opens 10 minutes before the hunt starts");
+            }
+        }
+
+        List<GroupLobbyParticipantResponse> participants = participations.stream()
+                .map(HuntParticipation::getHunter)
+                .map(GroupLobbyParticipantResponse::from)
+                .toList();
+
+        return GroupLobbyResponse.from(hunt, participations.size(), joined, participants);
     }
 
     @Transactional
@@ -410,6 +446,17 @@ public class HuntService {
                         hunter.getDisplayName(),
                         weatherContext
                 ))),
+                List.of(BattleParticipantResponse.from(
+                        hunter,
+                        simulation.initialHunterHp(),
+                        initialHunterMaxHp,
+                        simulation.hunterRemainingHp(),
+                        simulation.hunterRemainingHp() > 0,
+                        simulation.damageTaken(),
+                        calculateSoloDamageDealt(simulation.turns(), hunter.getId()),
+                        rewardResult.expChange(),
+                        rewardResult.goldChange()
+                )),
                 simulation.turns()
         );
     }
@@ -424,13 +471,23 @@ public class HuntService {
         boolean won = simulation.huntersWon();
         LocalDateTime completedAt = getCurrentTime();
         Map<Long, HunterBattleOutcome> outcomes = simulation.hunterOutcomes();
+        Map<Long, InitialParticipantState> initialStates = participations.stream()
+                .collect(Collectors.toMap(
+                        participation -> participation.getHunter().getId(),
+                        participation -> new InitialParticipantState(
+                                participation.getHunter().getCurrentHp(),
+                                participation.getHunter().getBaseHp(),
+                                participation.getHunter().isExpPotionActive(),
+                                participation.getHunter().isEndurancePotionActive()
+                        ),
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new
+                ));
         Map<Long, HuntParticipation> participationsByHunterId = participations.stream()
                 .collect(Collectors.toMap(participation -> participation.getHunter().getId(), Function.identity()));
         List<ParticipantWeatherResponse> participantWeather = participantWeatherContexts.values().stream()
                 .map(ParticipantWeatherResponse::from)
                 .toList();
-
-        HuntResultResponse currentHunterResponse = null;
         for (HuntParticipation partyParticipation : participations) {
             Hunter partyHunter = partyParticipation.getHunter();
             HunterBattleOutcome outcome = outcomes.get(partyHunter.getId());
@@ -442,46 +499,61 @@ public class HuntService {
                 throw new InvalidGameRuleException("Missing weather context for hunter " + partyHunter.getDisplayName());
             }
 
-            HuntResultResponse hunterResult = applyGroupHunterOutcome(
+            applyGroupHunterOutcome(
                     hunt,
                     partyHunter,
                     participationsByHunterId.get(partyHunter.getId()),
                     outcome,
-                    partyHunter.getCurrentHp(),
-                    partyHunter.getBaseHp(),
-                    simulation.initialBossHp(),
                     won,
                     completedAt,
-                    participantWeatherContext,
-                    participantWeather,
-                    simulation.turns()
+                    participantWeatherContext
             );
-            if (partyHunter.getId().equals(currentHunterId)) {
-                currentHunterResponse = hunterResult;
-            }
         }
 
         hunt.setStatus(won ? HuntStatus.COMPLETED : HuntStatus.FAILED);
-        if (currentHunterResponse == null) {
+        Hunter currentHunter = participationsByHunterId.get(currentHunterId).getHunter();
+        HuntParticipation currentParticipation = participationsByHunterId.get(currentHunterId);
+        HunterBattleOutcome currentOutcome = outcomes.get(currentHunterId);
+        GroupParticipantBattleContext currentWeatherContext = participantWeatherContexts.get(currentHunterId);
+        InitialParticipantState currentInitialState = initialStates.get(currentHunterId);
+        if (currentHunter == null || currentParticipation == null || currentOutcome == null
+                || currentWeatherContext == null || currentInitialState == null) {
             throw new ResourceNotFoundException("Current hunter result not found for this hunt");
         }
+        List<BattleParticipantResponse> battleParticipants = buildGroupBattleParticipants(
+                participations,
+                initialStates,
+                outcomes
+        );
         log.info("Completed group hunt {} with result {}", hunt.getTitle(), won ? "WIN" : "LOSS");
-        return currentHunterResponse;
+        return HuntResultResponse.from(
+                hunt,
+                currentHunter,
+                currentInitialState.initialHp(),
+                currentInitialState.initialMaxHp(),
+                simulation.initialBossHp(),
+                simulation.initialBossHp(),
+                won,
+                currentParticipation.getExpChange(),
+                currentParticipation.getGoldChange(),
+                currentOutcome.damageTaken(),
+                currentInitialState.expPotionActive() && won,
+                currentInitialState.endurancePotionActive(),
+                WeatherResponse.from(currentWeatherContext.weatherContext()),
+                participantWeather,
+                battleParticipants,
+                simulation.turns()
+        );
     }
 
-    private HuntResultResponse applyGroupHunterOutcome(
+    private void applyGroupHunterOutcome(
             Hunt hunt,
             Hunter hunter,
             HuntParticipation participation,
             HunterBattleOutcome outcome,
-            int initialHunterHp,
-            int initialHunterMaxHp,
-            int initialBossHp,
             boolean won,
             LocalDateTime completedAt,
-            GroupParticipantBattleContext participantWeatherContext,
-            List<ParticipantWeatherResponse> participantWeather,
-            List<BattleTurnResponse> turns
+            GroupParticipantBattleContext participantWeatherContext
     ) {
         boolean expPotionApplied = hunter.isExpPotionActive() && won;
         boolean endurancePotionApplied = hunter.isEndurancePotionActive();
@@ -518,24 +590,58 @@ public class HuntService {
         participation.setExpChange(rewardResult.expChange());
         participation.setGoldChange(rewardResult.goldChange());
         participation.setCompletedAt(completedAt);
+    }
 
-        return HuntResultResponse.from(
-                hunt,
-                hunter,
-                initialHunterHp,
-                initialHunterMaxHp,
-                initialBossHp,
-                initialBossHp,
-                won,
-                rewardResult.expChange(),
-                rewardResult.goldChange(),
-                outcome.damageTaken(),
-                expPotionApplied,
-                endurancePotionApplied,
-                WeatherResponse.from(participantWeatherContext.weatherContext()),
-                participantWeather,
-                turns
-        );
+    private int calculateSoloDamageDealt(List<BattleTurnResponse> turns, Long hunterId) {
+        String combatantId = "hunter-" + hunterId;
+        return turns.stream()
+                .filter(turn -> combatantId.equals(turn.attackerCombatantId()))
+                .mapToInt(BattleTurnResponse::damage)
+                .sum();
+    }
+
+    private List<BattleParticipantResponse> buildGroupBattleParticipants(
+            List<HuntParticipation> participations,
+            Map<Long, InitialParticipantState> initialStates,
+            Map<Long, HunterBattleOutcome> outcomes
+    ) {
+        return participations.stream()
+                .map(HuntParticipation::getHunter)
+                .map(hunter -> {
+                    InitialParticipantState initialState = initialStates.get(hunter.getId());
+                    HunterBattleOutcome outcome = outcomes.get(hunter.getId());
+                    if (initialState == null || outcome == null) {
+                        throw new InvalidGameRuleException("Missing group battle participant state for hunter " + hunter.getDisplayName());
+                    }
+                    return BattleParticipantResponse.from(
+                            hunter,
+                            initialState.initialHp(),
+                            initialState.initialMaxHp(),
+                            hunter.getCurrentHp(),
+                            outcome.remainingHp() > 0,
+                            outcome.damageTaken(),
+                            outcome.damageDealt(),
+                            findParticipationExpChange(participations, hunter.getId()),
+                            findParticipationGoldChange(participations, hunter.getId())
+                    );
+                })
+                .toList();
+    }
+
+    private int findParticipationExpChange(List<HuntParticipation> participations, Long hunterId) {
+        return participations.stream()
+                .filter(participation -> participation.getHunter().getId().equals(hunterId))
+                .mapToInt(HuntParticipation::getExpChange)
+                .findFirst()
+                .orElse(0);
+    }
+
+    private int findParticipationGoldChange(List<HuntParticipation> participations, Long hunterId) {
+        return participations.stream()
+                .filter(participation -> participation.getHunter().getId().equals(hunterId))
+                .mapToInt(HuntParticipation::getGoldChange)
+                .findFirst()
+                .orElse(0);
     }
 
     private Map<Long, GroupParticipantBattleContext> buildParticipantWeatherContexts(List<HuntParticipation> participations) {
@@ -724,6 +830,14 @@ public class HuntService {
 
     private LocalDateTime getCurrentTime() {
         return ZonedDateTime.now(STOCKHOLM_ZONE).toLocalDateTime();
+    }
+
+    private record InitialParticipantState(
+            int initialHp,
+            int initialMaxHp,
+            boolean expPotionActive,
+            boolean endurancePotionActive
+    ) {
     }
 
     private record HuntConfiguration(

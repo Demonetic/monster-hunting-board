@@ -248,6 +248,7 @@ class HuntControllerTest {
         return new HuntResultResponse(
                 huntId,
                 title,
+                10L,
                 "Aria",
                 "KNIGHT",
                 100,
@@ -293,6 +294,7 @@ class HuntControllerTest {
                                 WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
                         ))
                 )),
+                List.of(),
                 List.of()
         );
     }

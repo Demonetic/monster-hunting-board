@@ -17,6 +17,8 @@ function BottomNav({
   activeOverlay,
   role,
 }) {
+  const isGameMaster = role === 'GAME_MASTER'
+
   const navButtons = [
     {
       key: 'board',
@@ -27,15 +29,19 @@ function BottomNav({
       image: buttonWorldMap,
       onClick: 'onBoard',
     },
-    {
-      key: 'inventory',
-      active: (overlay) => overlay === 'inventory',
-      className: 'bottom-nav-button bottom-nav-button-character',
-      label: 'Inventory',
-      ariaLabel: 'Inventory',
-      image: buttonInventory,
-      onClick: 'onInventory',
-    },
+    ...(!isGameMaster
+      ? [
+          {
+            key: 'inventory',
+            active: (overlay) => overlay === 'inventory',
+            className: 'bottom-nav-button bottom-nav-button-character',
+            label: 'Inventory',
+            ariaLabel: 'Inventory',
+            image: buttonInventory,
+            onClick: 'onInventory',
+          },
+        ]
+      : []),
     {
       key: 'menu',
       active: (overlay) => overlay === 'menu',
@@ -45,15 +51,19 @@ function BottomNav({
       image: buttonMenu,
       onClick: 'onMenu',
     },
-    {
-      key: 'shop',
-      active: (overlay) => overlay === 'shop',
-      className: 'bottom-nav-button bottom-nav-button-shop',
-      label: 'Shop',
-      ariaLabel: 'Shop',
-      image: buttonShop,
-      onClick: 'onShop',
-    },
+    ...(!isGameMaster
+      ? [
+          {
+            key: 'shop',
+            active: (overlay) => overlay === 'shop',
+            className: 'bottom-nav-button bottom-nav-button-shop',
+            label: 'Shop',
+            ariaLabel: 'Shop',
+            image: buttonShop,
+            onClick: 'onShop',
+          },
+        ]
+      : []),
     {
       key: 'hunts',
       active: (overlay) => overlay === 'hunts',
@@ -63,7 +73,7 @@ function BottomNav({
       image: buttonHunts,
       onClick: 'onHunts',
     },
-    ...(role === 'GAME_MASTER'
+    ...(isGameMaster
       ? [
           {
             key: 'manage',

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import se.edugrade.monsterhuntingboard.dto.CompleteHuntRequest;
 import se.edugrade.monsterhuntingboard.dto.CreateHuntRequest;
+import se.edugrade.monsterhuntingboard.dto.GroupLobbyResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResponse;
 import se.edugrade.monsterhuntingboard.dto.HuntResultResponse;
 import se.edugrade.monsterhuntingboard.dto.JoinHuntResponse;
@@ -40,6 +41,12 @@ public class HuntController {
     @GetMapping("/{id}")
     public ResponseEntity<HuntResponse> getHuntById(@PathVariable Long id) {
         return ResponseEntity.ok(huntService.getHuntById(id));
+    }
+
+    @GetMapping("/{id}/lobby")
+    @PreAuthorize("hasRole('HUNTER')")
+    public ResponseEntity<GroupLobbyResponse> getGroupLobby(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(huntService.getGroupLobby(id, principal.getName()));
     }
 
     @GetMapping("/scheduled")

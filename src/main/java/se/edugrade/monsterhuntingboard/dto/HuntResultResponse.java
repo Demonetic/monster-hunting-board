@@ -7,6 +7,7 @@ import se.edugrade.monsterhuntingboard.model.Hunter;
 public record HuntResultResponse(
         Long huntId,
         String huntTitle,
+        Long currentHunterId,
         String hunterName,
         String hunterAppearance,
         int initialHunterHp,
@@ -28,6 +29,7 @@ public record HuntResultResponse(
         boolean endurancePotionApplied,
         WeatherResponse weather,
         List<ParticipantWeatherResponse> participantWeather,
+        List<BattleParticipantResponse> battleParticipants,
         List<BattleTurnResponse> turns
 ) {
     public static HuntResultResponse from(
@@ -45,11 +47,13 @@ public record HuntResultResponse(
             boolean endurancePotionApplied,
             WeatherResponse weather,
             List<ParticipantWeatherResponse> participantWeather,
+            List<BattleParticipantResponse> battleParticipants,
             List<BattleTurnResponse> turns
     ) {
         return new HuntResultResponse(
                 hunt.getId(),
                 hunt.getTitle(),
+                hunter.getId(),
                 hunter.getDisplayName(),
                 hunter.getAppearance().name(),
                 initialHunterHp,
@@ -71,6 +75,7 @@ public record HuntResultResponse(
                 endurancePotionApplied,
                 weather,
                 participantWeather,
+                battleParticipants,
                 turns
         );
     }

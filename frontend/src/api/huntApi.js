@@ -8,6 +8,10 @@ export function createHunt(data) {
   return apiClient.post('/hunts', data)
 }
 
+export function getGroupLobby(huntId) {
+  return apiClient.get(`/hunts/${huntId}/lobby`)
+}
+
 export function joinHunt(huntId) {
   return apiClient.post(`/hunts/${huntId}/join`)
 }

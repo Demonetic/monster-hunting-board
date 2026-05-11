@@ -4,13 +4,7 @@ import { getCurrentUsername } from '../api/authStorage'
 import { getCurrentHunter } from '../api/hunterApi'
 import { getAllBeasts } from '../api/beastApi'
 import { completeHunt, deleteHunt, joinHunt, startSoloHunt, updateHunt } from '../api/huntApi'
-import panelHuntDefault from '../assets/panel_hunt.png'
-import panelHuntBasilisk from '../assets/panel_hunt_basilisk.png'
-import panelHuntChimera from '../assets/panel_hunt_chimera.png'
-import panelHuntDragon from '../assets/panel_hunt_dragon.png'
-import panelHuntGriffin from '../assets/panel_hunt_griffin.png'
-import panelHuntPegasus from '../assets/panel_hunt_pegasus.png'
-import panelHuntPhoenix from '../assets/panel_hunt_phoenix.png'
+import panelHunt from '../assets/panel_hunt.png'
 import buttonCancel from '../assets/button_cancel.png'
 import buttonCompleteHunt from '../assets/button_complete_hunt.png'
 import buttonClose from '../assets/button_close.png'
@@ -27,27 +21,10 @@ import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
 const LOW_HP_WARNING_THRESHOLD = 20
-const huntPanelsByBeastType = {
-  BASILISK: panelHuntBasilisk,
-  CHIMERA: panelHuntChimera,
-  DRAGON: panelHuntDragon,
-  GRIFFIN: panelHuntGriffin,
-  PEGASUS: panelHuntPegasus,
-  PHOENIX: panelHuntPhoenix,
-}
+const LOBBY_ENTRY_WINDOW_MS = 10 * 60 * 1000
 
 function getFirstBeast(hunt) {
   return hunt.beasts?.[0] ?? null
-}
-
-function getHuntPanelImage(hunt) {
-  const firstBeast = getFirstBeast(hunt)
-
-  if (!firstBeast) {
-    return panelHuntDefault
-  }
-
-  return huntPanelsByBeastType[firstBeast.type] ?? panelHuntDefault
 }
 
 function formatType(type) {
@@ -63,6 +40,14 @@ function formatStartTime(startTime) {
   }
 
   return new Date(startTime).toLocaleString()
+}
+
+function getMillisecondsUntilStart(startTime) {
+  if (!startTime) {
+    return Number.POSITIVE_INFINITY
+  }
+
+  return new Date(startTime).getTime() - Date.now()
 }
 
 function toDateTimeLocalValue(value) {
@@ -177,6 +162,7 @@ function getActionConfig({
   isCompleted,
   isInProgress,
   isSubmitting,
+  canEnterLobby,
 }) {
   if (role === 'GAME_MASTER') {
     return {
@@ -247,9 +233,19 @@ function getActionConfig({
   if (hunt.status === 'ACTIVE') {
     return {
       primary: {
-        action: 'complete',
+        action: 'battle',
         disabled: isSubmitting,
-        label: isSubmitting ? 'Fighting...' : 'Complete Hunt',
+        label: 'Enter Battle',
+      },
+    }
+  }
+
+  if (canEnterLobby) {
+    return {
+      primary: {
+        action: 'lobby',
+        disabled: isSubmitting,
+        label: 'Enter Lobby',
       },
     }
   }
@@ -257,7 +253,7 @@ function getActionConfig({
   return {
     primary: {
       disabled: true,
-      label: 'Joined',
+      label: hunt.status === 'SCHEDULED' ? 'Lobby Locked' : 'Joined',
     },
   }
 }
@@ -291,11 +287,23 @@ function getActionImage(actionConfig) {
     return buttonCompleteHunt
   }
 
+  if (actionConfig.label === 'Enter Battle') {
+    return buttonCompleteHunt
+  }
+
+  if (actionConfig.label === 'Enter Lobby') {
+    return buttonStart
+  }
+
   if (actionConfig.label === 'Hunt Full') {
     return buttonHuntFull
   }
 
   if (actionConfig.label === 'Joined') {
+    return buttonJoined
+  }
+
+  if (actionConfig.label === 'Lobby Locked') {
     return buttonJoined
   }
 
@@ -310,7 +318,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
   const navigate = useNavigate()
   const firstBeast = getFirstBeast(hunt)
   const primaryBeastImage = getBeastImage(firstBeast)
-  const panelParchment = getHuntPanelImage(hunt)
   const username = getCurrentUsername()
   const huntSignature = buildHuntSignature(hunt)
   const [actionMessage, setActionMessage] = useState('')
@@ -342,6 +349,12 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
   const isJoined = huntProgress.joined
   const isCompleted = huntProgress.completed
   const isInProgress = huntProgress.inProgress || hunt.status === 'ACTIVE'
+  const msUntilStart = getMillisecondsUntilStart(hunt.startTime)
+  const canEnterLobby =
+    isGroupHunt &&
+    isJoined &&
+    hunt.status === 'SCHEDULED' &&
+    msUntilStart <= LOBBY_ENTRY_WINDOW_MS
   const isFull =
     isGroupHunt &&
     hunt.maxPartySize !== null &&
@@ -357,6 +370,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
     isCompleted,
     isInProgress,
     isSubmitting,
+    canEnterLobby,
   })
 
   useEffect(() => {
@@ -404,6 +418,14 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
         weatherEffect: null,
       },
     })
+  }
+
+  const openGroupLobbyPage = () => {
+    navigate(`/hunts/${hunt.id}/lobby`)
+  }
+
+  const openGroupBattlePage = () => {
+    navigate(`/battle/group/${hunt.id}`)
   }
 
   const primaryAction = actionConfig?.primary ?? null
@@ -566,6 +588,14 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
         await handleSoloStart()
       }
 
+      if (action === 'lobby') {
+        openGroupLobbyPage()
+      }
+
+      if (action === 'battle') {
+        openGroupBattlePage()
+      }
+
       if (action === 'complete') {
         await handleComplete()
       }
@@ -680,7 +710,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
     <div className="hunt-modal-overlay" onClick={onClose}>
       <section
         className="hunt-modal-frame"
-        style={{ backgroundImage: `url(${panelParchment})` }}
+        style={{ backgroundImage: `url(${panelHunt})` }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="hunt-modal-content-wrap">

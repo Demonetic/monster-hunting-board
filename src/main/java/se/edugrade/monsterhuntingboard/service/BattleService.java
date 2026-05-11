@@ -20,6 +20,7 @@ import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 @Service
 public class BattleService {
     private static final Logger log = LoggerFactory.getLogger(BattleService.class);
+    private static final String BEAST_COMBATANT_ID = "beast";
 
     public boolean rollWin() {
         boolean won = Math.random() < 0.7;
@@ -72,8 +73,10 @@ public class BattleService {
                 monsterHp = Math.max(0, monsterHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
+                        hunterCombatantId(hunter.getId()),
                         hunter.getDisplayName(),
                         "hunter",
+                        BEAST_COMBATANT_ID,
                         beastName,
                         "beast",
                         hunterDamage,
@@ -100,8 +103,10 @@ public class BattleService {
                 totalDamageTaken += monsterDamage;
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
+                        BEAST_COMBATANT_ID,
                         toDisplayName(beastName),
                         "beast",
+                        hunterCombatantId(hunter.getId()),
                         hunter.getDisplayName(),
                         "hunter",
                         monsterDamage,
@@ -121,6 +126,7 @@ public class BattleService {
 
         WeatherFatigueResult fatigueResult = applyWeatherFatigue(
                 weatherEffect,
+                hunterCombatantId(hunter.getId()),
                 hunter.getDisplayName(),
                 beastName,
                 turnNumber,
@@ -190,8 +196,10 @@ public class BattleService {
                 bossHp = Math.max(0, bossHp - hunterDamage);
                 turns.add(new BattleTurnResponse(
                         turnNumber++,
+                        hunterCombatantId(attacker.hunterId()),
                         attacker.displayName(),
                         "hunter",
+                        BEAST_COMBATANT_ID,
                         beastName,
                         "beast",
                         hunterDamage,
@@ -204,6 +212,7 @@ public class BattleService {
                         false,
                         false
                 ));
+                attacker.recordDamageDealt(hunterDamage);
             }
 
             if (bossHp <= 0 || !hasLivingHunters(hunterStates)) {
@@ -230,8 +239,10 @@ public class BattleService {
             target.applyDamage(bossDamage);
             turns.add(new BattleTurnResponse(
                     turnNumber++,
+                    BEAST_COMBATANT_ID,
                     toDisplayName(beastName),
                     "beast",
+                    hunterCombatantId(target.hunterId()),
                     target.displayName(),
                     "hunter",
                     bossDamage,
@@ -255,6 +266,7 @@ public class BattleService {
             if (stateWeather.enduranceCostMultiplier() > 1.0) {
                 WeatherFatigueResult fatigueResult = applyWeatherFatigue(
                         stateWeather,
+                        hunterCombatantId(state.hunterId()),
                         state.displayName(),
                         beastName,
                         turnNumberAfterBattle,
@@ -273,7 +285,7 @@ public class BattleService {
         Map<Long, HunterBattleOutcome> outcomes = hunterStates.values().stream()
                 .collect(LinkedHashMap::new, (result, state) -> result.put(
                         state.hunterId(),
-                        new HunterBattleOutcome(state.remainingHp(), state.damageTaken())
+                        new HunterBattleOutcome(state.remainingHp(), state.damageTaken(), state.damageDealt())
                 ), Map::putAll);
 
         return new GroupBattleSimulation(initialBossHp, bossHp <= 0, bossHp, turns, outcomes, participantWeatherContexts);
@@ -429,8 +441,13 @@ public class BattleService {
         return Math.max(1, Math.round(damage * (float) weatherEffect.hunterDamageTakenMultiplier()));
     }
 
+    private String hunterCombatantId(Long hunterId) {
+        return "hunter-" + hunterId;
+    }
+
     private WeatherFatigueResult applyWeatherFatigue(
             WeatherEffect weatherEffect,
+            String hunterCombatantId,
             String hunterName,
             String beastName,
             int turnNumber,
@@ -451,8 +468,10 @@ public class BattleService {
         int newTotalDamageTaken = damageTaken + fatigueDamage;
         turns.add(new BattleTurnResponse(
                 turnNumber,
+                "weather",
                 weatherEffect.displayName(),
                 "weather",
+                hunterCombatantId,
                 hunterName,
                 "hunter",
                 fatigueDamage,
@@ -483,6 +502,7 @@ public class BattleService {
         private final boolean endurancePotionActive;
         private int remainingHp;
         private int damageTaken;
+        private int damageDealt;
 
         private HunterBattleState(
                 Long hunterId,
@@ -531,6 +551,14 @@ public class BattleService {
 
         private int damageTaken() {
             return damageTaken;
+        }
+
+        private int damageDealt() {
+            return damageDealt;
+        }
+
+        private void recordDamageDealt(int damage) {
+            damageDealt += Math.max(0, damage);
         }
 
         private boolean endurancePotionActive() {

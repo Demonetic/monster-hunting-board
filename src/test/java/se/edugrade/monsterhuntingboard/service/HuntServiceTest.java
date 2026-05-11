@@ -336,8 +336,8 @@ class HuntServiceTest {
                         0,
                         List.of(),
                         Map.of(
-                                hunter.getId(), new HunterBattleOutcome(86, 14),
-                                secondHunter.getId(), new HunterBattleOutcome(90, 10)
+                                hunter.getId(), new HunterBattleOutcome(86, 14, 20),
+                                secondHunter.getId(), new HunterBattleOutcome(90, 10, 16)
                         ),
                         participantWeatherContexts(hunter, secondHunter)
                 )
@@ -372,7 +372,7 @@ class HuntServiceTest {
                         true,
                         0,
                         List.of(),
-                        Map.of(mageHunter.getId(), new HunterBattleOutcome(90, 10)),
+                        Map.of(mageHunter.getId(), new HunterBattleOutcome(90, 10, 18)),
                         participantWeatherContexts(mageHunter)
                 )
         );
@@ -433,8 +433,8 @@ class HuntServiceTest {
                         0,
                         List.of(),
                         Map.of(
-                                firstHunter.getId(), new HunterBattleOutcome(84, 16),
-                                secondHunter.getId(), new HunterBattleOutcome(0, 100)
+                                firstHunter.getId(), new HunterBattleOutcome(84, 16, 20),
+                                secondHunter.getId(), new HunterBattleOutcome(0, 100, 8)
                         ),
                         participantWeatherContexts(firstHunter, secondHunter)
                 )
@@ -486,8 +486,8 @@ class HuntServiceTest {
                         0,
                         List.of(),
                         Map.of(
-                                firstHunter.getId(), new HunterBattleOutcome(82, 18),
-                                secondHunter.getId(), new HunterBattleOutcome(100, 0)
+                                firstHunter.getId(), new HunterBattleOutcome(82, 18, 24),
+                                secondHunter.getId(), new HunterBattleOutcome(100, 0, 16)
                         ),
                         Map.of(
                                 firstHunter.getId(), new GroupParticipantBattleContext(firstHunter.getId(), firstHunter.getDisplayName(), rainWeather()),
@@ -598,8 +598,8 @@ class HuntServiceTest {
                         createTurn(3, "Griffin", "beast", "Aria", "hunter", 18, 82, 82, 272, "Aria takes 18 damage", "Aria: 82 HP, Rowan: 100 HP | Boss HP: 272")
                 ),
                 Map.of(
-                        firstHunter.getId(), new HunterBattleOutcome(82, 18),
-                        secondHunter.getId(), new HunterBattleOutcome(100, 0)
+                        firstHunter.getId(), new HunterBattleOutcome(82, 18, 24),
+                        secondHunter.getId(), new HunterBattleOutcome(100, 0, 16)
                 ),
                 participantWeatherContexts(firstHunter, secondHunter)
         );
@@ -619,8 +619,8 @@ class HuntServiceTest {
                         createTurn(3, "Griffin", "beast", "Aria", "hunter", 45, 0, 0, 320, "Aria takes 45 damage", "Aria: 0 HP (down), Rowan: 0 HP (down) | Boss HP: 320")
                 ),
                 Map.of(
-                        firstHunter.getId(), new HunterBattleOutcome(0, 100),
-                        secondHunter.getId(), new HunterBattleOutcome(0, 100)
+                        firstHunter.getId(), new HunterBattleOutcome(0, 100, 12),
+                        secondHunter.getId(), new HunterBattleOutcome(0, 100, 10)
                 ),
                 participantWeatherContexts(firstHunter, secondHunter)
         );
@@ -717,8 +717,10 @@ class HuntServiceTest {
     ) {
         return new BattleTurnResponse(
                 turnNumber,
+                attackerSide.equals("hunter") ? "hunter-test" : "beast",
                 attacker,
                 attackerSide,
+                targetSide.equals("hunter") ? "hunter-target" : "beast",
                 target,
                 targetSide,
                 damage,

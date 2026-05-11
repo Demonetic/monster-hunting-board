@@ -109,8 +109,10 @@ class MonsterHuntingBoardIntegrationTest {
                     0,
                     List.of(new BattleTurnResponse(
                             1,
+                            "hunter-" + hunterId,
                             "Integration Hunter",
                             "hunter",
+                            "beast",
                             "GRIFFIN",
                             "beast",
                             15,
@@ -122,7 +124,7 @@ class MonsterHuntingBoardIntegrationTest {
                             false,
                             false
                     )),
-                    Map.of(hunterId, new HunterBattleOutcome(88, 12)),
+                    Map.of(hunterId, new HunterBattleOutcome(88, 12, 15)),
                     participantWeatherContexts
             );
         });
