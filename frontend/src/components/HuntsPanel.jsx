@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import panelImage from '../assets/panel_information.png'
 import buttonClose from '../assets/button_close.png'
-import { getBeastImage } from '../assets/beastVisuals'
+import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
 
 function matchesFilter(hunt, filter) {
   if (filter === 'GROUP') {
@@ -66,7 +66,7 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
         <div className="hunts-list">
           {filteredHunts.map((hunt) => {
             const firstBeast = hunt.beasts?.[0]
-            const beastIcon = firstBeast ? getBeastImage(firstBeast.type) : null
+            const beastIcon = getBeastImage(firstBeast)
 
             return (
               <div key={hunt.id} className="hunt-list-row">
@@ -78,21 +78,19 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
                   <div className="hunt-list-copy">
                     <h3>{hunt.title}</h3>
                     <p>{hunt.type === 'HUNT' ? 'Group Hunt' : 'Solo Hunt'}</p>
-                    <p>Difficulty: {hunt.difficulty}</p>
+                    <p>Hunt Difficulty: {hunt.difficulty}</p>
                     <p>
                       Party: {hunt.currentPartySize}
                       {hunt.maxPartySize ? ` / ${hunt.maxPartySize}` : ''}
                     </p>
-                    <p>Beast: {firstBeast?.type ?? 'Unknown'}</p>
+                    <p>Beast: {getBeastDisplayName(firstBeast)}</p>
                   </div>
 
-                  {beastIcon && (
-                    <img
-                      className="hunt-list-icon"
-                      src={beastIcon}
-                      alt={firstBeast.type}
-                    />
-                  )}
+                  <img
+                    className="hunt-list-icon"
+                    src={beastIcon}
+                    alt={getBeastDisplayName(firstBeast)}
+                  />
                 </button>
               </div>
             )

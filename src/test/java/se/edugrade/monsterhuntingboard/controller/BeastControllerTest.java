@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import se.edugrade.monsterhuntingboard.config.SecurityConfig;
 import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.model.BeastType;
-import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.security.CustomUserDetailsService;
 import se.edugrade.monsterhuntingboard.security.JwtAuthenticationFilter;
 import se.edugrade.monsterhuntingboard.security.JwtService;
@@ -48,7 +47,7 @@ class BeastControllerTest {
     @Test
     void getAllBeastsReturnsOk() throws Exception {
         when(beastService.getAllBeasts()).thenReturn(List.of(
-                new BeastResponse(1L, BeastType.GRIFFIN, Difficulty.MEDIUM, 180, 35, 100, 75)
+                new BeastResponse(1L, "Griffin", BeastType.GRIFFIN, 180, 35, 100, 75)
         ));
 
         mockMvc.perform(get("/api/beasts"))
@@ -58,8 +57,8 @@ class BeastControllerTest {
 
     @Test
     void gameMasterCanCreateUpdateAndDeleteBeast() throws Exception {
-        BeastResponse created = new BeastResponse(1L, BeastType.PHOENIX, Difficulty.HARD, 300, 55, 200, 150);
-        BeastResponse updated = new BeastResponse(1L, BeastType.PHOENIX, Difficulty.HARD, 250, 45, 200, 150);
+        BeastResponse created = new BeastResponse(1L, "Phoenix", BeastType.PHOENIX, 300, 55, 200, 150);
+        BeastResponse updated = new BeastResponse(1L, "Phoenix", BeastType.PHOENIX, 250, 45, 200, 150);
 
         when(beastService.createBeast(any())).thenReturn(created);
         when(beastService.updateBeast(eq(1L), any())).thenReturn(updated);
@@ -70,8 +69,8 @@ class BeastControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "name": "Phoenix",
                                   "type": "PHOENIX",
-                                  "difficulty": "HARD",
                                   "hp": 300,
                                   "attackPower": 55,
                                   "rewardExp": 200,
@@ -106,8 +105,8 @@ class BeastControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "name": "Phoenix",
                                   "type": "PHOENIX",
-                                  "difficulty": "HARD",
                                   "hp": 300,
                                   "attackPower": 55,
                                   "rewardExp": 200,
@@ -133,7 +132,7 @@ class BeastControllerTest {
         mockMvc.perform(post("/api/beasts")
                         .with(user("gm").roles("GAME_MASTER"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"GRIFFIN\",\"difficulty\":"))
+                        .content("{\"name\":\"Griffin\",\"type\":\"GRIFFIN\","))
                 .andExpect(status().isBadRequest());
     }
 }

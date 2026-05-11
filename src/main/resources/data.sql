@@ -46,15 +46,51 @@ DELETE FROM beasts;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+SET @schema_name = DATABASE();
+
+SET @add_beast_name_sql = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @schema_name
+              AND TABLE_NAME = 'beasts'
+              AND COLUMN_NAME = 'name'
+        ),
+        'SELECT 1',
+        'ALTER TABLE beasts ADD COLUMN name VARCHAR(80) NOT NULL DEFAULT ''Unknown Beast'''
+    )
+);
+PREPARE add_beast_name_stmt FROM @add_beast_name_sql;
+EXECUTE add_beast_name_stmt;
+DEALLOCATE PREPARE add_beast_name_stmt;
+
+SET @drop_beast_difficulty_sql = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @schema_name
+              AND TABLE_NAME = 'beasts'
+              AND COLUMN_NAME = 'difficulty'
+        ),
+        'ALTER TABLE beasts DROP COLUMN difficulty',
+        'SELECT 1'
+    )
+);
+PREPARE drop_beast_difficulty_stmt FROM @drop_beast_difficulty_sql;
+EXECUTE drop_beast_difficulty_stmt;
+DEALLOCATE PREPARE drop_beast_difficulty_stmt;
+
 ALTER TABLE beasts AUTO_INCREMENT = 1;
 ALTER TABLE hunts AUTO_INCREMENT = 1;
 ALTER TABLE hunt_templates AUTO_INCREMENT = 1;
 
-INSERT INTO beasts (id, type, difficulty, hp, attack_power, reward_exp, reward_gold)
+INSERT INTO beasts (id, name, type, hp, attack_power, reward_exp, reward_gold)
 VALUES
-    (1, 'BASILISK', 'EASY', 110, 18, 60, 30),
-    (2, 'GRIFFIN', 'MEDIUM', 180, 32, 110, 70),
-    (3, 'PEGASUS', 'MEDIUM', 165, 28, 100, 60),
-    (4, 'CHIMERA', 'HARD', 260, 48, 190, 130),
-    (5, 'PHOENIX', 'HARD', 320, 58, 240, 180),
-    (6, 'DRAGON', 'BOSS', 520, 82, 420, 520);
+    (1, 'Basilisk', 'BASILISK', 110, 18, 60, 30),
+    (2, 'Griffin', 'GRIFFIN', 180, 32, 110, 70),
+    (3, 'Pegasus', 'PEGASUS', 165, 28, 100, 60),
+    (4, 'Chimera', 'CHIMERA', 260, 48, 190, 130),
+    (5, 'Phoenix', 'PHOENIX', 320, 58, 240, 180),
+    (6, 'Dragon', 'DRAGON', 520, 82, 420, 520);

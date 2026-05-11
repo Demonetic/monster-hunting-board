@@ -55,6 +55,7 @@ function BattlePage() {
   const battleResult = location.state?.battleResult ?? null
   const weather = battleResult?.weather ?? location.state?.weatherEffect ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
+  const beastLabel = battleResult?.beastName ?? battleResult?.beastType ?? 'Unknown Beast'
 
   const [phase, setPhase] = useState('intro')
   const [playedTurnIndex, setPlayedTurnIndex] = useState(-1)
@@ -70,8 +71,8 @@ function BattlePage() {
   )
 
   const beastSprite = useMemo(
-    () => getBeastImage(battleResult?.beastType) ?? null,
-    [battleResult?.beastType],
+    () => getBeastImage({ type: battleResult?.beastType, imageKey: battleResult?.beastImageKey }),
+    [battleResult?.beastImageKey, battleResult?.beastType],
   )
 
   useEffect(() => {
@@ -170,7 +171,7 @@ function BattlePage() {
 
           <HPBar
             side="beast"
-            name={battleResult.beastType}
+            name={beastLabel}
             currentHp={beastHp}
             maxHp={battleResult.initialBeastMaxHp}
           />
@@ -209,7 +210,7 @@ function BattlePage() {
 
         <BattleSprite
           side="beast"
-          name={battleResult.beastType}
+          name={beastLabel}
           image={beastSprite}
           isActing={actingSide === 'beast'}
           isDamaged={damagedSide === 'beast'}

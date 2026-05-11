@@ -31,8 +31,8 @@ class HuntRepositoryTest {
     @BeforeEach
     void setUp() {
         beast = beastRepository.save(Beast.builder()
+                .name("Basilisk")
                 .type(BeastType.BASILISK)
-                .difficulty(Difficulty.EASY)
                 .hp(100)
                 .attackPower(20)
                 .rewardExp(50)

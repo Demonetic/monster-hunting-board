@@ -64,8 +64,8 @@ class HuntParticipationRepositoryTest {
         userAccountRepository.save(userAccount);
 
         Beast beast = beastRepository.save(Beast.builder()
+                .name("Griffin")
                 .type(BeastType.GRIFFIN)
-                .difficulty(Difficulty.MEDIUM)
                 .hp(180)
                 .attackPower(35)
                 .rewardExp(100)

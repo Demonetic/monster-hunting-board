@@ -1,7 +1,9 @@
-import { getPinImage } from '../assets/beastVisuals'
+import { getBeastDisplayName, getHuntPinImage, getHuntPinType } from '../assets/beastVisuals'
 
-function HuntPin({ x, y, type, beastType, onClick }) {
-  const pinImage = getPinImage(type, beastType)
+function HuntPin({ hunt, x, y, onClick }) {
+  const pinImage = getHuntPinImage(hunt)
+  const pinType = getHuntPinType(hunt)
+  const beastLabel = getBeastDisplayName(hunt?.beasts?.[0] ?? hunt?.primaryBeast ?? hunt?.beast ?? hunt?.primaryBeastType ?? hunt?.beastType ?? null)
 
   return (
     <button
@@ -9,7 +11,7 @@ function HuntPin({ x, y, type, beastType, onClick }) {
       className="hunt-pin"
       style={{ left: `${x}%`, top: `${y}%` }}
       onClick={onClick}
-      aria-label={`${type} ${beastType?.toLowerCase() ?? 'hunt'} hunt`}
+      aria-label={`${pinType} ${String(beastLabel).toLowerCase()} hunt`}
     >
       <img src={pinImage} alt="" />
     </button>

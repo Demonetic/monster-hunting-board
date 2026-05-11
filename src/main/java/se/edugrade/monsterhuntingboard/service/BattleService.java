@@ -60,9 +60,7 @@ public class BattleService {
         int monsterHp = calculateScaledMonsterHp(hunt, hunter.getLevel());
         int initialHunterHp = hunterHp;
         int initialMonsterHp = monsterHp;
-        String beastName = hunt.getBeasts().isEmpty()
-                ? "Beast"
-                : hunt.getBeasts().getFirst().getType().name();
+        String beastName = getPrimaryBeastName(hunt);
         boolean hunterTurn = ThreadLocalRandom.current().nextBoolean();
         int turnNumber = 1;
         int totalDamageTaken = 0;
@@ -172,9 +170,7 @@ public class BattleService {
         ));
         int bossHp = calculateScaledBossHp(hunt, averageHunterLevel, orderedParticipations.size());
         int initialBossHp = bossHp;
-        String beastName = hunt.getBeasts().isEmpty()
-                ? "Beast"
-                : hunt.getBeasts().getFirst().getType().name();
+        String beastName = getPrimaryBeastName(hunt);
         int turnNumber = 1;
         List<BattleTurnResponse> turns = new ArrayList<>();
 
@@ -283,8 +279,46 @@ public class BattleService {
         return new GroupBattleSimulation(initialBossHp, bossHp <= 0, bossHp, turns, outcomes, participantWeatherContexts);
     }
 
+    private String getPrimaryBeastName(Hunt hunt) {
+        if (hunt.getBeasts().isEmpty()) {
+            return "Unknown Beast";
+        }
+
+        String beastName = hunt.getBeasts().getFirst().getName();
+        if (beastName != null && !beastName.isBlank()) {
+            return beastName;
+        }
+
+        return formatBeastTypeName(hunt.getBeasts().getFirst().getType().name());
+    }
+
     private String toDisplayName(String rawName) {
-        return rawName.charAt(0) + rawName.substring(1).toLowerCase();
+        if (rawName == null || rawName.isBlank()) {
+            return "Unknown Beast";
+        }
+
+        return rawName.chars().allMatch(character -> character == '_' || Character.isUpperCase(character))
+                ? formatBeastTypeName(rawName)
+                : rawName;
+    }
+
+    private String formatBeastTypeName(String rawName) {
+        String normalized = rawName.replace('_', ' ').toLowerCase();
+        String[] words = normalized.split(" ");
+        StringBuilder builder = new StringBuilder();
+        for (String word : words) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (!builder.isEmpty()) {
+                builder.append(' ');
+            }
+            builder.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                builder.append(word.substring(1));
+            }
+        }
+        return builder.isEmpty() ? "Unknown Beast" : builder.toString();
     }
 
     private int calculateScaledMonsterHp(Hunt hunt, int hunterLevel) {

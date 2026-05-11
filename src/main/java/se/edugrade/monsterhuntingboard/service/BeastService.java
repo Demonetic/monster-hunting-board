@@ -13,7 +13,6 @@ import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
 import se.edugrade.monsterhuntingboard.model.Beast;
 import se.edugrade.monsterhuntingboard.model.BeastType;
-import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.repository.BeastRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 
@@ -28,8 +27,8 @@ public class BeastService {
     @Transactional
     public BeastResponse createBeast(BeastRequest request) {
         Beast beast = Beast.builder()
+                .name(request.name().trim())
                 .type(request.type())
-                .difficulty(request.difficulty())
                 .hp(request.hp())
                 .attackPower(request.attackPower())
                 .rewardExp(request.rewardExp())
@@ -57,14 +56,6 @@ public class BeastService {
     }
 
     @Transactional(readOnly = true)
-    public List<BeastResponse> getBeastsByDifficulty(Difficulty difficulty) {
-        return beastRepository.findByDifficulty(difficulty)
-                .stream()
-                .map(BeastResponse::from)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<BeastResponse> getBeastsByType(BeastType type) {
         return beastRepository.findByType(type)
                 .stream()
@@ -76,11 +67,11 @@ public class BeastService {
     public BeastResponse updateBeast(Long id, UpdateBeastRequest request) {
         Beast beast = getBeastOrThrow(id);
 
+        if (request.name() != null) {
+            beast.setName(request.name().trim());
+        }
         if (request.type() != null) {
             beast.setType(request.type());
-        }
-        if (request.difficulty() != null) {
-            beast.setDifficulty(request.difficulty());
         }
         if (request.hp() != null) {
             beast.setHp(request.hp());

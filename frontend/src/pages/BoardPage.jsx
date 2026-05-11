@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import HuntPin from '../components/HuntPin'
 import worldMap from '../assets/world_map.png'
+import { getHuntPinType } from '../assets/beastVisuals'
 
 const positions = [
   { x: 30, y: 45 },
@@ -66,26 +67,6 @@ function getAvailablePosition(index, placedPositions) {
   return clampPosition(positions[index % positions.length])
 }
 
-function getPinType(hunt) {
-  if (hunt.sourceType === 'DAILY_BOSS' || hunt.difficulty === 'BOSS') {
-    return 'boss'
-  }
-
-  if (hunt.sourceType === 'REPEATABLE') {
-    return 'normal'
-  }
-
-  if (hunt.sourceType === 'DAILY_BOUNTY' || hunt.sourceType === 'WEEKLY_CONTRACT') {
-    return 'daily'
-  }
-
-  if (hunt.type === 'SOLO_HUNT') {
-    return 'normal'
-  }
-
-  return 'daily'
-}
-
 function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
   const mappedHunts = useMemo(
     () => {
@@ -99,7 +80,7 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
           ...hunt,
           ...position,
           primaryBeastType: hunt.beasts?.[0]?.type ?? null,
-          pinType: getPinType(hunt),
+          pinType: getHuntPinType(hunt),
         }
       })
     },
@@ -125,10 +106,9 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
       {!loading && !error && mappedHunts.map((hunt) => (
         <HuntPin
           key={hunt.id}
+          hunt={hunt}
           x={hunt.x}
           y={hunt.y}
-          type={hunt.pinType}
-          beastType={hunt.primaryBeastType}
           onClick={() => onSelectHunt(hunt)}
         />
       ))}

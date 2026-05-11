@@ -94,8 +94,8 @@ class HuntServiceTest {
         );
 
         beast = beastRepository.save(Beast.builder()
+                .name("Griffin")
                 .type(BeastType.GRIFFIN)
-                .difficulty(Difficulty.MEDIUM)
                 .hp(180)
                 .attackPower(35)
                 .rewardExp(100)
@@ -146,9 +146,9 @@ class HuntServiceTest {
     }
 
     @Test
-    void createHuntRejectsNonBossPartyHuntAndBossSoloHunt() {
-        assertThatThrownBy(() -> huntService.createHunt(new CreateHuntRequest(
-                "Invalid Party Hunt",
+    void createHuntAllowsAnyDifficultyForEitherHuntType() {
+        HuntResponse partyResponse = huntService.createHunt(new CreateHuntRequest(
+                "Flexible Party Hunt",
                 HuntType.HUNT,
                 Difficulty.HARD,
                 HuntStatus.SCHEDULED,
@@ -157,10 +157,10 @@ class HuntServiceTest {
                 List.of(beast.getId()),
                 100,
                 50
-        ))).isInstanceOf(InvalidGameRuleException.class);
+        ));
 
-        assertThatThrownBy(() -> huntService.createHunt(new CreateHuntRequest(
-                "Invalid Solo Hunt",
+        HuntResponse soloResponse = huntService.createHunt(new CreateHuntRequest(
+                "Flexible Solo Hunt",
                 HuntType.SOLO_HUNT,
                 Difficulty.BOSS,
                 HuntStatus.ACTIVE,
@@ -169,7 +169,10 @@ class HuntServiceTest {
                 List.of(beast.getId()),
                 100,
                 50
-        ))).isInstanceOf(InvalidGameRuleException.class);
+        ));
+
+        assertThat(partyResponse.difficulty()).isEqualTo(Difficulty.HARD);
+        assertThat(soloResponse.difficulty()).isEqualTo(Difficulty.BOSS);
     }
 
     @Test
@@ -529,10 +532,11 @@ class HuntServiceTest {
                 new UpdateHuntRequest(null, null, null, null, null, List.of(), null, null)
         )).isInstanceOf(InvalidGameRuleException.class);
 
-        assertThatThrownBy(() -> huntService.updateHunt(
+        HuntResponse reDifficultyResponse = huntService.updateHunt(
                 activeHunt.getId(),
                 new UpdateHuntRequest(null, Difficulty.HARD, null, null, null, null, null, null)
-        )).isInstanceOf(InvalidGameRuleException.class);
+        );
+        assertThat(reDifficultyResponse.difficulty()).isEqualTo(Difficulty.HARD);
 
         Hunt deletableHunt = huntRepository.save(Hunt.builder()
                 .title("Delete Hunt")

@@ -43,8 +43,8 @@ class BeastServiceTest {
     @BeforeEach
     void setUp() {
         freeBeast = beastRepository.save(Beast.builder()
+                .name("Basilisk")
                 .type(BeastType.BASILISK)
-                .difficulty(Difficulty.EASY)
                 .hp(100)
                 .attackPower(20)
                 .rewardExp(50)
@@ -52,8 +52,8 @@ class BeastServiceTest {
                 .build());
 
         usedBeast = beastRepository.save(Beast.builder()
+                .name("Griffin")
                 .type(BeastType.GRIFFIN)
-                .difficulty(Difficulty.MEDIUM)
                 .hp(180)
                 .attackPower(35)
                 .rewardExp(100)
@@ -84,6 +84,7 @@ class BeastServiceTest {
         assertThat(response.attackPower()).isEqualTo(45);
         assertThat(response.rewardExp()).isEqualTo(130);
         assertThat(response.rewardGold()).isEqualTo(25);
+        assertThat(response.name()).isEqualTo("Basilisk");
         assertThat(response.type()).isEqualTo(BeastType.BASILISK);
     }
 

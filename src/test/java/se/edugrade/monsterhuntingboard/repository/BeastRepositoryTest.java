@@ -9,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import se.edugrade.monsterhuntingboard.model.Beast;
 import se.edugrade.monsterhuntingboard.model.BeastType;
-import se.edugrade.monsterhuntingboard.model.Difficulty;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -21,16 +20,16 @@ class BeastRepositoryTest {
     @BeforeEach
     void setUp() {
         beastRepository.save(Beast.builder()
+                .name("Dragon")
                 .type(BeastType.DRAGON)
-                .difficulty(Difficulty.BOSS)
                 .hp(500)
                 .attackPower(80)
                 .rewardExp(400)
                 .rewardGold(500)
                 .build());
         beastRepository.save(Beast.builder()
+                .name("Griffin")
                 .type(BeastType.GRIFFIN)
-                .difficulty(Difficulty.MEDIUM)
                 .hp(180)
                 .attackPower(35)
                 .rewardExp(100)
@@ -39,10 +38,8 @@ class BeastRepositoryTest {
     }
 
     @Test
-    void findByTypeAndDifficultyReturnsMatchingBeasts() {
+    void findByTypeReturnsMatchingBeasts() {
         assertThat(beastRepository.findByType(BeastType.GRIFFIN)).hasSize(1);
-        assertThat(beastRepository.findByDifficulty(Difficulty.BOSS)).hasSize(1);
-        assertThat(beastRepository.findByDifficultyAndType(Difficulty.MEDIUM, BeastType.GRIFFIN))
-                .allMatch(beast -> beast.getType() == BeastType.GRIFFIN);
+        assertThat(beastRepository.findFirstByType(BeastType.DRAGON)).isPresent();
     }
 }

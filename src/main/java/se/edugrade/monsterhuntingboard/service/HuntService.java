@@ -683,11 +683,8 @@ public class HuntService {
     }
 
     private void validateDifficultyMatchesType(HuntType type, Difficulty difficulty) {
-        if (type == HuntType.HUNT && difficulty != Difficulty.BOSS) {
-            throw new InvalidGameRuleException("HUNT missions must use BOSS difficulty");
-        }
-        if (type == HuntType.SOLO_HUNT && difficulty == Difficulty.BOSS) {
-            throw new InvalidGameRuleException("SOLO_HUNT missions cannot use BOSS difficulty");
+        if (difficulty == null) {
+            throw new InvalidGameRuleException("difficulty is required");
         }
     }
 

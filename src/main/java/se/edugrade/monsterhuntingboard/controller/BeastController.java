@@ -17,7 +17,6 @@ import se.edugrade.monsterhuntingboard.dto.BeastRequest;
 import se.edugrade.monsterhuntingboard.dto.BeastResponse;
 import se.edugrade.monsterhuntingboard.dto.UpdateBeastRequest;
 import se.edugrade.monsterhuntingboard.model.BeastType;
-import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.service.BeastService;
 
 @RestController
@@ -38,11 +37,6 @@ public class BeastController {
     @GetMapping("/{id}")
     public ResponseEntity<BeastResponse> getBeastById(@PathVariable Long id) {
         return ResponseEntity.ok(beastService.getBeastById(id));
-    }
-
-    @GetMapping("/difficulty/{difficulty}")
-    public ResponseEntity<List<BeastResponse>> getBeastsByDifficulty(@PathVariable Difficulty difficulty) {
-        return ResponseEntity.ok(beastService.getBeastsByDifficulty(difficulty));
     }
 
     @GetMapping("/type/{type}")

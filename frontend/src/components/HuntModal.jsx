@@ -23,6 +23,7 @@ import buttonJoined from '../assets/button_joined.png'
 import buttonSave from '../assets/button_save.png'
 import buttonStart from '../assets/button_start.png'
 import buttonUpdate from '../assets/button_update.png'
+import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
 const LOW_HP_WARNING_THRESHOLD = 20
@@ -308,6 +309,7 @@ function getActionImage(actionConfig) {
 function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
   const navigate = useNavigate()
   const firstBeast = getFirstBeast(hunt)
+  const primaryBeastImage = getBeastImage(firstBeast)
   const panelParchment = getHuntPanelImage(hunt)
   const username = getCurrentUsername()
   const huntSignature = buildHuntSignature(hunt)
@@ -684,13 +686,18 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
         <div className="hunt-modal-content-wrap">
           <div className="hunt-modal-content">
             <h2 className="hunt-modal-title">{hunt.title}</h2>
+            <img
+              className="hunt-modal-beast-image"
+              src={primaryBeastImage}
+              alt={firstBeast?.type ?? 'Unknown beast'}
+            />
 
             <div className="hunt-modal-info">
               <p>
                 <span>Type:</span> {formatType(hunt.type)}
               </p>
               <p>
-                <span>Difficulty:</span> {hunt.difficulty}
+                <span>Hunt Difficulty:</span> {hunt.difficulty}
               </p>
               <p>
                 <span>Status:</span> {hunt.status}
@@ -715,7 +722,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
                 <span>Reward Gold:</span> {hunt.rewardGold}
               </p>
               <p>
-                <span>Primary Beast:</span> {firstBeast?.type ?? 'Unknown'}
+                <span>Primary Beast:</span> {getBeastDisplayName(firstBeast)}
               </p>
               {weather && (
                 <>
@@ -817,7 +824,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
                 </label>
 
                 <label className="hunt-update-field">
-                  <span>Difficulty</span>
+                  <span>Hunt Difficulty</span>
                   <select
                     name="difficulty"
                     value={updateForm.difficulty}
@@ -887,7 +894,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
                 >
                   {availableBeasts.map((beast) => (
                     <option key={beast.id} value={beast.id}>
-                      {`${beast.type} (${beast.difficulty})`}
+                      {`${getBeastDisplayName(beast)} (${beast.type})`}
                     </option>
                   ))}
                 </select>

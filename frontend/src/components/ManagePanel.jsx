@@ -8,7 +8,7 @@ import buttonCreateBeast from '../assets/button_create_beast.png'
 import buttonCreateHunt from '../assets/button_create_hunt.png'
 import buttonDelete from '../assets/button_delete.png'
 import buttonUpdate from '../assets/button_update.png'
-import { getBeastImage } from '../assets/beastVisuals'
+import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
 
 const huntTypeOptions = [
   { value: 'HUNT', label: 'Group Hunt' },
@@ -17,7 +17,7 @@ const huntTypeOptions = [
 
 const difficultyOptions = ['EASY', 'MEDIUM', 'HARD', 'BOSS']
 const statusOptions = ['SCHEDULED', 'ACTIVE']
-const beastTypeOptions = ['DRAGON', 'PHOENIX', 'GRIFFIN', 'PEGASUS', 'CHIMERA', 'BASILISK']
+const beastTypeOptions = ['UNKNOWN', 'DRAGON', 'PHOENIX', 'GRIFFIN', 'PEGASUS', 'CHIMERA', 'BASILISK']
 
 const initialHuntForm = {
   id: null,
@@ -33,8 +33,8 @@ const initialHuntForm = {
 }
 
 const initialBeastForm = {
-  type: 'DRAGON',
-  difficulty: 'EASY',
+  name: '',
+  type: 'UNKNOWN',
   hp: '100',
   attackPower: '20',
   rewardExp: '50',
@@ -127,7 +127,7 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
     () =>
       beasts.map((beast) => ({
         id: beast.id,
-        label: `${beast.type} (${beast.difficulty})`,
+        label: `${getBeastDisplayName(beast)} (${beast.type})`,
       })),
     [beasts],
   )
@@ -273,8 +273,8 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
 
     try {
       await createBeast({
+        name: beastForm.name.trim(),
         type: beastForm.type,
-        difficulty: beastForm.difficulty,
         hp: Number(beastForm.hp),
         attackPower: Number(beastForm.attackPower),
         rewardExp: Number(beastForm.rewardExp),
@@ -484,8 +484,8 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                       <div className="manage-list-copy">
                         <h4>{hunt.title}</h4>
                         <p>{formatType(hunt.type)}</p>
-                        <p>Difficulty: {hunt.difficulty}</p>
-                        <p>Beast: {hunt.beasts?.map((beast) => beast.type).join(', ') || 'Unknown'}</p>
+                        <p>Hunt Difficulty: {hunt.difficulty}</p>
+                        <p>Beast Templates: {hunt.beasts?.map((beast) => getBeastDisplayName(beast)).join(', ') || 'Unknown'}</p>
                       </div>
                       <div className="manage-list-actions">
                         <button type="button" className="manage-inline-button" onClick={() => openUpdateHunt(hunt)} aria-label="Update hunt">
@@ -517,10 +517,10 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
                   beasts.map((beast) => (
                     <div key={beast.id} className="manage-list-row">
                       <div className="manage-list-copy manage-list-copy-beast">
-                        <img className="manage-beast-icon" src={getBeastImage(beast.type)} alt={beast.type} />
+                        <img className="manage-beast-icon" src={getBeastImage(beast)} alt={beast.type} />
                         <div>
-                          <h4>{beast.type}</h4>
-                          <p>{beast.difficulty}</p>
+                          <h4>{getBeastDisplayName(beast)}</h4>
+                          <p>{beast.type}</p>
                         </div>
                       </div>
                       <div className="manage-list-actions">
@@ -543,20 +543,21 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
 
                 <div className="manage-form-row">
                   <label className="manage-field">
-                    <span>Name</span>
-                    <select name="type" value={beastForm.type} onChange={handleBeastFieldChange}>
-                      {beastTypeOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                    <span>Beast Name</span>
+                    <input
+                      name="name"
+                      value={beastForm.name}
+                      onChange={handleBeastFieldChange}
+                      maxLength="80"
+                      placeholder="Crystal Fox"
+                      required
+                    />
                   </label>
 
                   <label className="manage-field">
-                    <span>Difficulty</span>
-                    <select name="difficulty" value={beastForm.difficulty} onChange={handleBeastFieldChange}>
-                      {difficultyOptions.map((option) => (
+                    <span>Type</span>
+                    <select name="type" value={beastForm.type} onChange={handleBeastFieldChange}>
+                      {beastTypeOptions.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>

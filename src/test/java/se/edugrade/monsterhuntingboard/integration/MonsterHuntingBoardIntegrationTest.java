@@ -170,8 +170,8 @@ class MonsterHuntingBoardIntegrationTest {
                 authorizedEntity(
                         gmToken,
                         new BeastRequest(
+                                "Griffin",
                                 se.edugrade.monsterhuntingboard.model.BeastType.GRIFFIN,
-                                Difficulty.MEDIUM,
                                 200,
                                 40,
                                 120,

@@ -52,12 +52,12 @@ class HuntGenerationServiceTest {
 
     private void seedBeasts() {
         beastRepository.saveAll(List.of(
-                Beast.builder().type(BeastType.BASILISK).difficulty(Difficulty.EASY).hp(110).attackPower(18).rewardExp(60).rewardGold(30).build(),
-                Beast.builder().type(BeastType.GRIFFIN).difficulty(Difficulty.MEDIUM).hp(180).attackPower(32).rewardExp(110).rewardGold(70).build(),
-                Beast.builder().type(BeastType.PEGASUS).difficulty(Difficulty.MEDIUM).hp(165).attackPower(28).rewardExp(100).rewardGold(60).build(),
-                Beast.builder().type(BeastType.CHIMERA).difficulty(Difficulty.HARD).hp(260).attackPower(48).rewardExp(190).rewardGold(130).build(),
-                Beast.builder().type(BeastType.PHOENIX).difficulty(Difficulty.HARD).hp(320).attackPower(58).rewardExp(240).rewardGold(180).build(),
-                Beast.builder().type(BeastType.DRAGON).difficulty(Difficulty.BOSS).hp(520).attackPower(82).rewardExp(420).rewardGold(520).build()
+                Beast.builder().name("Basilisk").type(BeastType.BASILISK).hp(110).attackPower(18).rewardExp(60).rewardGold(30).build(),
+                Beast.builder().name("Griffin").type(BeastType.GRIFFIN).hp(180).attackPower(32).rewardExp(110).rewardGold(70).build(),
+                Beast.builder().name("Pegasus").type(BeastType.PEGASUS).hp(165).attackPower(28).rewardExp(100).rewardGold(60).build(),
+                Beast.builder().name("Chimera").type(BeastType.CHIMERA).hp(260).attackPower(48).rewardExp(190).rewardGold(130).build(),
+                Beast.builder().name("Phoenix").type(BeastType.PHOENIX).hp(320).attackPower(58).rewardExp(240).rewardGold(180).build(),
+                Beast.builder().name("Dragon").type(BeastType.DRAGON).hp(520).attackPower(82).rewardExp(420).rewardGold(520).build()
         ));
     }
 }

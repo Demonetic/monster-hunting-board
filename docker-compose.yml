@@ -46,11 +46,11 @@
       volumes:
         - mysql-data:/var/lib/mysql
       healthcheck:
-        test: ["CMD-SHELL", "mysqladmin", "ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+        test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent || exit 1"]
         interval: 10s
         timeout: 5s
         retries: 10
-        start_period: 20s
+        start_period: 30s
       networks:
         - monster-network
 
