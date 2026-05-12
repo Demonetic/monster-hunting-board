@@ -1283,7 +1283,8 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 2.8%;
+  column-gap: 3.6%;
+  row-gap: 2.8%;
 }
 
 .inventory-slot-hitbox {
@@ -1307,19 +1308,19 @@ textarea:focus-visible {
 }
 
 .inventory-slot-hitbox:nth-child(5n + 2) {
-  transform: translateX(4%);
+  transform: translateX(5%);
 }
 
 .inventory-slot-hitbox:nth-child(5n + 3) {
-  transform: translateX(7%);
-}
-
-.inventory-slot-hitbox:nth-child(5n + 4) {
   transform: translateX(10%);
 }
 
+.inventory-slot-hitbox:nth-child(5n + 4) {
+  transform: translateX(17%);
+}
+
 .inventory-slot-hitbox:nth-child(5n + 5) {
-  transform: translateX(13%);
+  transform: translateX(24%);
 }
 
 .inventory-slot-potion {
@@ -1363,17 +1364,42 @@ textarea:focus-visible {
 }
 
 .inventory-selection-preview-image {
-  width: min(120px, 34%);
+  width: min(102px, 29%);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.22));
+}
+
+.inventory-selection-copy {
+  display: grid;
+  gap: 0.2rem;
+  text-align: center;
+  color: #412917;
+}
+
+.inventory-selection-copy strong {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.9rem;
+  line-height: 1.08;
+}
+
+.inventory-selection-copy p {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.22;
 }
 
 .inventory-selection-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
+}
+
+.inventory-selection-actions .inventory-slot-button img {
+  width: auto;
+  height: 42px;
+  object-fit: contain;
 }
 
 .hunts-panel {
@@ -2976,7 +3002,20 @@ textarea:focus-visible {
   }
 
   .inventory-selection-preview-image {
-    width: min(86px, 42%);
+    width: min(76px, 37%);
+  }
+
+  .inventory-selection-copy strong {
+    font-size: 0.76rem;
+  }
+
+  .inventory-selection-copy p {
+    font-size: 0.6rem;
+  }
+
+  .inventory-selection-actions .inventory-slot-button img {
+    width: auto;
+    height: 34px;
   }
 
   .inventory-slot-button img {

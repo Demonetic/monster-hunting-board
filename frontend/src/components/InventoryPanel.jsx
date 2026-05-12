@@ -23,6 +23,12 @@ const itemTypeImages = {
   ENDURANCE_POTION: endurancePotionImage,
 }
 
+const itemTypeDescriptions = {
+  HEALTH_POTION: 'Restore health before the next fight.',
+  EXP_POTION: 'Boost experience gain for the next hunt.',
+  ENDURANCE_POTION: 'Reduce damage taken in the next hunt.',
+}
+
 function InventoryPanel({ onClose }) {
   const role = getRole()
   const isGameMaster = role === 'GAME_MASTER'
@@ -228,6 +234,11 @@ function InventoryPanel({ onClose }) {
                         src={itemTypeImages[selectedItem.itemType]}
                         alt={selectedItem.displayName}
                       />
+                    </div>
+
+                    <div className="inventory-selection-copy">
+                      <strong>{selectedItem.displayName}</strong>
+                      <p>{itemTypeDescriptions[selectedItem.itemType] ?? 'A useful hunt item.'}</p>
                     </div>
 
                     <div className="inventory-selection-actions">
