@@ -451,6 +451,7 @@ public class HuntService {
                 won,
                 rewardResult.expChange(),
                 rewardResult.goldChange(),
+                newLevel > previousLevel,
                 simulation.damageTaken(),
                 expPotionApplied,
                 endurancePotionApplied,
@@ -491,6 +492,7 @@ public class HuntService {
                         participation -> new InitialParticipantState(
                                 participation.getHunter().getCurrentHp(),
                                 participation.getHunter().getBaseHp(),
+                                participation.getHunter().getLevel(),
                                 participation.getHunter().isExpPotionActive(),
                                 participation.getHunter().isEndurancePotionActive()
                         ),
@@ -550,6 +552,7 @@ public class HuntService {
                 won,
                 currentParticipation.getExpChange(),
                 currentParticipation.getGoldChange(),
+                currentHunter.getLevel() > currentInitialState.initialLevel(),
                 currentOutcome.damageTaken(),
                 currentInitialState.expPotionActive() && won,
                 currentInitialState.endurancePotionActive(),
@@ -939,6 +942,7 @@ public class HuntService {
     private record InitialParticipantState(
             int initialHp,
             int initialMaxHp,
+            int initialLevel,
             boolean expPotionActive,
             boolean endurancePotionActive
     ) {

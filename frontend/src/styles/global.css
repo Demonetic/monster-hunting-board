@@ -2579,10 +2579,8 @@ textarea:focus-visible {
   justify-content: center;
   gap: 0.45rem;
   text-align: center;
-  color: #f3d884;
-  text-shadow:
-    0 1px 1px rgba(88, 58, 18, 0.85),
-    0 0 12px rgba(243, 216, 132, 0.16);
+  color: #fffaf0;
+  text-shadow: 0 1px 2px rgba(30, 19, 10, 0.82);
 }
 
 .battle-result-heading {
@@ -2615,10 +2613,11 @@ textarea:focus-visible {
 
 .battle-result-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem 0.9rem;
+  grid-template-columns: 1fr;
+  gap: 0.38rem;
   width: 100%;
-  text-align: left;
+  justify-items: center;
+  text-align: center;
 }
 
 .battle-result-grid p,
@@ -2631,34 +2630,6 @@ textarea:focus-visible {
   font-family: 'Cinzel', Georgia, serif;
   font-weight: 700;
   color: inherit;
-}
-
-.battle-result-party-summary {
-  width: 100%;
-  display: grid;
-  gap: 0.28rem;
-}
-
-.battle-result-party-title {
-  font-family: 'Cinzel', Georgia, serif;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-}
-
-.battle-result-party-list {
-  display: grid;
-  gap: 0.18rem;
-  text-align: left;
-}
-
-.battle-result-party-list p {
-  margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.22;
-}
-
-.battle-result-party-list p.is-current {
-  font-weight: 700;
 }
 
 .battle-continue-button {
@@ -3173,10 +3144,6 @@ textarea:focus-visible {
   .battle-result-grid {
     grid-template-columns: 1fr;
     gap: 0.35rem;
-  }
-
-  .battle-result-party-list p {
-    font-size: 0.66rem;
   }
 
   .toast {

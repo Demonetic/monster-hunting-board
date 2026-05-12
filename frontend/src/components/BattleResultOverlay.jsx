@@ -4,7 +4,6 @@ function BattleResultOverlay({ result, onContinue }) {
   const expLabel = result.expChange >= 0 ? 'EXP earned' : 'EXP lost'
   const goldLabel = result.goldChange >= 0 ? 'Gold earned' : 'Gold lost'
   const itemsGained = result.itemsGained ?? []
-  const participantResults = result.battleParticipants ?? []
 
   return (
     <div className="battle-result-overlay">
@@ -23,26 +22,9 @@ function BattleResultOverlay({ result, onContinue }) {
           <div className="battle-result-grid">
             <p><span>{expLabel}:</span> {Math.abs(result.expChange)}</p>
             <p><span>{goldLabel}:</span> {Math.abs(result.goldChange)}</p>
-            <p><span>Level:</span> {result.newLevel}</p>
-            <p><span>HP after battle:</span> {result.newCurrentHp} / {result.newBaseHp}</p>
+            {result.leveledUp && <p><span>Leveled up!</span> Level {result.newLevel}</p>}
+            <p><span>HP:</span> {result.newCurrentHp} / {result.newBaseHp}</p>
           </div>
-
-          {participantResults.length > 1 && (
-            <div className="battle-result-party-summary">
-              <p className="battle-result-party-title">Party Summary</p>
-              <div className="battle-result-party-list">
-                {participantResults.map((participant) => (
-                  <p
-                    key={participant.hunterId}
-                    className={participant.hunterId === result.currentHunterId ? 'is-current' : ''}
-                  >
-                    <span>{participant.hunterName}:</span>{' '}
-                    {participant.survived ? 'Survived' : 'Defeated'} | {participant.damageDealt} dmg | {participant.expChange >= 0 ? '+' : ''}{participant.expChange} EXP
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
 
           {itemsGained.length > 0 && (
             <p className="battle-result-loot">

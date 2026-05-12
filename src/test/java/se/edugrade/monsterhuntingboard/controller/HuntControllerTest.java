@@ -267,6 +267,7 @@ class HuntControllerTest {
                 newExp,
                 newGold,
                 newLevel,
+                false,
                 newBaseHp,
                 newCurrentHp,
                 damageTaken,
