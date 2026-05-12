@@ -34,13 +34,13 @@ public class HuntController {
     }
 
     @GetMapping
-    public ResponseEntity<List<HuntResponse>> getAllHunts() {
-        return ResponseEntity.ok(huntService.getAllHunts());
+    public ResponseEntity<List<HuntResponse>> getAllHunts(Principal principal) {
+        return ResponseEntity.ok(huntService.getAllHunts(principal != null ? principal.getName() : null));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<HuntResponse> getHuntById(@PathVariable Long id) {
-        return ResponseEntity.ok(huntService.getHuntById(id));
+    public ResponseEntity<HuntResponse> getHuntById(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(huntService.getHuntById(id, principal != null ? principal.getName() : null));
     }
 
     @GetMapping("/{id}/lobby")
@@ -50,8 +50,8 @@ public class HuntController {
     }
 
     @GetMapping("/scheduled")
-    public ResponseEntity<List<HuntResponse>> getScheduledHunts() {
-        return ResponseEntity.ok(huntService.getScheduledHunts());
+    public ResponseEntity<List<HuntResponse>> getScheduledHunts(Principal principal) {
+        return ResponseEntity.ok(huntService.getScheduledHunts(principal != null ? principal.getName() : null));
     }
 
     @PostMapping

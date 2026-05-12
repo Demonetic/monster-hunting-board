@@ -59,7 +59,7 @@ class HuntControllerTest {
 
     @Test
     void getAllHuntsReturnsOk() throws Exception {
-        when(huntService.getAllHunts()).thenReturn(List.of(createHuntResponse(1L, "Scheduled Hunt", HuntStatus.SCHEDULED)));
+        when(huntService.getAllHunts(null)).thenReturn(List.of(createHuntResponse(1L, "Scheduled Hunt", HuntStatus.SCHEDULED)));
 
         mockMvc.perform(get("/api/hunts"))
                 .andExpect(status().isOk())
@@ -68,7 +68,7 @@ class HuntControllerTest {
 
     @Test
     void getScheduledHuntsReturnsOk() throws Exception {
-        when(huntService.getScheduledHunts()).thenReturn(List.of(
+        when(huntService.getScheduledHunts(null)).thenReturn(List.of(
                 createHuntResponse(1L, "Scheduled Hunt", HuntStatus.SCHEDULED)
         ));
 
@@ -227,7 +227,10 @@ class HuntControllerTest {
                 0,
                 50,
                 25,
-                LocalDateTime.of(2026, 1, 1, 10, 0)
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                0,
+                null,
+                false
         );
     }
 

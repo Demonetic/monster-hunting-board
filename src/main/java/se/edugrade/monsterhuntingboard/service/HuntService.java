@@ -58,6 +58,7 @@ public class HuntService {
     private static final Logger log = LoggerFactory.getLogger(HuntService.class);
     private static final ZoneId STOCKHOLM_ZONE = ZoneId.of("Europe/Stockholm");
     private static final long GROUP_LOBBY_WINDOW_MINUTES = 10L;
+    private static final int SOLO_HUNT_MAX_WINS = 5;
 
     private final HuntRepository huntRepository;
     private final BeastRepository beastRepository;
@@ -86,27 +87,33 @@ public class HuntService {
 
         Hunt savedHunt = huntRepository.save(hunt);
         log.info("Created hunt: {} (id={})", savedHunt.getTitle(), savedHunt.getId());
-        return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
+        return HuntResponse.from(
+                savedHunt,
+                Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())),
+                0,
+                getSoloHuntMaxWins(savedHunt),
+                false
+        );
     }
 
     @Transactional
-    public List<HuntResponse> getAllHunts() {
-        return huntRepository.findAll()
+    public List<HuntResponse> getAllHunts(String username) {
+        Hunter hunter = findHunterByUsername(username);
+        List<Hunt> hunts = huntRepository.findAll()
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
                 .filter(this::isVisibleOnBoard)
-                .map(hunt -> HuntResponse.from(
-                        hunt,
-                        Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
-                ))
                 .toList();
+
+        return buildHuntResponses(hunts, hunter);
     }
 
     @Transactional
-    public HuntResponse getHuntById(Long id) {
+    public HuntResponse getHuntById(Long id, String username) {
         Hunt hunt = getHuntOrThrow(id);
         updateHuntStatusIfNeeded(hunt);
-        return HuntResponse.from(hunt, Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId())));
+        Hunter hunter = findHunterByUsername(username);
+        return buildHuntResponse(hunt, hunter, findProgressByHuntId(hunter, List.of(hunt)));
     }
 
     @Transactional
@@ -142,16 +149,14 @@ public class HuntService {
     }
 
     @Transactional
-    public List<HuntResponse> getScheduledHunts() {
-        return huntRepository.findByStatus(HuntStatus.SCHEDULED)
+    public List<HuntResponse> getScheduledHunts(String username) {
+        Hunter hunter = findHunterByUsername(username);
+        List<Hunt> hunts = huntRepository.findByStatus(HuntStatus.SCHEDULED)
                 .stream()
                 .peek(this::updateHuntStatusIfNeeded)
                 .filter(hunt -> hunt.getStatus() == HuntStatus.SCHEDULED && isVisibleOnBoard(hunt))
-                .map(hunt -> HuntResponse.from(
-                        hunt,
-                        Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId()))
-                ))
                 .toList();
+        return buildHuntResponses(hunts, hunter);
     }
 
     @Transactional
@@ -165,6 +170,7 @@ public class HuntService {
         }
         validateGeneratedHuntAvailability(hunt);
         validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
+        validateHunterHasRemainingSoloWins(hunt, hunter);
         validateHuntHasNotStarted(hunt);
         if (hunt.getStatus() != HuntStatus.SCHEDULED && hunt.getStatus() != HuntStatus.ACTIVE) {
             throw new InvalidHuntStateException("This hunt cannot be joined in its current state");
@@ -195,6 +201,7 @@ public class HuntService {
         }
         validateGeneratedHuntAvailability(hunt);
         validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
+        validateHunterHasRemainingSoloWins(hunt, hunter);
         validateSoloHuntIsActive(hunt);
         validateHunterCanFight(hunter);
 
@@ -263,7 +270,13 @@ public class HuntService {
 
         Hunt savedHunt = huntRepository.save(hunt);
         log.info("Updated hunt: {} (id={})", savedHunt.getTitle(), savedHunt.getId());
-        return HuntResponse.from(savedHunt, Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())));
+        return HuntResponse.from(
+                savedHunt,
+                Math.toIntExact(huntParticipationRepository.countByHuntId(savedHunt.getId())),
+                0,
+                getSoloHuntMaxWins(savedHunt),
+                false
+        );
     }
 
     @Transactional
@@ -418,6 +431,7 @@ public class HuntService {
         hunter.setEndurancePotionActive(false);
         if (won) {
             registerGeneratedHuntWin(hunter, hunt);
+            registerSoloHuntWin(hunter, hunt);
         }
 
         participation.setCompleted(true);
@@ -734,6 +748,20 @@ public class HuntService {
         }
     }
 
+    private void validateHunterHasRemainingSoloWins(Hunt hunt, Hunter hunter) {
+        Integer maxWins = getSoloHuntMaxWins(hunt);
+        if (maxWins == null) {
+            return;
+        }
+
+        int currentWins = hunterGeneratedHuntProgressRepository.findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
+                .map(HunterGeneratedHuntProgress::getWinCount)
+                .orElse(0);
+        if (currentWins >= maxWins) {
+            throw new InvalidGameRuleException("Hunter has reached the win limit for this solo hunt");
+        }
+    }
+
     private void registerGeneratedHuntWin(Hunter hunter, Hunt hunt) {
         if (!hunt.isGenerated()) {
             return;
@@ -749,6 +777,82 @@ public class HuntService {
         progress.setWinCount(progress.getWinCount() + 1);
         progress.setLastWinAt(getCurrentTime());
         hunterGeneratedHuntProgressRepository.save(progress);
+    }
+
+    private void registerSoloHuntWin(Hunter hunter, Hunt hunt) {
+        Integer maxWins = getSoloHuntMaxWins(hunt);
+        if (maxWins == null || hunt.isGenerated()) {
+            return;
+        }
+
+        HunterGeneratedHuntProgress progress = hunterGeneratedHuntProgressRepository
+                .findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
+                .orElseGet(() -> HunterGeneratedHuntProgress.builder()
+                        .hunter(hunter)
+                        .hunt(hunt)
+                        .winCount(0)
+                        .build());
+        progress.setWinCount(Math.min(maxWins, progress.getWinCount() + 1));
+        progress.setLastWinAt(getCurrentTime());
+        hunterGeneratedHuntProgressRepository.save(progress);
+    }
+
+    private List<HuntResponse> buildHuntResponses(List<Hunt> hunts, Hunter hunter) {
+        Map<Long, HunterGeneratedHuntProgress> progressByHuntId = findProgressByHuntId(hunter, hunts);
+        return hunts.stream()
+                .map(hunt -> buildHuntResponse(hunt, hunter, progressByHuntId))
+                .toList();
+    }
+
+    private HuntResponse buildHuntResponse(
+            Hunt hunt,
+            Hunter hunter,
+            Map<Long, HunterGeneratedHuntProgress> progressByHuntId
+    ) {
+        Integer maxWins = getSoloHuntMaxWins(hunt);
+        int winCount = 0;
+        boolean completed = false;
+
+        if (hunter != null && maxWins != null) {
+            winCount = progressByHuntId.getOrDefault(hunt.getId(), null) != null
+                    ? progressByHuntId.get(hunt.getId()).getWinCount()
+                    : 0;
+            completed = winCount >= maxWins;
+        }
+
+        return HuntResponse.from(
+                hunt,
+                Math.toIntExact(huntParticipationRepository.countByHuntId(hunt.getId())),
+                winCount,
+                maxWins,
+                completed
+        );
+    }
+
+    private Map<Long, HunterGeneratedHuntProgress> findProgressByHuntId(Hunter hunter, List<Hunt> hunts) {
+        if (hunter == null || hunts.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> huntIds = hunts.stream().map(Hunt::getId).toList();
+        return hunterGeneratedHuntProgressRepository.findByHunterIdAndHuntIdIn(hunter.getId(), huntIds)
+                .stream()
+                .collect(Collectors.toMap(progress -> progress.getHunt().getId(), Function.identity()));
+    }
+
+    private Integer getSoloHuntMaxWins(Hunt hunt) {
+        if (hunt.getType() != HuntType.SOLO_HUNT) {
+            return null;
+        }
+        return hunt.getWinLimitPerHunter() != null ? hunt.getWinLimitPerHunter() : SOLO_HUNT_MAX_WINS;
+    }
+
+    private Hunter findHunterByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+
+        return hunterRepository.findByUserAccountUsername(username).orElse(null);
     }
 
     private RewardResult calculateWinRewardForHunter(

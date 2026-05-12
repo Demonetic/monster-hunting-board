@@ -21,9 +21,18 @@ public record HuntResponse(
         int currentPartySize,
         int rewardExp,
         int rewardGold,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        int winCount,
+        Integer maxWins,
+        boolean completed
 ) {
-    public static HuntResponse from(Hunt hunt, int currentPartySize) {
+    public static HuntResponse from(
+            Hunt hunt,
+            int currentPartySize,
+            int winCount,
+            Integer maxWins,
+            boolean completed
+    ) {
         return new HuntResponse(
                 hunt.getId(),
                 hunt.getTitle(),
@@ -37,7 +46,10 @@ public record HuntResponse(
                 currentPartySize,
                 hunt.getRewardExp(),
                 hunt.getRewardGold(),
-                hunt.getCreatedAt()
+                hunt.getCreatedAt(),
+                winCount,
+                maxWins,
+                completed
         );
     }
 }

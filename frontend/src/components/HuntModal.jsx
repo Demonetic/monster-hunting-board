@@ -347,7 +347,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
       : { joined: false, completed: false, inProgress: false, signature: huntSignature }
   const isGroupHunt = hunt.type === 'HUNT'
   const isJoined = huntProgress.joined
-  const isCompleted = huntProgress.completed
+  const isCompleted = isGroupHunt ? huntProgress.completed : Boolean(hunt.completed)
   const isInProgress = huntProgress.inProgress || hunt.status === 'ACTIVE'
   const msUntilStart = getMillisecondsUntilStart(hunt.startTime)
   const canEnterLobby =
@@ -480,16 +480,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
 
     const response = await startSoloHunt(hunt.id, true)
 
-    setHuntProgress((current) => ({
-      ...current,
-      [hunt.id]: {
-        joined: true,
-        completed: true,
-        inProgress: false,
-        signature: huntSignature,
-      },
-    }))
-
     setHunterState((current) => current
       ? {
           ...current,
@@ -530,6 +520,7 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
           endurancePotionActive: false,
         }
       : current)
+    await syncAfterAction()
     openBattlePage(response.data)
   }
 
@@ -746,12 +737,12 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
               <p>
                 <span>Start Time:</span> {formatStartTime(hunt.startTime)}
               </p>
-              {hunt.maxPartySize !== null && hunt.maxPartySize !== undefined && (
+              {hunt.type === 'HUNT' && hunt.maxPartySize !== null && hunt.maxPartySize !== undefined && (
                 <p>
                   <span>Party Size:</span> {hunt.currentPartySize} / {hunt.maxPartySize}
                 </p>
               )}
-              {(hunt.maxPartySize === null || hunt.maxPartySize === undefined) && (
+              {hunt.type === 'HUNT' && (hunt.maxPartySize === null || hunt.maxPartySize === undefined) && (
                 <p>
                   <span>Current Party:</span> {hunt.currentPartySize}
                 </p>
@@ -765,6 +756,16 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
               <p>
                 <span>Primary Beast:</span> {getBeastDisplayName(firstBeast)}
               </p>
+              {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
+                <p>
+                  <span>Solo Wins:</span> {hunt.winCount} / {hunt.maxWins}
+                </p>
+              )}
+              {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
+                <p>
+                  <span>Completion:</span> {hunt.completed ? 'Completed' : `${Math.max(hunt.maxWins - hunt.winCount, 0)} wins remaining`}
+                </p>
+              )}
               {weather && (
                 <>
                   <p>

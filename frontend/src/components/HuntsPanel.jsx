@@ -79,10 +79,15 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
                     <h3>{hunt.title}</h3>
                     <p>{hunt.type === 'HUNT' ? 'Group Hunt' : 'Solo Hunt'}</p>
                     <p>Hunt Difficulty: {hunt.difficulty}</p>
-                    <p>
-                      Party: {hunt.currentPartySize}
-                      {hunt.maxPartySize ? ` / ${hunt.maxPartySize}` : ''}
-                    </p>
+                    {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
+                      <p>{hunt.completed ? 'Completed' : `Wins: ${hunt.winCount} / ${hunt.maxWins}`}</p>
+                    )}
+                    {hunt.type === 'HUNT' && (
+                      <p>
+                        Party: {hunt.currentPartySize}
+                        {hunt.maxPartySize ? ` / ${hunt.maxPartySize}` : ''}
+                      </p>
+                    )}
                     <p>Beast: {getBeastDisplayName(firstBeast)}</p>
                   </div>
 
