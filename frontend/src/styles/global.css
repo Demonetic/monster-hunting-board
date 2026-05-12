@@ -72,10 +72,6 @@ button:not(:disabled):hover {
   filter: brightness(1.08);
 }
 
-button:not(:disabled):active {
-  transform: scale(0.95);
-}
-
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -220,10 +216,6 @@ textarea:focus-visible {
 
 .hunt-pin:not(:disabled):hover {
   transform: translate(-50%, -100%) scale(1.12);
-}
-
-.hunt-pin:not(:disabled):active {
-  transform: translate(-50%, -100%) scale(0.95);
 }
 
 .hunt-pin img {
@@ -2371,10 +2363,6 @@ textarea:focus-visible {
 
 .bottom-nav-button:hover img {
   filter: brightness(1.1) drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
-}
-
-.bottom-nav-button:active img {
-  transform: translateY(0) scale(0.96);
 }
 
 .bottom-nav-button.is-active img {
