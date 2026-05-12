@@ -1,4 +1,5 @@
 :root {
+  --desktop-layout-min-width: 1280px;
   --shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.28);
   --shadow-panel: 0 24px 48px rgba(13, 9, 6, 0.34);
   --text-shadow-soft: 1px 1px 2px rgba(0, 0, 0, 0.3);
@@ -2326,7 +2327,7 @@ textarea:focus-visible {
 }
 
 .bottom-nav {
-  position: fixed;
+  position: absolute;
   left: 50%;
   bottom: 1.25rem;
   transform: translateX(-50%);
@@ -2334,6 +2335,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  width: max-content;
   padding: 0;
   z-index: 30;
 }
@@ -2370,6 +2372,67 @@ textarea:focus-visible {
     brightness(1.08)
     drop-shadow(0 0 18px rgba(222, 173, 94, 0.24))
     drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+}
+
+.orientation-guard {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine), (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  .game-page-shell,
+  .board-page,
+  .battle-page,
+  .battle-stage,
+  .battle-route-message-page,
+  .group-lobby-page {
+    min-width: var(--desktop-layout-min-width);
+  }
+
+  .board-page,
+  .battle-page,
+  .battle-route-message-page,
+  .group-lobby-page {
+    width: max(100vw, var(--desktop-layout-min-width));
+  }
+}
+
+@media (max-width: 900px) and (orientation: portrait) and (hover: none) and (pointer: coarse) {
+  .orientation-guard {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background:
+      linear-gradient(rgba(13, 10, 7, 0.9), rgba(13, 10, 7, 0.94)),
+      #12100d;
+    text-align: center;
+  }
+
+  .orientation-guard-card {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 280px;
+    padding: 1.2rem 1.1rem;
+    border: 1px solid rgba(244, 226, 185, 0.24);
+    border-radius: 16px;
+    background: rgba(51, 35, 21, 0.82);
+    box-shadow: var(--shadow-panel);
+    color: #f4ead5;
+  }
+
+  .orientation-guard-card strong {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .orientation-guard-card span {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
 }
 
 .battle-page {
@@ -2857,7 +2920,7 @@ textarea:focus-visible {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px) and (orientation: portrait) and (hover: none) and (pointer: coarse) {
   .hunt-pin {
     width: 180px;
   }
