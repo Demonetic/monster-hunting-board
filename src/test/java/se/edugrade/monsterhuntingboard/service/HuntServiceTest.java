@@ -654,6 +654,7 @@ class HuntServiceTest {
                 18.0686,
                 0,
                 6.0,
+                19.0,
                 false,
                 WeatherCategory.SUNNY_CLEAR,
                 WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
@@ -668,6 +669,7 @@ class HuntServiceTest {
                 18.0686,
                 3,
                 6.0,
+                14.0,
                 false,
                 WeatherCategory.CLOUDY_OVERCAST,
                 WeatherEffect.fromCategory(WeatherCategory.CLOUDY_OVERCAST)
@@ -682,6 +684,7 @@ class HuntServiceTest {
                 18.0686,
                 63,
                 14.0,
+                9.0,
                 false,
                 WeatherCategory.RAIN,
                 WeatherEffect.fromCategory(WeatherCategory.RAIN)
@@ -696,6 +699,7 @@ class HuntServiceTest {
                 18.0686,
                 99,
                 80.0,
+                2.0,
                 false,
                 WeatherCategory.EXTREME_WEATHER,
                 WeatherEffect.fromCategory(WeatherCategory.EXTREME_WEATHER)

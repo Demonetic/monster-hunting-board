@@ -138,6 +138,14 @@ function getWeatherTitleLines(displayName) {
     .filter(Boolean)
 }
 
+function formatWeatherTemperature(temperatureCelsius) {
+  if (!Number.isFinite(temperatureCelsius)) {
+    return ''
+  }
+
+  return `${Math.round(temperatureCelsius)}°`
+}
+
 function BattleScene({ battleResult, onContinue }) {
   const weather = battleResult?.weather ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
@@ -166,6 +174,10 @@ function BattleScene({ battleResult, onContinue }) {
   const weatherTitleLines = useMemo(
     () => getWeatherTitleLines(weather?.displayName),
     [weather?.displayName],
+  )
+  const weatherTemperature = useMemo(
+    () => formatWeatherTemperature(weather?.temperatureCelsius),
+    [weather?.temperatureCelsius],
   )
 
   const [phase, setPhase] = useState('intro')
@@ -299,6 +311,11 @@ function BattleScene({ battleResult, onContinue }) {
             className="battle-weather-badge"
             style={{ backgroundImage: `url(${weatherPanel})` }}
           >
+            {weatherTemperature && (
+              <span className="weather-panel-temperature" aria-hidden="true">
+                {weatherTemperature}
+              </span>
+            )}
             <strong className="weather-panel-title">
               {weatherTitleLines.map((line) => (
                 <span key={line}>{line}</span>

@@ -14,6 +14,7 @@ public record WeatherResponse(
         List<String> activeEffects,
         int weatherCode,
         double windSpeedKmh,
+        double temperatureCelsius,
         boolean fallback,
         WeatherModifiersResponse modifiers
 ) {
@@ -29,6 +30,7 @@ public record WeatherResponse(
                 effect.descriptions(),
                 context.weatherCode(),
                 context.windSpeedKmh(),
+                context.temperatureCelsius(),
                 context.fallback(),
                 WeatherModifiersResponse.from(effect)
         );

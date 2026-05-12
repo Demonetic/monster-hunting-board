@@ -92,6 +92,7 @@ class MonsterHuntingBoardIntegrationTest {
                 18.0686,
                 0,
                 8.0,
+                16.0,
                 false,
                 WeatherCategory.SUNNY_CLEAR,
                 WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)

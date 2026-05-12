@@ -11,7 +11,8 @@ public interface WeatherApiClient {
 
     record ForecastSnapshot(
             int weatherCode,
-            double windSpeedKmh
+            double windSpeedKmh,
+            double temperatureCelsius
     ) {
     }
 }

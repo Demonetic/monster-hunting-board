@@ -7,6 +7,7 @@ public record WeatherContext(
         double longitude,
         int weatherCode,
         double windSpeedKmh,
+        double temperatureCelsius,
         boolean fallback,
         WeatherCategory category,
         WeatherEffect effect

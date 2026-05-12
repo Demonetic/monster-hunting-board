@@ -102,6 +102,14 @@ function getWeatherTitleLines(displayName) {
     .filter(Boolean)
 }
 
+function formatWeatherTemperature(temperatureCelsius) {
+  if (!Number.isFinite(temperatureCelsius)) {
+    return ''
+  }
+
+  return `${Math.round(temperatureCelsius)}°`
+}
+
 function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
   const mappedHunts = useMemo(
     () => {
@@ -125,6 +133,10 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
     () => getWeatherTitleLines(weather?.displayName),
     [weather?.displayName],
   )
+  const weatherTemperature = useMemo(
+    () => formatWeatherTemperature(weather?.temperatureCelsius),
+    [weather?.temperatureCelsius],
+  )
 
   return (
     <main
@@ -139,6 +151,11 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
           aria-label="Current weather"
           style={{ backgroundImage: `url(${weatherPanel})` }}
         >
+          {weatherTemperature && (
+            <span className="weather-panel-temperature" aria-hidden="true">
+              {weatherTemperature}
+            </span>
+          )}
           <strong className="weather-panel-title">
             {weatherTitleLines.map((line) => (
               <span key={line}>{line}</span>

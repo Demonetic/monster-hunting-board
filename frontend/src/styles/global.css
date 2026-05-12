@@ -107,6 +107,7 @@ textarea:focus-visible {
   top: 13.55rem;
   left: 0.45rem;
   z-index: 2;
+  isolation: isolate;
   display: grid;
   gap: 0.04rem;
   place-content: center;
@@ -129,6 +130,24 @@ textarea:focus-visible {
   line-height: 1.12;
 }
 
+.board-weather-card > .weather-panel-temperature,
+.battle-weather-badge > .weather-panel-temperature {
+  position: absolute;
+  inset: calc(50% + 3px) auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 4.3rem;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(201, 167, 96, 0.75);
+  letter-spacing: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
 .board-logo-round {
   position: absolute;
   top: 1.35rem;
@@ -145,6 +164,8 @@ textarea:focus-visible {
   display: grid;
   gap: 0.02rem;
   margin: 0;
+  position: relative;
+  z-index: 1;
   font-family: 'Cinzel', Georgia, serif;
   font-size: 1.02rem;
   line-height: 1.02;
@@ -158,6 +179,13 @@ textarea:focus-visible {
   font: inherit;
   line-height: inherit;
   color: inherit;
+}
+
+.board-weather-card > span:not(.weather-panel-temperature),
+.board-weather-card > p,
+.battle-weather-badge > span:not(.weather-panel-temperature) {
+  position: relative;
+  z-index: 1;
 }
 
 .board-status {
@@ -2290,9 +2318,11 @@ textarea:focus-visible {
 
 .battle-weather-badge {
   top: 5.8rem;
+  position: absolute;
   display: grid;
   gap: 0.04rem;
   place-content: center;
+  isolation: isolate;
   justify-items: center;
   width: min(188px, calc(100vw - 1rem));
   aspect-ratio: 1 / 1;

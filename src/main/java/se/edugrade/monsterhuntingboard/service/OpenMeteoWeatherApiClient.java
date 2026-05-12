@@ -56,7 +56,7 @@ public class OpenMeteoWeatherApiClient implements WeatherApiClient {
         String uri = UriComponentsBuilder.fromHttpUrl(FORECAST_URL)
                 .queryParam("latitude", latitude)
                 .queryParam("longitude", longitude)
-                .queryParam("current", "weather_code,wind_speed_10m")
+                .queryParam("current", "weather_code,wind_speed_10m,temperature_2m")
                 .queryParam("timezone", "auto")
                 .toUriString();
 
@@ -72,7 +72,8 @@ public class OpenMeteoWeatherApiClient implements WeatherApiClient {
 
         return new ForecastSnapshot(
                 current.path("weather_code").asInt(),
-                current.path("wind_speed_10m").asDouble()
+                current.path("wind_speed_10m").asDouble(),
+                current.path("temperature_2m").asDouble()
         );
     }
 }

@@ -192,6 +192,7 @@ class BattleServiceBalanceTest {
                                     0,
                                     0,
                                     0,
+                                    12.0,
                                     false,
                                     WeatherCategory.CLOUDY_OVERCAST,
                                     NEUTRAL_WEATHER

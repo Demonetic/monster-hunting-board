@@ -130,6 +130,7 @@ public class WeatherService {
                     location.longitude(),
                     forecastSnapshot.weatherCode(),
                     forecastSnapshot.windSpeedKmh(),
+                    forecastSnapshot.temperatureCelsius(),
                     false,
                     category,
                     WeatherEffect.fromCategory(category)
@@ -147,6 +148,7 @@ public class WeatherService {
                         staleContext.longitude(),
                         staleContext.weatherCode(),
                         staleContext.windSpeedKmh(),
+                        staleContext.temperatureCelsius(),
                         true,
                         staleContext.category(),
                         staleContext.effect()
@@ -160,6 +162,7 @@ public class WeatherService {
                     location.latitude(),
                     location.longitude(),
                     -1,
+                    0.0,
                     0.0,
                     true,
                     WeatherCategory.CLOUDY_OVERCAST,

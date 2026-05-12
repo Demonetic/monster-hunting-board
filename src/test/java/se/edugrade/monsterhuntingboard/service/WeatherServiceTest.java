@@ -202,6 +202,7 @@ class WeatherServiceTest {
                             hunter.getLongitude(),
                             0,
                             8.0,
+                            18.0,
                             false,
                             category,
                             se.edugrade.monsterhuntingboard.model.WeatherEffect.fromCategory(category)

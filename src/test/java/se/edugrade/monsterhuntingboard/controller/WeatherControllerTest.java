@@ -46,6 +46,7 @@ class WeatherControllerTest {
                 18.0686,
                 0,
                 12.0,
+                21.0,
                 false,
                 WeatherCategory.SUNNY_CLEAR,
                 WeatherEffect.fromCategory(WeatherCategory.SUNNY_CLEAR)
