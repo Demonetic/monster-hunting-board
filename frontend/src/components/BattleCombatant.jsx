@@ -23,6 +23,7 @@ function BattleCombatant({
   image,
   currentHp,
   maxHp,
+  isDefeated = false,
   isActing,
   isDamaged,
   floatingTexts = [],
@@ -37,7 +38,8 @@ function BattleCombatant({
         'battle-combatant',
         `battle-combatant-${side}`,
         className,
-        isActing ? 'is-acting' : '',
+        isDefeated ? `defeated-${side}` : '',
+        isActing && !isDefeated ? 'is-acting' : '',
         isDamaged ? 'is-damaged' : '',
       ].filter(Boolean).join(' ')}
       style={style}
@@ -65,8 +67,15 @@ function BattleCombatant({
         />
       ))}
 
-      <div className="battle-combatant-sprite">
-        <img src={image} alt={name} />
+      <div className="battle-combatant-sprite-shell">
+        <div
+          className={[
+            'battle-combatant-sprite',
+            isDefeated ? 'is-defeated' : '',
+          ].filter(Boolean).join(' ')}
+        >
+          <img src={image} alt={name} />
+        </div>
       </div>
     </div>
   )

@@ -4,11 +4,12 @@ function WeatherEffectSummary({
   className = '',
   title = 'Weather',
   fallbackText = 'Cloudy / Overcast: No weather effects',
+  compact = false,
 }) {
   if (loading) {
     return (
-      <section className={`weather-effect-summary ${className}`.trim()}>
-        <span className="weather-effect-summary-label">{title}</span>
+      <section className={`weather-effect-summary ${compact ? 'is-compact' : ''} ${className}`.trim()}>
+        <span className="weather-effect-summary-label">{compact ? `${title}:` : title}</span>
         <p className="weather-effect-summary-state">Loading weather...</p>
       </section>
     )
@@ -16,9 +17,33 @@ function WeatherEffectSummary({
 
   if (!weather) {
     return (
-      <section className={`weather-effect-summary ${className}`.trim()}>
-        <span className="weather-effect-summary-label">{title}</span>
+      <section className={`weather-effect-summary ${compact ? 'is-compact' : ''} ${className}`.trim()}>
+        <span className="weather-effect-summary-label">{compact ? `${title}:` : title}</span>
         <p className="weather-effect-summary-state">{fallbackText}</p>
+      </section>
+    )
+  }
+
+  if (compact) {
+    const compactEffects = weather.activeEffects?.length > 0
+      ? weather.activeEffects.join(' • ')
+      : 'No weather effects'
+
+    return (
+      <section className={`weather-effect-summary is-compact ${className}`.trim()}>
+        <p className="weather-effect-summary-inline">
+          <span className="weather-effect-summary-label">{title}:</span>{' '}
+          <strong className="weather-effect-summary-heading">
+            {weather.city}, {weather.displayName}
+          </strong>
+          {weather.country && (
+            <>
+              <span className="weather-effect-summary-separator"> • </span>
+              <span className="weather-effect-summary-subtle">{weather.country}</span>
+            </>
+          )}
+        </p>
+        <p className="weather-effect-summary-state">{compactEffects}</p>
       </section>
     )
   }

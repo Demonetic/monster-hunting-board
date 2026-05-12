@@ -909,6 +909,12 @@ textarea:focus-visible {
   gap: 0.14rem;
 }
 
+.passive-skill-summary-inline,
+.weather-effect-summary-inline {
+  margin: 0;
+  line-height: 1.18;
+}
+
 .passive-skill-summary-label,
 .weather-effect-summary-label {
   font-family: 'Cinzel', Georgia, serif;
@@ -931,6 +937,11 @@ textarea:focus-visible {
 
 .passive-skill-summary-name {
   font-size: 0.92rem;
+}
+
+.passive-skill-summary-separator,
+.weather-effect-summary-separator {
+  color: rgba(65, 41, 23, 0.72);
 }
 
 .passive-skill-summary-description,
@@ -959,6 +970,30 @@ textarea:focus-visible {
   padding-left: 1rem;
   display: grid;
   gap: 0.15rem;
+}
+
+.passive-skill-summary.is-compact,
+.weather-effect-summary.is-compact {
+  gap: 0.08rem;
+}
+
+.passive-skill-summary.is-compact .passive-skill-summary-label,
+.weather-effect-summary.is-compact .weather-effect-summary-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+.passive-skill-summary.is-compact .passive-skill-summary-appearance,
+.passive-skill-summary.is-compact .passive-skill-summary-name,
+.weather-effect-summary.is-compact .weather-effect-summary-heading {
+  font-size: 0.82rem;
+}
+
+.passive-skill-summary.is-compact .passive-skill-summary-description,
+.weather-effect-summary.is-compact .weather-effect-summary-state,
+.weather-effect-summary.is-compact .weather-effect-summary-subtle {
+  font-size: 0.72rem;
+  line-height: 1.18;
 }
 
 .auth-error {
@@ -1094,16 +1129,23 @@ textarea:focus-visible {
 .inventory-player-summary {
   position: absolute;
   left: 5.6%;
-  top: 5.2%;
-  width: 36%;
+  top: 12.6%;
+  width: 39%;
   z-index: 2;
   display: grid;
-  gap: 0.32rem;
+  gap: 0.2rem;
 }
 
 .player-summary-header {
   display: grid;
   gap: 0.05rem;
+}
+
+.player-summary-header.is-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.28rem;
 }
 
 .player-summary-name {
@@ -1117,6 +1159,15 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.player-summary.is-compact .player-summary-name {
+  font-size: 0.94rem;
+}
+
+.player-summary.is-compact .player-summary-level {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 .player-summary-passive .passive-skill-summary-description,
 .player-summary-weather .weather-effect-summary-list,
 .player-summary-weather .weather-effect-summary-state {
@@ -1126,17 +1177,18 @@ textarea:focus-visible {
 .inventory-character-stage {
   position: absolute;
   left: 4.8%;
-  top: 16.2%;
-  width: 45%;
-  height: 71.5%;
+  top: 30.2%;
+  width: 44%;
+  height: 56.6%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  padding-bottom: 1.1%;
   pointer-events: none;
 }
 
 .inventory-character-image {
-  width: min(390px, 98%);
+  width: min(370px, 94%);
   max-width: 100%;
   max-height: 100%;
   height: auto;
@@ -2190,11 +2242,20 @@ textarea:focus-visible {
 .battle-combatant {
   position: absolute;
   z-index: 1;
-  transition: transform 220ms ease, filter 160ms ease;
+  transition: transform 220ms ease;
 }
 
 .battle-combatant.is-current-hunter {
   z-index: 2;
+}
+
+.battle-combatant-sprite-shell {
+  position: relative;
+}
+
+.battle-combatant-sprite {
+  transition: transform 0.4s ease, filter 0.4s ease;
+  transform-origin: center 72%;
 }
 
 .battle-combatant-sprite img {
@@ -2305,6 +2366,16 @@ textarea:focus-visible {
 
 .battle-combatant-beast .battle-combatant-sprite img {
   width: min(400px, 34vw);
+}
+
+.battle-combatant-hunter.defeated-hunter .battle-combatant-sprite {
+  transform: rotate(-90deg);
+  filter: grayscale(100%) brightness(0.82);
+}
+
+.battle-combatant-beast.defeated-beast .battle-combatant-sprite {
+  transform: rotate(90deg);
+  filter: grayscale(100%) brightness(0.82);
 }
 
 .battle-combatant-hunter.is-acting {
@@ -2775,7 +2846,7 @@ textarea:focus-visible {
 
   .inventory-player-summary {
     left: 5.6%;
-    top: 5.3%;
+    top: 12.8%;
     width: 38%;
     gap: 0.2rem;
   }
@@ -2794,12 +2865,13 @@ textarea:focus-visible {
   }
 
   .inventory-character-stage {
-    top: 18%;
-    height: 68.5%;
+    top: 30.8%;
+    width: 43%;
+    height: 54.2%;
   }
 
   .inventory-character-image {
-    width: min(246px, 96%);
+    width: min(236px, 92%);
   }
 
   .inventory-panel-close {

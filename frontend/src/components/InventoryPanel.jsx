@@ -180,6 +180,7 @@ function InventoryPanel({ onClose }) {
               hunter={hunter}
               weather={weather}
               weatherLoading={weatherLoading}
+              compact
             />
           )}
 

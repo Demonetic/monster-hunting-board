@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import battleArenaImage from '../assets/battle_arena.png'
 import characterBard from '../assets/character_bard.png'
 import characterHunter from '../assets/character_hunter.png'
@@ -106,6 +106,22 @@ function getHunterPlacementStyle(index, count) {
   }
 }
 
+function buildInitialDefeatedCombatants(initialCombatants) {
+  const defeatedCombatants = {}
+
+  if ((initialCombatants?.beast?.currentHp ?? 0) <= 0) {
+    defeatedCombatants.beast = true
+  }
+
+  for (const hunter of initialCombatants?.hunters ?? []) {
+    if ((hunter.currentHp ?? 0) <= 0) {
+      defeatedCombatants[hunter.id] = true
+    }
+  }
+
+  return defeatedCombatants
+}
+
 function BattleScene({ battleResult, onContinue }) {
   const weather = battleResult?.weather ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
@@ -135,6 +151,26 @@ function BattleScene({ battleResult, onContinue }) {
   const [actingCombatantId, setActingCombatantId] = useState('')
   const [damagedCombatantId, setDamagedCombatantId] = useState('')
   const [floatingTextsByCombatant, setFloatingTextsByCombatant] = useState({})
+  const [defeatedCombatants, setDefeatedCombatants] = useState(() =>
+    buildInitialDefeatedCombatants(initialCombatants),
+  )
+  const defeatedCombatantsRef = useRef(defeatedCombatants)
+
+  useEffect(() => {
+    defeatedCombatantsRef.current = defeatedCombatants
+  }, [defeatedCombatants])
+
+  const markCombatantDefeated = (combatantId) => {
+    if (!combatantId) {
+      return
+    }
+
+    setDefeatedCombatants((current) => (
+      current[combatantId]
+        ? current
+        : { ...current, [combatantId]: true }
+    ))
+  }
 
   useEffect(() => {
     if (!battleResult || phase !== 'intro') {
@@ -177,7 +213,9 @@ function BattleScene({ battleResult, onContinue }) {
     )
 
     const startTimeoutId = window.setTimeout(() => {
-      setActingCombatantId(attackerId)
+      if (!defeatedCombatantsRef.current[attackerId]) {
+        setActingCombatantId(attackerId)
+      }
     }, 0)
 
     const impactTimeoutId = window.setTimeout(() => {
@@ -185,12 +223,18 @@ function BattleScene({ battleResult, onContinue }) {
 
       if (targetId === 'beast') {
         setBeastHp(nextTurn.targetHpAfter)
+        if (nextTurn.targetHpAfter <= 0) {
+          markCombatantDefeated(targetId)
+        }
       } else if (targetId.startsWith('hunter-')) {
         setHunters((current) => current.map((hunter) => (
           hunter.id === targetId
             ? { ...hunter, currentHp: nextTurn.targetHpAfter }
             : hunter
         )))
+        if (nextTurn.targetHpAfter <= 0) {
+          markCombatantDefeated(targetId)
+        }
       }
 
       const nextFloatingTexts = buildFloatingEntries(nextTurn).map((entry, index) => ({
@@ -252,7 +296,8 @@ function BattleScene({ battleResult, onContinue }) {
               image={hunter.image}
               currentHp={hunter.currentHp}
               maxHp={hunter.maxHp}
-              isActing={actingCombatantId === hunter.id}
+              isDefeated={Boolean(defeatedCombatants[hunter.id])}
+              isActing={actingCombatantId === hunter.id && !defeatedCombatants[hunter.id]}
               isDamaged={damagedCombatantId === hunter.id}
               floatingTexts={floatingTextsByCombatant[hunter.id] ?? []}
             />
@@ -265,7 +310,8 @@ function BattleScene({ battleResult, onContinue }) {
           image={initialCombatants.beast.image}
           currentHp={beastHp}
           maxHp={initialCombatants.beast.maxHp}
-          isActing={actingCombatantId === 'beast'}
+          isDefeated={Boolean(defeatedCombatants.beast)}
+          isActing={actingCombatantId === 'beast' && !defeatedCombatants.beast}
           isDamaged={damagedCombatantId === 'beast'}
           floatingTexts={floatingTextsByCombatant.beast ?? []}
         />
