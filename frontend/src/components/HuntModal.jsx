@@ -724,6 +724,12 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
               alt={firstBeast?.type ?? 'Unknown beast'}
             />
 
+            {role === 'HUNTER' && hunterState && hunterState.currentHp < LOW_HP_WARNING_THRESHOLD && (
+              <p className="hunt-action-error hunt-modal-low-hp-warning">
+                Low HP warning: heal before entering a solo hunt.
+              </p>
+            )}
+
             <div className="hunt-modal-info">
               <p>
                 <span>Type:</span> {formatType(hunt.type)}
@@ -781,11 +787,6 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
                   <p>
                     <span>Your HP:</span> {hunterState.currentHp} / {hunterState.baseHp}
                   </p>
-                  {hunterState.currentHp < LOW_HP_WARNING_THRESHOLD && (
-                    <p className="hunt-action-error">
-                      Low HP warning: heal before entering a solo hunt.
-                    </p>
-                  )}
                   <p>
                     <span>EXP Potion:</span> {hunterState.expPotionActive ? 'Ready for this hunt' : 'Inactive'}
                   </p>

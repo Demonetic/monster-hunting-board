@@ -341,8 +341,10 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
-.hunt-modal-info .hunt-action-error {
-  grid-column: 1 / -1;
+.hunt-modal-low-hp-warning {
+  margin: -0.15rem 0 0.1rem;
+  font-size: 0.82rem;
+  line-height: 1.16;
 }
 
 .hunt-modal-actions {
@@ -1223,6 +1225,13 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.player-summary-hp {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #315922;
+  white-space: nowrap;
+}
+
 .player-summary.is-compact .player-summary-name {
   font-size: 0.94rem;
 }
@@ -1230,6 +1239,10 @@ textarea:focus-visible {
 .player-summary.is-compact .player-summary-level {
   font-size: 0.78rem;
   white-space: nowrap;
+}
+
+.player-summary.is-compact .player-summary-hp {
+  font-size: 0.78rem;
 }
 
 .player-summary-passive .passive-skill-summary-description,

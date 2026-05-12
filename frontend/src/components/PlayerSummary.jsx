@@ -17,6 +17,9 @@ function PlayerSummary({
       <div className={`player-summary-header ${compact ? 'is-compact' : ''}`.trim()}>
         <strong className="player-summary-name">{hunter.displayName ?? 'Hunter'}</strong>
         <span className="player-summary-level">Level {hunter.level ?? 1}</span>
+        <span className="player-summary-hp">
+          {hunter.currentHp ?? 0}/{hunter.baseHp ?? 0} HP
+        </span>
       </div>
 
       <PassiveSkillSummary
