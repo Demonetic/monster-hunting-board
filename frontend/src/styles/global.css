@@ -1128,12 +1128,15 @@ textarea:focus-visible {
 
 .inventory-player-summary {
   position: absolute;
-  left: 5.6%;
+  left: 24.8%;
   top: 12.6%;
+  transform: translateX(-50%);
   width: 39%;
   z-index: 2;
   display: grid;
   gap: 0.2rem;
+  justify-items: center;
+  text-align: center;
 }
 
 .player-summary-header {
@@ -1145,6 +1148,7 @@ textarea:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  justify-content: center;
   gap: 0.28rem;
 }
 
@@ -1869,6 +1873,10 @@ textarea:focus-visible {
 
 .menu-panel-header {
   gap: 0.4rem;
+}
+
+.menu-panel-header .hunts-panel-title {
+  margin-top: 0.55rem;
 }
 
 .menu-panel-message,
@@ -2845,8 +2853,9 @@ textarea:focus-visible {
   }
 
   .inventory-player-summary {
-    left: 5.6%;
+    left: 24.4%;
     top: 12.8%;
+    transform: translateX(-50%);
     width: 38%;
     gap: 0.2rem;
   }
