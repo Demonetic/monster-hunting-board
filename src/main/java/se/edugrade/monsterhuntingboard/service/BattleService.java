@@ -2,6 +2,7 @@ package se.edugrade.monsterhuntingboard.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,18 @@ import se.edugrade.monsterhuntingboard.model.WeatherEffect;
 public class BattleService {
     private static final Logger log = LoggerFactory.getLogger(BattleService.class);
     private static final String BEAST_COMBATANT_ID = "beast";
+    private static final int HUNTER_MIN_DAMAGE_BASE = 9;
+    private static final int HUNTER_MAX_DAMAGE_BASE = 15;
+    private static final int HUNTER_MIN_DAMAGE_PER_LEVEL = 2;
+    private static final int HUNTER_MAX_DAMAGE_PER_LEVEL = 3;
+    private static final EnumMap<Difficulty, DifficultyBalance> DIFFICULTY_BALANCE = new EnumMap<>(Difficulty.class);
+
+    static {
+        DIFFICULTY_BALANCE.put(Difficulty.EASY, new DifficultyBalance(0.88f, 4, 0.34f, 0.92f, 12, 0.18, 0.24f, 1));
+        DIFFICULTY_BALANCE.put(Difficulty.MEDIUM, new DifficultyBalance(0.84f, 6, 0.36f, 0.88f, 14, 0.20, 0.24f, 1));
+        DIFFICULTY_BALANCE.put(Difficulty.HARD, new DifficultyBalance(0.60f, 8, 0.24f, 0.84f, 16, 0.24, 0.26f, 2));
+        DIFFICULTY_BALANCE.put(Difficulty.BOSS, new DifficultyBalance(0.72f, 10, 0.24f, 0.90f, 18, 0.20, 0.28f, 2));
+    }
 
     public boolean rollWin() {
         boolean won = Math.random() < 0.7;
@@ -29,21 +42,11 @@ public class BattleService {
     }
 
     public int calculateDamageTaken(Hunt hunt, boolean won, boolean endurancePotionActive, WeatherEffect weatherEffect) {
-        int baseDamage = hunt.getBeasts()
-                .stream()
-                .mapToInt(beast -> beast.getAttackPower())
-                .sum();
-
-        int difficultyModifier = switch (hunt.getDifficulty()) {
-            case EASY -> 6;
-            case MEDIUM -> 12;
-            case HARD -> 18;
-            case BOSS -> 28;
-        };
-
+        DifficultyBalance balance = getBalance(hunt.getDifficulty());
+        int baseDamage = Math.max(1, Math.round(getAverageBeastAttackPower(hunt) * balance.beastAttackMultiplier()));
         int scaledDamage = won
-                ? Math.max(8, Math.round((baseDamage + difficultyModifier) * 0.45f))
-                : Math.max(12, Math.round((baseDamage + difficultyModifier) * 0.7f));
+                ? Math.max(4, Math.round(baseDamage * 0.95f))
+                : Math.max(6, Math.round(baseDamage * 1.15f));
 
         if (endurancePotionActive) {
             scaledDamage = Math.max(0, Math.round(scaledDamage * 0.7f));
@@ -227,7 +230,7 @@ public class BattleService {
             WeatherEffect targetWeather = targetContext != null
                     ? targetContext.weatherEffect()
                     : WeatherEffect.neutral();
-            int bossDamage = rollBossDamage(averageHunterLevel, orderedParticipations.size());
+            int bossDamage = rollBossDamage(hunt, averageHunterLevel, orderedParticipations.size());
             bossDamage = adjustBeastDamageAgainstHunter(
                     bossDamage,
                     hunt.getDifficulty(),
@@ -334,27 +337,30 @@ public class BattleService {
     }
 
     private int calculateScaledMonsterHp(Hunt hunt, int hunterLevel) {
+        DifficultyBalance balance = getBalance(hunt.getDifficulty());
         int baseHp = hunt.getBeasts().stream().mapToInt(beast -> beast.getHp()).sum();
-        int hpGrowthPerLevel = switch (hunt.getDifficulty()) {
-            case EASY -> 10;
-            case MEDIUM -> 15;
-            case HARD -> 22;
-            case BOSS -> 35;
-        };
-
-        return baseHp + Math.max(0, hunterLevel - 1) * hpGrowthPerLevel;
+        int scaledBaseHp = Math.max(1, Math.round(baseHp * balance.soloHpMultiplier()));
+        return scaledBaseHp + Math.max(0, hunterLevel - 1) * balance.soloHpGrowthPerLevel();
     }
 
     private int calculateScaledBossHp(Hunt hunt, int averageHunterLevel, int partySize) {
         int baseHp = hunt.getBeasts().stream().mapToInt(beast -> beast.getHp()).sum();
-        int levelScaling = Math.max(0, averageHunterLevel - 1) * 35;
-        int partyScaling = Math.max(0, partySize - 1) * 60;
-        return baseHp + 120 + levelScaling + partyScaling;
+        DifficultyBalance balance = getBalance(hunt.getDifficulty());
+        int scaledBaseHp = Math.max(1, Math.round(baseHp * balance.bossHpMultiplier()));
+        int levelScaling = Math.max(0, averageHunterLevel - 1) * balance.bossHpGrowthPerLevel();
+        int extraHunters = Math.max(0, partySize - 1);
+        int partyScaling = extraHunters == 0
+                ? 0
+                : Math.max(
+                0,
+                Math.round((float) (baseHp * balance.bossAdditionalHunterHpScale() * Math.sqrt(extraHunters)))
+        );
+        return scaledBaseHp + 80 + levelScaling + partyScaling;
     }
 
     private int rollHunterDamage(int hunterLevel, Appearance appearance, WeatherEffect weatherEffect) {
-        int minDamage = 8 + (hunterLevel * 2);
-        int maxDamage = 14 + (hunterLevel * 3);
+        int minDamage = HUNTER_MIN_DAMAGE_BASE + (hunterLevel * HUNTER_MIN_DAMAGE_PER_LEVEL);
+        int maxDamage = HUNTER_MAX_DAMAGE_BASE + (hunterLevel * HUNTER_MAX_DAMAGE_PER_LEVEL);
         if (appearance == Appearance.HUNTER) {
             maxDamage += 4;
         }
@@ -370,19 +376,28 @@ public class BattleService {
     }
 
     private int rollMonsterDamage(Hunt hunt, int hunterLevel, WeatherEffect weatherEffect) {
-        int baseDamage = switch (hunt.getDifficulty()) {
-            case EASY -> 6 + hunterLevel;
-            case MEDIUM -> 10 + hunterLevel;
-            case HARD -> 14 + (hunterLevel * 2);
-            case BOSS -> 20 + (hunterLevel * 2);
-        };
+        DifficultyBalance balance = getBalance(hunt.getDifficulty());
+        int baseDamage = Math.max(
+                1,
+                Math.round(
+                        (getAverageBeastAttackPower(hunt) * balance.beastAttackMultiplier())
+                                + (Math.max(0, hunterLevel - 1) * 0.6f)
+                )
+        );
 
         int rolledDamage = rollBetween(Math.max(1, baseDamage - 2), baseDamage + 3);
         return applyWeatherOutgoingDamage(rolledDamage, hunt.getDifficulty(), weatherEffect);
     }
 
-    private int rollBossDamage(int averageHunterLevel, int partySize) {
-        int baseDamage = 14 + (averageHunterLevel * 2) + partySize;
+    private int rollBossDamage(Hunt hunt, int averageHunterLevel, int partySize) {
+        DifficultyBalance balance = getBalance(hunt.getDifficulty());
+        int baseDamage = Math.max(
+                1,
+                Math.round(
+                        (getAverageBeastAttackPower(hunt) * balance.bossAttackMultiplier())
+                                + (Math.max(0, averageHunterLevel - 1) * 0.8f)
+                ) + (Math.max(0, partySize - 1) * balance.bossAttackPerExtraHunter())
+        );
         return rollBetween(Math.max(1, baseDamage - 2), baseDamage + 4);
     }
 
@@ -431,6 +446,22 @@ public class BattleService {
 
     private int rollBetween(int minInclusive, int maxInclusive) {
         return ThreadLocalRandom.current().nextInt(minInclusive, maxInclusive + 1);
+    }
+
+    private int getAverageBeastAttackPower(Hunt hunt) {
+        return Math.max(
+                1,
+                (int) Math.round(
+                        hunt.getBeasts().stream()
+                                .mapToInt(beast -> beast.getAttackPower())
+                                .average()
+                                .orElse(1)
+                )
+        );
+    }
+
+    private DifficultyBalance getBalance(Difficulty difficulty) {
+        return DIFFICULTY_BALANCE.get(difficulty);
     }
 
     private int applyWeatherOutgoingDamage(int damage, Difficulty difficulty, WeatherEffect weatherEffect) {
@@ -491,6 +522,18 @@ public class BattleService {
             int totalDamageTaken,
             int extraDamage,
             int turnsAdded
+    ) {
+    }
+
+    private record DifficultyBalance(
+            float soloHpMultiplier,
+            int soloHpGrowthPerLevel,
+            float beastAttackMultiplier,
+            float bossHpMultiplier,
+            int bossHpGrowthPerLevel,
+            double bossAdditionalHunterHpScale,
+            float bossAttackMultiplier,
+            int bossAttackPerExtraHunter
     ) {
     }
 
