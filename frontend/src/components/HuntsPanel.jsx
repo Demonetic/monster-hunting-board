@@ -4,16 +4,22 @@ import buttonClose from '../assets/button_close.png'
 import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
 
 function matchesFilter(hunt, filter) {
+  const sourceType = hunt.sourceType ?? ''
+
+  if (filter === 'DAILY') {
+    return sourceType === 'DAILY_BOUNTY' || sourceType === 'DAILY_BOSS'
+  }
+
+  if (filter === 'WEEKLY') {
+    return sourceType === 'WEEKLY_CONTRACT'
+  }
+
   if (filter === 'GROUP') {
     return hunt.type === 'HUNT'
   }
 
   if (filter === 'SOLO') {
-    return hunt.type === 'SOLO_HUNT'
-  }
-
-  if (filter === 'BOSS') {
-    return hunt.difficulty === 'BOSS'
+    return hunt.type === 'SOLO_HUNT' && sourceType !== 'DAILY_BOUNTY' && sourceType !== 'DAILY_BOSS' && sourceType !== 'WEEKLY_CONTRACT'
   }
 
   return true
@@ -44,20 +50,14 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
           <h2 className="hunts-panel-title">Hunts</h2>
 
           <div className="hunts-filter-row">
-            {['ALL', 'GROUP', 'SOLO', 'BOSS'].map((filterOption) => (
+            {['ALL', 'DAILY', 'WEEKLY', 'SOLO', 'GROUP'].map((filterOption) => (
               <button
                 key={filterOption}
                 type="button"
                 className={`hunts-filter-button ${filter === filterOption ? 'is-active' : ''}`}
                 onClick={() => setFilter(filterOption)}
               >
-                {filterOption === 'ALL'
-                  ? 'All'
-                  : filterOption === 'GROUP'
-                    ? 'Group'
-                    : filterOption === 'SOLO'
-                      ? 'Solo'
-                      : 'Boss'}
+                {filterOption.charAt(0) + filterOption.slice(1).toLowerCase()}
               </button>
             ))}
           </div>
