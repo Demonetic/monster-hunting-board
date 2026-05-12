@@ -10,6 +10,9 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +22,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.model.Beast;
-import se.edugrade.monsterhuntingboard.model.BeastType;
 import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntSourceType;
@@ -62,45 +64,23 @@ public class HuntGenerationService {
             return;
         }
 
-        Beast basilisk = beastRepository.findFirstByType(BeastType.BASILISK).orElse(null);
-        Beast griffin = beastRepository.findFirstByType(BeastType.GRIFFIN).orElse(null);
-        Beast pegasus = beastRepository.findFirstByType(BeastType.PEGASUS).orElse(null);
-        Beast chimera = beastRepository.findFirstByType(BeastType.CHIMERA).orElse(null);
-        Beast phoenix = beastRepository.findFirstByType(BeastType.PHOENIX).orElse(null);
-        Beast dragon = beastRepository.findFirstByType(BeastType.DRAGON).orElse(null);
-
         List<HuntTemplate> templates = new ArrayList<>();
-        if (basilisk != null) {
-            templates.add(buildTemplate("Basilisk Burrow Sweep", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.EASY, 60, 30, null, List.of(basilisk)));
-            templates.add(buildTemplate("Stone Path Cleanup", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.EASY, 70, 35, null, List.of(basilisk)));
-            templates.add(buildTemplate("Marsh Stalker Bounty", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.EASY, 80, 40, null, List.of(basilisk)));
-        }
-        if (griffin != null) {
-            templates.add(buildTemplate("Griffin Sky Trial", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 110, 70, null, List.of(griffin)));
-            templates.add(buildTemplate("Ridge Recon Sweep", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 120, 75, null, List.of(griffin)));
-            templates.add(buildTemplate("Feathered Menace Bounty", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 120, 80, null, List.of(griffin)));
-        }
-        if (pegasus != null) {
-            templates.add(buildTemplate("Pegasus Sky Run", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 105, 65, null, List.of(pegasus)));
-            templates.add(buildTemplate("Cloudwake Escort", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 115, 72, null, List.of(pegasus)));
-            templates.add(buildTemplate("Silver Mane Bounty", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 125, 82, null, List.of(pegasus)));
-        }
-        if (chimera != null) {
-            templates.add(buildTemplate("Chimera Fang Contract", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 190, 130, null, List.of(chimera)));
-            templates.add(buildTemplate("Ravine Alpha Contract", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 210, 145, null, List.of(chimera)));
-        }
-        if (phoenix != null) {
-            templates.add(buildTemplate("Phoenix Ember Contract", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 240, 180, null, List.of(phoenix)));
-        }
-        if (dragon != null) {
-            templates.add(buildTemplate("Dragonfall Vanguard", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 420, 520, 4, List.of(dragon)));
-            if (chimera != null) {
-                templates.add(buildTemplate("Molten Crown Siege", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 450, 560, 4, List.of(dragon, chimera)));
-            }
-            if (phoenix != null) {
-                templates.add(buildTemplate("Ashen Sky Cataclysm", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 470, 590, 4, List.of(dragon, phoenix)));
-            }
-        }
+        templates.add(buildTemplate("Wayfinder Trial", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.EASY, 60, 30, null, List.of()));
+        templates.add(buildTemplate("Stonewatch Sweep", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.EASY, 70, 35, null, List.of()));
+        templates.add(buildTemplate("Wildpath Trial", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 105, 65, null, List.of()));
+        templates.add(buildTemplate("Skyline Sweep", HuntSourceType.REPEATABLE, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 115, 72, null, List.of()));
+
+        templates.add(buildTemplate("Daily Bounty I", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.EASY, 80, 40, null, List.of()));
+        templates.add(buildTemplate("Daily Bounty II", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 120, 80, null, List.of()));
+        templates.add(buildTemplate("Daily Bounty III", HuntSourceType.DAILY_BOUNTY, HuntType.SOLO_HUNT, Difficulty.MEDIUM, 125, 82, null, List.of()));
+
+        templates.add(buildTemplate("Weekly Contract I", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 190, 130, null, List.of()));
+        templates.add(buildTemplate("Weekly Contract II", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 210, 145, null, List.of()));
+        templates.add(buildTemplate("Weekly Contract III", HuntSourceType.WEEKLY_CONTRACT, HuntType.SOLO_HUNT, Difficulty.HARD, 240, 180, null, List.of()));
+
+        templates.add(buildTemplate("Daily Boss I", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 420, 520, 4, List.of()));
+        templates.add(buildTemplate("Daily Boss II", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 450, 560, 4, List.of()));
+        templates.add(buildTemplate("Daily Boss III", HuntSourceType.DAILY_BOSS, HuntType.HUNT, Difficulty.BOSS, 470, 590, 4, List.of()));
 
         if (!templates.isEmpty()) {
             huntTemplateRepository.saveAll(templates);
@@ -137,19 +117,26 @@ public class HuntGenerationService {
             return;
         }
 
-        List<HuntTemplate> templates = shuffledTemplates(HuntSourceType.DAILY_BOSS);
+        List<Beast> beastPool = shuffledBeastPool(HuntSourceType.DAILY_BOSS, dayStart, existingBosses);
+        if (beastPool.isEmpty()) {
+            return;
+        }
+
+        List<HuntTemplate> templates = shuffledTemplates(HuntSourceType.DAILY_BOSS, dayStart);
         List<LocalTime> bossTimes = List.of(LocalTime.of(8, 0), LocalTime.of(13, 0), LocalTime.of(19, 0));
 
         for (int index = existingBosses.size(); index < Math.min(3, templates.size()); index++) {
             HuntTemplate template = templates.get(index);
             LocalDateTime bossStart = date.atTime(bossTimes.get(index));
+            List<Beast> selectedBeasts = selectGeneratedBeasts(beastPool, index - existingBosses.size(), 1);
             huntRepository.save(buildGeneratedHunt(
                     template,
                     dayStart,
                     nextDayStart,
                     bossStart,
                     bossStart.minusMinutes(10),
-                    1
+                    1,
+                    selectedBeasts
             ));
         }
     }
@@ -171,25 +158,59 @@ public class HuntGenerationService {
             return;
         }
 
-        List<HuntTemplate> templates = shuffledTemplates(sourceType);
+        List<Beast> beastPool = shuffledBeastPool(sourceType, periodStart, existing);
+        if (beastPool.isEmpty()) {
+            return;
+        }
+
+        List<HuntTemplate> templates = shuffledTemplates(sourceType, periodStart);
         int missingCount = Math.min(targetCount - existing.size(), templates.size());
         for (int index = 0; index < missingCount; index++) {
             HuntTemplate template = templates.get(index);
+            List<Beast> selectedBeasts = selectGeneratedBeasts(beastPool, index, 1);
             huntRepository.save(buildGeneratedHunt(
                     template,
                     periodStart,
                     periodEnd,
                     startHour == null ? null : periodStart.withHour(startHour),
                     null,
-                    sourceType == HuntSourceType.REPEATABLE ? 5 : 1
+                    sourceType == HuntSourceType.REPEATABLE ? 5 : 1,
+                    selectedBeasts
             ));
         }
     }
 
-    private List<HuntTemplate> shuffledTemplates(HuntSourceType sourceType) {
+    private List<HuntTemplate> shuffledTemplates(HuntSourceType sourceType, LocalDateTime rotationStart) {
         List<HuntTemplate> templates = new ArrayList<>(huntTemplateRepository.findByActiveTrueAndSourceType(sourceType));
-        Collections.shuffle(templates);
+        Collections.shuffle(templates, new Random(buildRotationSeed(sourceType, rotationStart, "templates")));
         return templates;
+    }
+
+    private List<Beast> shuffledBeastPool(HuntSourceType sourceType, LocalDateTime rotationStart, List<Hunt> existingHunts) {
+        List<Beast> beastPool = new ArrayList<>(beastRepository.findAll());
+        Collections.shuffle(beastPool, new Random(buildRotationSeed(sourceType, rotationStart, "beasts")));
+        if (beastPool.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> usedBeastIds = existingHunts.stream()
+                .flatMap(hunt -> hunt.getBeasts().stream())
+                .map(Beast::getId)
+                .collect(Collectors.toSet());
+
+        List<Beast> availableBeasts = beastPool.stream()
+                .filter(beast -> !usedBeastIds.contains(beast.getId()))
+                .toList();
+
+        return availableBeasts.isEmpty() ? beastPool : new ArrayList<>(availableBeasts);
+    }
+
+    private List<Beast> selectGeneratedBeasts(List<Beast> beastPool, int offset, int count) {
+        List<Beast> selectedBeasts = new ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            selectedBeasts.add(beastPool.get((offset + index) % beastPool.size()));
+        }
+        return selectedBeasts;
     }
 
     private Hunt buildGeneratedHunt(
@@ -198,10 +219,11 @@ public class HuntGenerationService {
             LocalDateTime expiresAt,
             LocalDateTime startTime,
             LocalDateTime roomOpensAt,
-            Integer winLimitPerHunter
+            Integer winLimitPerHunter,
+            List<Beast> selectedBeasts
     ) {
         return Hunt.builder()
-                .title(buildGeneratedTitle(template, availableFrom, startTime))
+                .title(buildGeneratedTitle(template, availableFrom, startTime, selectedBeasts))
                 .type(template.getType())
                 .difficulty(template.getDifficulty())
                 .status(template.getSourceType() == HuntSourceType.DAILY_BOSS ? HuntStatus.SCHEDULED : HuntStatus.ACTIVE)
@@ -213,7 +235,7 @@ public class HuntGenerationService {
                 .expiresAt(expiresAt)
                 .winLimitPerHunter(winLimitPerHunter)
                 .maxPartySize(template.getMaxPartySize())
-                .beasts(template.getBeasts())
+                .beasts(selectedBeasts)
                 .rewardExp(scaleReward(template.getRewardExp(), template.getSourceType()))
                 .rewardGold(scaleReward(template.getRewardGold(), template.getSourceType()))
                 .build();
@@ -229,11 +251,34 @@ public class HuntGenerationService {
         return Math.max(1, Math.round(baseReward * multiplier));
     }
 
-    private String buildGeneratedTitle(HuntTemplate template, LocalDateTime availableFrom, LocalDateTime startTime) {
+    private String buildGeneratedTitle(
+            HuntTemplate template,
+            LocalDateTime availableFrom,
+            LocalDateTime startTime,
+            List<Beast> selectedBeasts
+    ) {
+        String beastLabel = selectedBeasts.stream()
+                .map(Beast::getName)
+                .collect(Collectors.joining(" / "));
+        String rotationLabel = switch (template.getSourceType()) {
+            case REPEATABLE -> "Repeatable Hunt";
+            case DAILY_BOUNTY -> "Daily Bounty";
+            case WEEKLY_CONTRACT -> "Weekly Contract";
+            case DAILY_BOSS -> "Daily Boss";
+            case MANUAL -> template.getTitle();
+        };
+
         if (template.getSourceType() == HuntSourceType.DAILY_BOSS && startTime != null) {
-            return "%s - %s".formatted(template.getTitle(), startTime.toLocalTime());
+            return "%s: %s - %s".formatted(rotationLabel, beastLabel, startTime.toLocalTime());
         }
-        return "%s - %s".formatted(template.getTitle(), availableFrom.toLocalDate());
+        return "%s: %s - %s".formatted(rotationLabel, beastLabel, availableFrom.toLocalDate());
+    }
+
+    private long buildRotationSeed(HuntSourceType sourceType, LocalDateTime rotationStart, String scope) {
+        long daySeed = rotationStart.toLocalDate().toEpochDay();
+        long sourceSeed = (long) sourceType.ordinal() * 9_973L;
+        long scopeSeed = scope.hashCode();
+        return daySeed * 1_003L + sourceSeed + scopeSeed;
     }
 
     private HuntTemplate buildTemplate(

@@ -45,6 +45,10 @@ class HuntGenerationServiceTest {
         assertThat(huntRepository.findAll().stream().filter(hunt -> hunt.getSourceType() == HuntSourceType.WEEKLY_CONTRACT)).hasSize(3);
         assertThat(huntRepository.findAll().stream().filter(hunt -> hunt.getSourceType() == HuntSourceType.DAILY_BOSS)).hasSize(3);
         assertThat(huntRepository.findAll().stream()
+                .filter(hunt -> hunt.getSourceType() == HuntSourceType.DAILY_BOUNTY || hunt.getSourceType() == HuntSourceType.WEEKLY_CONTRACT)
+                .allMatch(hunt -> hunt.getBeasts().size() == 1 && hunt.getTitle().contains(hunt.getBeasts().getFirst().getName())))
+                .isTrue();
+        assertThat(huntRepository.findAll().stream()
                 .filter(hunt -> hunt.getSourceType() == HuntSourceType.DAILY_BOSS)
                 .allMatch(hunt -> hunt.getRoomOpensAt() != null && hunt.getStartTime() != null && hunt.getRoomOpensAt().isEqual(hunt.getStartTime().minusMinutes(10))))
                 .isTrue();
