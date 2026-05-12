@@ -6,16 +6,16 @@ import worldMap from '../assets/world_map.png'
 import { getHuntPinType } from '../assets/beastVisuals'
 
 const positions = [
-  { x: 30, y: 45 },
-  { x: 58, y: 55 },
-  { x: 78, y: 35 },
-  { x: 42, y: 68 },
-  { x: 70, y: 72 },
-  { x: 18, y: 34 },
-  { x: 52, y: 28 },
-  { x: 84, y: 58 },
-  { x: 26, y: 76 },
-  { x: 64, y: 40 },
+  { x: 30, y: 50 },
+  { x: 58, y: 60 },
+  { x: 78, y: 40 },
+  { x: 42, y: 73 },
+  { x: 70, y: 77 },
+  { x: 18, y: 39 },
+  { x: 52, y: 33 },
+  { x: 84, y: 63 },
+  { x: 26, y: 81 },
+  { x: 64, y: 45 },
 ]
 
 const positionOffsets = [
@@ -35,11 +35,27 @@ const minPinSpacing = {
   y: 14,
 }
 
+const blockedZones = [
+  { minX: 0, maxX: 31, minY: 0, maxY: 48 },
+  { minX: 26, maxX: 74, minY: 0, maxY: 22 },
+  { minX: 0, maxX: 100, minY: 88, maxY: 100 },
+]
+
 function clampPosition(position) {
   return {
     x: Math.min(88, Math.max(12, position.x)),
-    y: Math.min(84, Math.max(25, position.y)),
+    y: Math.min(84, Math.max(31, position.y)),
   }
+}
+
+function isBlockedZone(position) {
+  return blockedZones.some(
+    (zone) =>
+      position.x >= zone.minX &&
+      position.x <= zone.maxX &&
+      position.y >= zone.minY &&
+      position.y <= zone.maxY,
+  )
 }
 
 function isTooClose(candidate, placedPositions) {
@@ -60,13 +76,19 @@ function getAvailablePosition(index, placedPositions) {
         y: basePosition.y + offset.y,
       })
 
-      if (!isTooClose(candidate, placedPositions)) {
+      if (!isBlockedZone(candidate) && !isTooClose(candidate, placedPositions)) {
         return candidate
       }
     }
   }
 
-  return clampPosition(positions[index % positions.length])
+  const fallbackPosition = clampPosition(positions[index % positions.length])
+
+  if (!isBlockedZone(fallbackPosition)) {
+    return fallbackPosition
+  }
+
+  return clampPosition({ x: 50, y: 60 })
 }
 
 function getWeatherTitleLines(displayName) {

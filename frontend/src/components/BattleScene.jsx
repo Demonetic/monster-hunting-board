@@ -41,7 +41,11 @@ function buildFloatingEntries(turn) {
   }
 
   if (turn.message) {
-    entries.push({ text: turn.message, variant: 'status' })
+    const normalizedMessage = turn.message.toLowerCase()
+    entries.push({
+      text: turn.message,
+      variant: normalizedMessage.includes('takes damage') ? 'damage' : 'status',
+    })
   }
 
   return entries.slice(0, 2)
