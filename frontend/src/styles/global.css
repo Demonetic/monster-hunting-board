@@ -146,12 +146,10 @@ textarea:focus-visible {
   gap: 0.02rem;
   margin: 0;
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 0.92rem;
+  font-size: 1.02rem;
   line-height: 1.02;
-  color: #f8df8a;
-  text-shadow:
-    0 1px 1px rgba(88, 58, 18, 0.85),
-    0 0 10px rgba(255, 223, 138, 0.18);
+  color: #4a2f1a;
+  text-shadow: none;
 }
 
 .weather-panel-title span {
@@ -280,13 +278,15 @@ textarea:focus-visible {
 .hunt-modal-title {
   max-width: 84%;
   margin: 0 auto 0.85rem;
-  font-size: 20px;
+  font-size: 21px;
   line-height: 1.12;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
   text-align: center;
+  color: #4a2f1a;
+  text-shadow: none;
 }
 
 .hunt-modal-info {
@@ -1775,10 +1775,11 @@ textarea:focus-visible {
 }
 
 .hunts-panel-title {
-  font-size: clamp(2.1rem, 3vw, 2.8rem);
+  font-size: clamp(2.18rem, 3.1vw, 2.9rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #412917;
+  color: #4a2f1a;
+  text-shadow: none;
 }
 
 .hunts-filter-row {
@@ -1908,6 +1909,11 @@ textarea:focus-visible {
 }
 
 .menu-panel-header .hunts-panel-title {
+  margin-top: 0.55rem;
+}
+
+.shop-panel-header .hunts-panel-title,
+.hunts-panel-header .hunts-panel-title {
   margin-top: 0.55rem;
 }
 
@@ -2250,7 +2256,6 @@ textarea:focus-visible {
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  box-shadow: 0 10px 24px rgba(27, 34, 73, 0.12);
   color: #433125;
   font-family: 'Cinzel', Georgia, serif;
   font-weight: 700;
@@ -2277,6 +2282,7 @@ textarea:focus-visible {
   padding: 0.55rem 1rem;
   border-radius: 999px;
   background: rgba(255, 252, 244, 0.78);
+  box-shadow: 0 10px 24px rgba(27, 34, 73, 0.12);
 }
 
 .battle-weather-badge > span {
@@ -2773,7 +2779,7 @@ textarea:focus-visible {
   }
 
   .hunt-modal-title {
-    font-size: 17px;
+    font-size: 18px;
     margin-bottom: 0.7rem;
   }
 
@@ -2872,7 +2878,7 @@ textarea:focus-visible {
   }
 
   .weather-panel-title {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
   }
 
   .board-weather-card > span,
