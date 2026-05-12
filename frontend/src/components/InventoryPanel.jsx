@@ -5,7 +5,6 @@ import {
   getCurrentHunter,
 } from '../api/hunterApi'
 import { getRole } from '../api/authStorage'
-import { getCurrentWeather } from '../api/weatherApi'
 import buttonActivate from '../assets/button_activate.png'
 import buttonClose from '../assets/button_close.png'
 import buttonDiscard from '../assets/button_discard.png'
@@ -13,6 +12,7 @@ import buttonUse from '../assets/button_use.png'
 import endurancePotionImage from '../assets/endurance_potion.png'
 import expPotionImage from '../assets/exp_potion.png'
 import healthPotionImage from '../assets/health_potion.png'
+import useCurrentWeather from '../hooks/useCurrentWeather'
 import inventoryPanelImage from '../assets/inventory_panel.png'
 import PlayerSummary from './PlayerSummary'
 import { getAppearanceCharacterImage } from '../constants/appearanceVisuals'
@@ -37,8 +37,7 @@ function InventoryPanel({ onClose }) {
   const [error, setError] = useState('')
   const [inventoryActionItemId, setInventoryActionItemId] = useState(null)
   const [selectedItemId, setSelectedItemId] = useState(null)
-  const [weather, setWeather] = useState(null)
-  const [weatherLoading, setWeatherLoading] = useState(!isGameMaster)
+  const { weather, weatherLoading } = useCurrentWeather(!isGameMaster)
 
   useEffect(() => {
     if (isGameMaster) {
@@ -52,23 +51,10 @@ function InventoryPanel({ onClose }) {
       setError('')
 
       try {
-        const [hunterResponse, weatherResponse] = await Promise.allSettled([
-          getCurrentHunter(),
-          getCurrentWeather(),
-        ])
+        const hunterResponse = await getCurrentHunter()
 
         if (!cancelled) {
-          if (hunterResponse.status === 'fulfilled') {
-            setHunter(hunterResponse.value.data)
-          } else {
-            throw hunterResponse.reason
-          }
-
-          if (weatherResponse.status === 'fulfilled') {
-            setWeather(weatherResponse.value.data)
-          } else {
-            setWeather(null)
-          }
+          setHunter(hunterResponse.data)
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -79,7 +65,6 @@ function InventoryPanel({ onClose }) {
       } finally {
         if (!cancelled) {
           setLoading(false)
-          setWeatherLoading(false)
         }
       }
     }

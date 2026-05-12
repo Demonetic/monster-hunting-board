@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { clearRole, clearToken, getRole, isAuthenticated } from '../api/authStorage'
 import { getAllHunts } from '../api/huntApi'
-import { getCurrentWeather } from '../api/weatherApi'
 import AuthModal from '../components/AuthModal'
 import BottomNav from '../components/BottomNav'
 import HuntModal from '../components/HuntModal'
@@ -11,6 +10,7 @@ import ManagePanel from '../components/ManagePanel'
 import MenuPanel from '../components/MenuPanel'
 import ShopPanel from '../components/ShopPanel'
 import Toast from '../components/Toast'
+import useCurrentWeather from '../hooks/useCurrentWeather'
 import titleImage from '../assets/monster_hunter_board.png'
 import BoardPage from './BoardPage'
 
@@ -23,7 +23,10 @@ function GamePage() {
   const [huntsError, setHuntsError] = useState('')
   const [selectedHuntId, setSelectedHuntId] = useState(null)
   const [toast, setToast] = useState(null)
-  const [weather, setWeather] = useState(null)
+  const {
+    weather,
+    refreshWeather,
+  } = useCurrentWeather(authenticated && role === 'HUNTER')
 
   const selectedHunt = selectedHuntId === null
     ? null
@@ -48,20 +51,6 @@ function GamePage() {
       setHuntsError(error.response?.data?.message ?? 'Could not load hunts.')
     } finally {
       setHuntsLoading(false)
-    }
-  }
-
-  const fetchWeather = async () => {
-    if (!authenticated || role !== 'HUNTER') {
-      setWeather(null)
-      return
-    }
-
-    try {
-      const response = await getCurrentWeather()
-      setWeather(response.data)
-    } catch {
-      setWeather(null)
     }
   }
 
@@ -100,31 +89,6 @@ function GamePage() {
     }
   }, [authenticated])
 
-  useEffect(() => {
-    if (!authenticated || role !== 'HUNTER') {
-      return undefined
-    }
-
-    let cancelled = false
-
-    ;(async () => {
-      try {
-        const response = await getCurrentWeather()
-        if (!cancelled) {
-          setWeather(response.data)
-        }
-      } catch {
-        if (!cancelled) {
-          setWeather(null)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [authenticated, role])
-
   const handleAuthenticated = () => {
     setAuthenticated(true)
     setRole(getRole())
@@ -138,7 +102,6 @@ function GamePage() {
     setAuthenticated(false)
     setRole('')
     setHunts([])
-    setWeather(null)
     setHuntsLoading(false)
     setHuntsError('')
     showToast('Logged out', 'success')
@@ -185,7 +148,7 @@ function GamePage() {
         <MenuPanel
           onClose={() => setActiveOverlay(null)}
           showToast={showToast}
-          onLocationUpdated={fetchWeather}
+          onLocationUpdated={refreshWeather}
         />
       )}
 

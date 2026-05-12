@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { getAppearanceOptions } from '../api/authApi'
 import { getCurrentUsername, getRole } from '../api/authStorage'
 import { getCurrentHunter, updateAppearance, updateLocation } from '../api/hunterApi'
-import { getCurrentWeather } from '../api/weatherApi'
 import buttonClose from '../assets/button_close.png'
 import buttonSave from '../assets/button_save.png'
+import useCurrentWeather from '../hooks/useCurrentWeather'
 import panelImage from '../assets/panel_information.png'
 import AppearanceOptionSelector from './AppearanceOptionSelector'
 import PassiveSkillSummary from './PassiveSkillSummary'
@@ -26,9 +26,9 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
   const [isSavingAppearance, setIsSavingAppearance] = useState(false)
   const [selectedCity, setSelectedCity] = useState('Stockholm')
   const [isSavingLocation, setIsSavingLocation] = useState(false)
-  const [weather, setWeather] = useState(null)
   const [appearanceOptions, setAppearanceOptions] = useState([])
   const [previewAppearance, setPreviewAppearance] = useState('MAGE')
+  const { weather, refreshWeather } = useCurrentWeather(!isGameMaster)
 
   useEffect(() => {
     if (isGameMaster) {
@@ -42,9 +42,8 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
       setError('')
 
       try {
-        const [hunterResponse, weatherResponse, appearanceOptionsResponse] = await Promise.allSettled([
+        const [hunterResponse, appearanceOptionsResponse] = await Promise.allSettled([
           getCurrentHunter(),
-          getCurrentWeather(),
           getAppearanceOptions(),
         ])
 
@@ -58,7 +57,6 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
           setSelectedAppearance(hunterData.appearance ?? 'MAGE')
           setPreviewAppearance(hunterData.appearance ?? 'MAGE')
           setSelectedCity(hunterData.city ?? 'Stockholm')
-          setWeather(weatherResponse.status === 'fulfilled' ? weatherResponse.value.data : null)
           setAppearanceOptions(
             appearanceOptionsResponse.status === 'fulfilled'
               ? appearanceOptionsResponse.value.data ?? []
@@ -162,12 +160,7 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
       const response = await updateLocation(selectedCity)
       setHunter(response.data)
       setSelectedCity(response.data.city ?? selectedCity)
-      try {
-        const weatherResponse = await getCurrentWeather()
-        setWeather(weatherResponse.data)
-      } catch {
-        setWeather(null)
-      }
+      await refreshWeather()
       setMessage('Location updated')
       showToast?.('Location updated', 'success')
       onLocationUpdated?.()

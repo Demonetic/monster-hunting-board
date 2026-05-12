@@ -25,7 +25,7 @@ import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 @RequiredArgsConstructor
 public class WeatherService {
     private static final Logger log = LoggerFactory.getLogger(WeatherService.class);
-    private static final Duration WEATHER_CACHE_TTL = Duration.ofMinutes(45);
+    private static final Duration WEATHER_CACHE_TTL = Duration.ofMinutes(15);
     private static final Duration LOCATION_CACHE_TTL = Duration.ofHours(12);
     private static final int GEOCODING_RESULT_COUNT = 10;
     private static final double WINDY_THRESHOLD_KMH = 30.0;
