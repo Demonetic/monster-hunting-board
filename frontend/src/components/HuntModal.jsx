@@ -762,12 +762,12 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
               <p>
                 <span>Primary Beast:</span> {getBeastDisplayName(firstBeast)}
               </p>
-              {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
+              {role === 'HUNTER' && hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
                 <p>
                   <span>Solo Wins:</span> {hunt.winCount} / {hunt.maxWins}
                 </p>
               )}
-              {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
+              {role === 'HUNTER' && hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
                 <p>
                   <span>Completion:</span> {hunt.completed ? 'Completed' : `${Math.max(hunt.maxWins - hunt.winCount, 0)} wins remaining`}
                 </p>

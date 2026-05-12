@@ -61,6 +61,7 @@ function formatType(type) {
 }
 
 function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
+  const [activeTab, setActiveTab] = useState('HUNTS')
   const [hunts, setHunts] = useState([])
   const [beasts, setBeasts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -321,7 +322,22 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
         </button>
 
         <div className="manage-panel-content">
-          <h2 className="manage-panel-title">Manage</h2>
+          <div className="hunts-panel-header manage-panel-header">
+            <h2 className="hunts-panel-title manage-panel-title">Manage</h2>
+
+            <div className="hunts-filter-row manage-filter-row">
+              {['HUNTS', 'BEASTS'].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`hunts-filter-button ${activeTab === tab ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab.charAt(0) + tab.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {errorMessage && <p className="manage-panel-error">{errorMessage}</p>}
 
@@ -466,75 +482,79 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
             </div>
           )}
 
-          <div className="manage-panel-grid">
-            <section className="manage-panel-section">
-              <div className="manage-panel-section-header">
-                <h3>Hunts Management</h3>
-                <button type="button" className="manage-panel-button" onClick={openCreateHunt}>
-                  <img src={buttonCreateHunt} alt="" />
-                </button>
-              </div>
+          <section className="manage-panel-section manage-panel-stage">
+            {activeTab === 'HUNTS' ? (
+              <>
+                <div className="manage-panel-section-header">
+                  <h3>Hunts Management</h3>
+                  <button type="button" className="manage-panel-button" onClick={openCreateHunt}>
+                    <img src={buttonCreateHunt} alt="" />
+                  </button>
+                </div>
 
-              <div className="manage-list">
-                {isLoading ? (
-                  <p className="manage-panel-message">Loading hunts...</p>
-                ) : (
-                  hunts.map((hunt) => (
-                    <div key={hunt.id} className="manage-list-row">
-                      <div className="manage-list-copy">
-                        <h4>{hunt.title}</h4>
-                        <p>{formatType(hunt.type)}</p>
-                        <p>Hunt Difficulty: {hunt.difficulty}</p>
-                        <p>Beast Templates: {hunt.beasts?.map((beast) => getBeastDisplayName(beast)).join(', ') || 'Unknown'}</p>
-                      </div>
-                      <div className="manage-list-actions">
-                        <button type="button" className="manage-inline-button" onClick={() => openUpdateHunt(hunt)} aria-label="Update hunt">
-                          <img src={buttonUpdate} alt="" />
-                        </button>
-                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteHunt(hunt.id)} aria-label="Delete hunt">
-                          <img src={buttonDelete} alt="" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-            </section>
-
-            <section className="manage-panel-section">
-              <div className="manage-panel-section-header">
-                <h3>Beast Management</h3>
-                <button type="button" className="manage-panel-button" onClick={() => setBeastFormOpen(true)}>
-                  <img src={buttonCreateBeast} alt="" />
-                </button>
-              </div>
-
-              <div className="manage-list">
-                {isLoading ? (
-                  <p className="manage-panel-message">Loading beasts...</p>
-                ) : (
-                  beasts.map((beast) => (
-                    <div key={beast.id} className="manage-list-row">
-                      <div className="manage-list-copy manage-list-copy-beast">
-                        <img className="manage-beast-icon" src={getBeastImage(beast)} alt={beast.type} />
-                        <div>
-                          <h4>{getBeastDisplayName(beast)}</h4>
-                          <p>{beast.type}</p>
+                <div className="manage-list">
+                  {isLoading ? (
+                    <p className="manage-panel-message">Loading hunts...</p>
+                  ) : hunts.length === 0 ? (
+                    <p className="hunts-empty">No hunts found.</p>
+                  ) : (
+                    hunts.map((hunt) => (
+                      <div key={hunt.id} className="manage-list-row">
+                        <div className="manage-list-copy">
+                          <h4>{hunt.title}</h4>
+                          <p>{formatType(hunt.type)}</p>
+                          <p>Hunt Difficulty: {hunt.difficulty}</p>
+                          <p>Beast Templates: {hunt.beasts?.map((beast) => getBeastDisplayName(beast)).join(', ') || 'Unknown'}</p>
+                        </div>
+                        <div className="manage-list-actions">
+                          <button type="button" className="manage-inline-button" onClick={() => openUpdateHunt(hunt)} aria-label="Update hunt">
+                            <img src={buttonUpdate} alt="" />
+                          </button>
+                          <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteHunt(hunt.id)} aria-label="Delete hunt">
+                            <img src={buttonDelete} alt="" />
+                          </button>
                         </div>
                       </div>
-                      <div className="manage-list-actions">
-                        <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteBeast(beast.id)} aria-label="Delete beast">
-                          <img src={buttonDelete} alt="" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="manage-panel-section-header">
+                  <h3>Beast Management</h3>
+                  <button type="button" className="manage-panel-button" onClick={() => setBeastFormOpen(true)}>
+                    <img src={buttonCreateBeast} alt="" />
+                  </button>
+                </div>
 
-            </section>
-          </div>
+                <div className="manage-list">
+                  {isLoading ? (
+                    <p className="manage-panel-message">Loading beasts...</p>
+                  ) : beasts.length === 0 ? (
+                    <p className="hunts-empty">No beasts found.</p>
+                  ) : (
+                    beasts.map((beast) => (
+                      <div key={beast.id} className="manage-list-row">
+                        <div className="manage-list-copy manage-list-copy-beast">
+                          <img className="manage-beast-icon" src={getBeastImage(beast)} alt={beast.type} />
+                          <div>
+                            <h4>{getBeastDisplayName(beast)}</h4>
+                            <p>{beast.type}</p>
+                          </div>
+                        </div>
+                        <div className="manage-list-actions">
+                          <button type="button" className="manage-inline-button is-danger" onClick={() => handleDeleteBeast(beast.id)} aria-label="Delete beast">
+                            <img src={buttonDelete} alt="" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </section>
 
           {beastFormOpen && (
             <div className="manage-modal-layer">
