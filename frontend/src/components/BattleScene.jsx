@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import battleArenaImage from '../assets/battle_arena.png'
 import characterBard from '../assets/character_bard.png'
 import characterHunter from '../assets/character_hunter.png'
 import characterKnight from '../assets/character_knight.png'
 import characterMage from '../assets/character_mage.png'
 import characterPaladin from '../assets/character_paladin.png'
 import characterRanger from '../assets/character_ranger.png'
+import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getBeastImage } from '../assets/beastVisuals'
 import BattleCombatant from './BattleCombatant'
 import BattleResultOverlay from './BattleResultOverlay'
@@ -125,6 +125,10 @@ function buildInitialDefeatedCombatants(initialCombatants) {
 function BattleScene({ battleResult, onContinue }) {
   const weather = battleResult?.weather ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
+  const arenaBackgroundImage = useMemo(
+    () => getBattleArenaBackground(getBattleArenaDifficulty(battleResult)),
+    [battleResult],
+  )
   const beastLabel = battleResult?.beastName ?? battleResult?.beastType ?? 'Unknown Beast'
   const beastSprite = useMemo(
     () => getBeastImage({ type: battleResult?.beastType, imageKey: battleResult?.beastImageKey }),
@@ -267,7 +271,7 @@ function BattleScene({ battleResult, onContinue }) {
   return (
     <main
       className={`battle-page ${isGroupBattle ? 'is-group-battle' : ''}`.trim()}
-      style={{ backgroundImage: `url(${battleArenaImage})` }}
+      style={{ backgroundImage: `url(${arenaBackgroundImage})` }}
     >
       <div className="battle-stage">
         {!isGroupBattle && weather?.displayName && (

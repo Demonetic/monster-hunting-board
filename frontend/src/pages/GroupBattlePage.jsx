@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { completeHunt } from '../api/huntApi'
 import BattleScene from '../components/BattleScene'
 
 function GroupBattlePage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const { huntId } = useParams()
   const [battleResult, setBattleResult] = useState(null)
@@ -16,7 +17,10 @@ function GroupBattlePage() {
       try {
         const response = await completeHunt(huntId, true)
         if (!cancelled) {
-          setBattleResult(response.data)
+          setBattleResult({
+            ...response.data,
+            difficulty: response.data?.difficulty ?? location.state?.difficulty ?? null,
+          })
         }
       } catch (error) {
         if (!cancelled) {
@@ -28,7 +32,7 @@ function GroupBattlePage() {
     return () => {
       cancelled = true
     }
-  }, [huntId])
+  }, [huntId, location.state])
 
   if (errorMessage) {
     return (

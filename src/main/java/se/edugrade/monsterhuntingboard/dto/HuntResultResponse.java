@@ -1,12 +1,14 @@
 package se.edugrade.monsterhuntingboard.dto;
 
 import java.util.List;
+import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 
 public record HuntResultResponse(
         Long huntId,
         String huntTitle,
+        Difficulty difficulty,
         Long currentHunterId,
         String hunterName,
         String hunterAppearance,
@@ -53,6 +55,7 @@ public record HuntResultResponse(
         return new HuntResultResponse(
                 hunt.getId(),
                 hunt.getTitle(),
+                hunt.getDifficulty(),
                 hunter.getId(),
                 hunter.getDisplayName(),
                 hunter.getAppearance().name(),

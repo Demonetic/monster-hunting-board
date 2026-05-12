@@ -2,12 +2,14 @@ package se.edugrade.monsterhuntingboard.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 
 public record GroupLobbyResponse(
         Long huntId,
         String huntTitle,
+        Difficulty difficulty,
         HuntStatus status,
         LocalDateTime startTime,
         int currentPartySize,
@@ -26,6 +28,7 @@ public record GroupLobbyResponse(
         return new GroupLobbyResponse(
                 hunt.getId(),
                 hunt.getTitle(),
+                hunt.getDifficulty(),
                 hunt.getStatus(),
                 hunt.getStartTime(),
                 currentPartySize,

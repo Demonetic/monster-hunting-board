@@ -414,18 +414,29 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
   const openBattlePage = (result) => {
     navigate('/battle', {
       state: {
-        battleResult: result,
+        battleResult: {
+          ...result,
+          difficulty: result?.difficulty ?? hunt.difficulty,
+        },
         weatherEffect: null,
       },
     })
   }
 
   const openGroupLobbyPage = () => {
-    navigate(`/hunts/${hunt.id}/lobby`)
+    navigate(`/hunts/${hunt.id}/lobby`, {
+      state: {
+        difficulty: hunt.difficulty,
+      },
+    })
   }
 
   const openGroupBattlePage = () => {
-    navigate(`/battle/group/${hunt.id}`)
+    navigate(`/battle/group/${hunt.id}`, {
+      state: {
+        difficulty: hunt.difficulty,
+      },
+    })
   }
 
   const primaryAction = actionConfig?.primary ?? null

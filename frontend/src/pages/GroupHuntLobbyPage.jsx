@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import battleArenaImage from '../assets/battle_arena.png'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getGroupLobby } from '../api/huntApi'
 
 const LOBBY_OPEN_MS = 10 * 60 * 1000
@@ -14,6 +14,7 @@ function formatCountdown(msRemaining) {
 }
 
 function GroupHuntLobbyPage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const { huntId } = useParams()
   const [lobby, setLobby] = useState(null)
@@ -27,7 +28,10 @@ function GroupHuntLobbyPage() {
       try {
         const response = await getGroupLobby(huntId)
         if (!cancelled) {
-          setLobby(response.data)
+          setLobby({
+            ...response.data,
+            difficulty: response.data?.difficulty ?? location.state?.difficulty ?? null,
+          })
           setErrorMessage('')
         }
       } catch (error) {
@@ -44,7 +48,7 @@ function GroupHuntLobbyPage() {
       cancelled = true
       window.clearInterval(refreshId)
     }
-  }, [huntId])
+  }, [huntId, location.state])
 
   useEffect(() => {
     const initialTickId = window.setTimeout(() => {
@@ -62,6 +66,7 @@ function GroupHuntLobbyPage() {
   }, [])
 
   const startTimeMs = lobby?.startTime ? new Date(lobby.startTime).getTime() : null
+  const arenaBackgroundImage = getBattleArenaBackground(getBattleArenaDifficulty(lobby))
   const msUntilStart = startTimeMs ? startTimeMs - now : null
   const isLobbyOpen = startTimeMs !== null && msUntilStart <= LOBBY_OPEN_MS
   const hasStarted = lobby?.status === 'ACTIVE' || (startTimeMs !== null && msUntilStart <= 0)
@@ -94,7 +99,7 @@ function GroupHuntLobbyPage() {
   }
 
   return (
-    <main className="group-lobby-page" style={{ backgroundImage: `url(${battleArenaImage})` }}>
+    <main className="group-lobby-page" style={{ backgroundImage: `url(${arenaBackgroundImage})` }}>
       <section className="group-lobby-card">
         <p className="group-lobby-kicker">{lobby.huntTitle}</p>
         <h1 className="group-lobby-title">{lobby.beastName}</h1>

@@ -248,6 +248,7 @@ class HuntControllerTest {
         return new HuntResultResponse(
                 huntId,
                 title,
+                Difficulty.MEDIUM,
                 10L,
                 "Aria",
                 "KNIGHT",
