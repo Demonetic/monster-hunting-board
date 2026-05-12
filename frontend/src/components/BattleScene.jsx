@@ -7,6 +7,7 @@ import characterPaladin from '../assets/character_paladin.png'
 import characterRanger from '../assets/character_ranger.png'
 import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getBeastImage } from '../assets/beastVisuals'
+import { formatWeatherTemperature, getWeatherTitleLines } from '../constants/weatherPresentation'
 import weatherPanel from '../assets/weather_panel.png'
 import BattleCombatant from './BattleCombatant'
 import BattleResultOverlay from './BattleResultOverlay'
@@ -125,25 +126,6 @@ function buildInitialDefeatedCombatants(initialCombatants) {
   }
 
   return defeatedCombatants
-}
-
-function getWeatherTitleLines(displayName) {
-  if (!displayName) {
-    return []
-  }
-
-  return displayName
-    .split('/')
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
-function formatWeatherTemperature(temperatureCelsius) {
-  if (!Number.isFinite(temperatureCelsius)) {
-    return ''
-  }
-
-  return `${Math.round(temperatureCelsius)}°`
 }
 
 function BattleScene({ battleResult, onContinue }) {
@@ -307,7 +289,7 @@ function BattleScene({ battleResult, onContinue }) {
     >
       <div className="battle-stage">
         {!isGroupBattle && weather?.displayName && (
-        <div
+          <div
             className="battle-weather-badge"
             style={{ backgroundImage: `url(${weatherPanel})` }}
           >

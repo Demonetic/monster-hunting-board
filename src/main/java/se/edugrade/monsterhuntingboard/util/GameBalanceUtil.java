@@ -1,7 +1,6 @@
 package se.edugrade.monsterhuntingboard.util;
 
 import se.edugrade.monsterhuntingboard.model.Appearance;
-import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 
 public final class GameBalanceUtil {
@@ -45,10 +44,6 @@ public final class GameBalanceUtil {
         return 20 + (level * 8);
     }
 
-    public static int calculateBaseHp(int level) {
-        return calculateBaseHp(level, null);
-    }
-
     public static int calculateBaseHp(int level, Appearance appearance) {
         int baseHp = 100 + ((level - 1) * 10);
         if (appearance == Appearance.PALADIN) {
@@ -57,21 +52,8 @@ public final class GameBalanceUtil {
         return baseHp;
     }
 
-    public static int calculateLossExp(Difficulty difficulty) {
-        return switch (difficulty) {
-            case EASY -> -10;
-            case MEDIUM -> -25;
-            case HARD -> -50;
-            case BOSS -> -100;
-        };
-    }
-
     public static RewardResult applyWinReward(Hunt hunt) {
         return new RewardResult(hunt.getRewardExp(), hunt.getRewardGold());
-    }
-
-    public static RewardResult applyLoss(Difficulty difficulty) {
-        return new RewardResult(calculateLossExp(difficulty), 0);
     }
 
     public static int applyExpPotionBonus(int expReward) {

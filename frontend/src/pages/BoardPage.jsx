@@ -4,6 +4,7 @@ import logoRound from '../assets/logo_round.png'
 import weatherPanel from '../assets/weather_panel.png'
 import worldMap from '../assets/world_map.png'
 import { getHuntPinType } from '../assets/beastVisuals'
+import { formatWeatherTemperature, getWeatherTitleLines } from '../constants/weatherPresentation'
 
 const positions = [
   { x: 30, y: 50 },
@@ -89,25 +90,6 @@ function getAvailablePosition(index, placedPositions) {
   }
 
   return clampPosition({ x: 50, y: 60 })
-}
-
-function getWeatherTitleLines(displayName) {
-  if (!displayName) {
-    return []
-  }
-
-  return displayName
-    .split('/')
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
-function formatWeatherTemperature(temperatureCelsius) {
-  if (!Number.isFinite(temperatureCelsius)) {
-    return ''
-  }
-
-  return `${Math.round(temperatureCelsius)}°`
 }
 
 function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
