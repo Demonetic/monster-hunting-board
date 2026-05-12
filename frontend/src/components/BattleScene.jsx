@@ -7,6 +7,7 @@ import characterPaladin from '../assets/character_paladin.png'
 import characterRanger from '../assets/character_ranger.png'
 import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getBeastImage } from '../assets/beastVisuals'
+import weatherPanel from '../assets/weather_panel.png'
 import BattleCombatant from './BattleCombatant'
 import BattleResultOverlay from './BattleResultOverlay'
 
@@ -122,6 +123,17 @@ function buildInitialDefeatedCombatants(initialCombatants) {
   return defeatedCombatants
 }
 
+function getWeatherTitleLines(displayName) {
+  if (!displayName) {
+    return []
+  }
+
+  return displayName
+    .split('/')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 function BattleScene({ battleResult, onContinue }) {
   const weather = battleResult?.weather ?? null
   const turns = useMemo(() => battleResult?.turns ?? [], [battleResult])
@@ -147,6 +159,10 @@ function BattleScene({ battleResult, onContinue }) {
     hunters: initialHunters,
   }), [battleResult, beastLabel, beastSprite, initialHunters])
   const isGroupBattle = initialHunters.length > 1
+  const weatherTitleLines = useMemo(
+    () => getWeatherTitleLines(weather?.displayName),
+    [weather?.displayName],
+  )
 
   const [phase, setPhase] = useState('intro')
   const [playedTurnIndex, setPlayedTurnIndex] = useState(-1)
@@ -275,8 +291,15 @@ function BattleScene({ battleResult, onContinue }) {
     >
       <div className="battle-stage">
         {!isGroupBattle && weather?.displayName && (
-          <div className="battle-weather-badge">
-            <strong>{weather.displayName}</strong>
+        <div
+            className="battle-weather-badge"
+            style={{ backgroundImage: `url(${weatherPanel})` }}
+          >
+            <strong className="weather-panel-title">
+              {weatherTitleLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </strong>
             <span>{weather.activeEffects?.[0] ?? 'No weather effects'}</span>
           </div>
         )}

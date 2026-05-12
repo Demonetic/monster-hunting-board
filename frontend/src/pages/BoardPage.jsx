@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import HuntPin from '../components/HuntPin'
+import logoRound from '../assets/logo_round.png'
+import weatherPanel from '../assets/weather_panel.png'
 import worldMap from '../assets/world_map.png'
 import { getHuntPinType } from '../assets/beastVisuals'
 
@@ -67,6 +69,17 @@ function getAvailablePosition(index, placedPositions) {
   return clampPosition(positions[index % positions.length])
 }
 
+function getWeatherTitleLines(displayName) {
+  if (!displayName) {
+    return []
+  }
+
+  return displayName
+    .split('/')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
   const mappedHunts = useMemo(
     () => {
@@ -86,15 +99,29 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
     },
     [hunts],
   )
+  const weatherTitleLines = useMemo(
+    () => getWeatherTitleLines(weather?.displayName),
+    [weather?.displayName],
+  )
 
   return (
     <main
       className="board-page"
       style={{ backgroundImage: `url(${worldMap})` }}
     >
+      <img className="board-logo-round" src={logoRound} alt="" aria-hidden="true" />
+
       {weather && (
-        <section className="board-weather-card" aria-label="Current weather">
-          <strong>{weather.displayName}</strong>
+        <section
+          className="board-weather-card"
+          aria-label="Current weather"
+          style={{ backgroundImage: `url(${weatherPanel})` }}
+        >
+          <strong className="weather-panel-title">
+            {weatherTitleLines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </strong>
           <span>{weather.city}{weather.country ? `, ${weather.country}` : ''}</span>
           <p>{weather.activeEffects[0] ?? 'No weather effects'}</p>
         </section>
