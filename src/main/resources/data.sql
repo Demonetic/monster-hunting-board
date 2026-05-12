@@ -34,18 +34,6 @@ WHERE NOT EXISTS (
     WHERE user_account_id = (SELECT id FROM user_accounts WHERE username = 'hunter2')
 );
 
-SET FOREIGN_KEY_CHECKS = 0;
-
-DELETE FROM hunt_participations;
-DELETE FROM hunter_generated_hunt_progress;
-DELETE FROM hunt_beasts;
-DELETE FROM hunt_template_beasts;
-DELETE FROM hunts;
-DELETE FROM hunt_templates;
-DELETE FROM beasts;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
 SET @schema_name = DATABASE();
 
 SET @add_beast_name_sql = (
@@ -82,10 +70,6 @@ PREPARE drop_beast_difficulty_stmt FROM @drop_beast_difficulty_sql;
 EXECUTE drop_beast_difficulty_stmt;
 DEALLOCATE PREPARE drop_beast_difficulty_stmt;
 
-ALTER TABLE beasts AUTO_INCREMENT = 1;
-ALTER TABLE hunts AUTO_INCREMENT = 1;
-ALTER TABLE hunt_templates AUTO_INCREMENT = 1;
-
 INSERT INTO beasts (id, name, type, hp, attack_power, reward_exp, reward_gold)
 VALUES
     (1, 'Basilisk', 'BASILISK', 110, 18, 60, 30),
@@ -93,4 +77,11 @@ VALUES
     (3, 'Pegasus', 'PEGASUS', 165, 28, 100, 60),
     (4, 'Chimera', 'CHIMERA', 260, 48, 190, 130),
     (5, 'Phoenix', 'PHOENIX', 320, 58, 240, 180),
-    (6, 'Dragon', 'DRAGON', 520, 82, 420, 520);
+    (6, 'Dragon', 'DRAGON', 520, 82, 420, 520)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    type = VALUES(type),
+    hp = VALUES(hp),
+    attack_power = VALUES(attack_power),
+    reward_exp = VALUES(reward_exp),
+    reward_gold = VALUES(reward_gold);
