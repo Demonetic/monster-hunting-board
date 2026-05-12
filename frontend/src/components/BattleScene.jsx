@@ -137,16 +137,6 @@ function BattleScene({ battleResult, onContinue }) {
   const [floatingTextsByCombatant, setFloatingTextsByCombatant] = useState({})
 
   useEffect(() => {
-    setPhase('intro')
-    setPlayedTurnIndex(-1)
-    setHunters(initialCombatants.hunters)
-    setBeastHp(initialCombatants.beast.currentHp)
-    setActingCombatantId('')
-    setDamagedCombatantId('')
-    setFloatingTextsByCombatant({})
-  }, [initialCombatants])
-
-  useEffect(() => {
     if (!battleResult || phase !== 'intro') {
       return undefined
     }
@@ -284,7 +274,6 @@ function BattleScene({ battleResult, onContinue }) {
       {phase === 'finished' && (
         <BattleResultOverlay
           result={battleResult}
-          weatherEffect={weather}
           onContinue={onContinue}
         />
       )}

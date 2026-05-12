@@ -51,7 +51,7 @@ function GroupBattlePage() {
     )
   }
 
-  return <BattleScene battleResult={battleResult} onContinue={() => navigate('/')} />
+  return <BattleScene key={JSON.stringify(battleResult)} battleResult={battleResult} onContinue={() => navigate('/')} />
 }
 
 export default GroupBattlePage

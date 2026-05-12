@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import battleArenaImage from '../assets/battle_arena.png'
 import { getGroupLobby } from '../api/huntApi'
@@ -17,7 +17,7 @@ function GroupHuntLobbyPage() {
   const navigate = useNavigate()
   const { huntId } = useParams()
   const [lobby, setLobby] = useState(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -47,17 +47,21 @@ function GroupHuntLobbyPage() {
   }, [huntId])
 
   useEffect(() => {
+    const initialTickId = window.setTimeout(() => {
+      setNow(Date.now())
+    }, 0)
+
     const tickId = window.setInterval(() => {
       setNow(Date.now())
     }, 1000)
 
-    return () => window.clearInterval(tickId)
+    return () => {
+      window.clearTimeout(initialTickId)
+      window.clearInterval(tickId)
+    }
   }, [])
 
-  const startTimeMs = useMemo(
-    () => (lobby?.startTime ? new Date(lobby.startTime).getTime() : null),
-    [lobby?.startTime],
-  )
+  const startTimeMs = lobby?.startTime ? new Date(lobby.startTime).getTime() : null
   const msUntilStart = startTimeMs ? startTimeMs - now : null
   const isLobbyOpen = startTimeMs !== null && msUntilStart <= LOBBY_OPEN_MS
   const hasStarted = lobby?.status === 'ACTIVE' || (startTimeMs !== null && msUntilStart <= 0)

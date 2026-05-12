@@ -1,6 +1,6 @@
 import panelBattleResult from '../assets/panel_battle_result.png'
 
-function BattleResultOverlay({ result, weatherEffect, onContinue }) {
+function BattleResultOverlay({ result, onContinue }) {
   const expLabel = result.expChange >= 0 ? 'EXP earned' : 'EXP lost'
   const goldLabel = result.goldChange >= 0 ? 'Gold earned' : 'Gold lost'
   const itemsGained = result.itemsGained ?? []
