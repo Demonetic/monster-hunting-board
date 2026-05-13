@@ -66,17 +66,19 @@ function ChatBox({
   }, [canLoad, isLobbyChat, lobbyId])
 
   useEffect(() => {
-    loadMessages({ showLoading: true })
-
     if (!canLoad) {
       return undefined
     }
 
+    const initialLoadId = window.setTimeout(() => {
+      loadMessages({ showLoading: true })
+    }, 0)
     const intervalId = window.setInterval(() => {
       loadMessages()
     }, POLL_INTERVAL_MS)
 
     return () => {
+      window.clearTimeout(initialLoadId)
       window.clearInterval(intervalId)
     }
   }, [canLoad, loadMessages])
