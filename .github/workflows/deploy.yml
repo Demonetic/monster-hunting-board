@@ -1,0 +1,30 @@
+name: Deploy to Hetzner
+
+on:
+  workflow_run:
+    workflows:
+      - Publish Docker Images
+    types:
+      - completed
+
+jobs:
+  deploy:
+    name: Deploy production containers
+    runs-on: ubuntu-latest
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_PORT }}
+          script: |
+            cd ~/git/06_devops_assignment_1_individual
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            docker compose -f docker-compose.prod.yml ps
