@@ -9,6 +9,7 @@ import buttonCreateHunt from '../assets/button_create_hunt.png'
 import buttonDelete from '../assets/button_delete.png'
 import buttonUpdate from '../assets/button_update.png'
 import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
+import BeastSelector from './BeastSelector'
 
 const huntTypeOptions = [
   { value: 'HUNT', label: 'Group Hunt' },
@@ -163,9 +164,11 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
     })
   }
 
-  const handleBeastSelectionChange = (event) => {
-    const selectedValues = Array.from(event.target.selectedOptions, (option) => Number(option.value))
-    setHuntForm((current) => ({ ...current, beastIds: selectedValues }))
+  const handleToggleHuntBeast = (beastId) => {
+    setHuntForm((current) => ({
+      ...current,
+      beastIds: [beastId],
+    }))
   }
 
   const handleBeastFieldChange = (event) => {
@@ -422,18 +425,12 @@ function ManagePanel({ onClose, onHuntsChanged, onBeastsChanged, showToast }) {
 
                 <label className="manage-field manage-field-beasts">
                   <span>Beasts</span>
-                  <select
-                    multiple
-                    value={huntForm.beastIds.map(String)}
-                    onChange={handleBeastSelectionChange}
-                    size={Math.min(4, Math.max(beastOptions.length, 2))}
-                  >
-                    {beastOptions.map((beast) => (
-                      <option key={beast.id} value={beast.id}>
-                        {beast.label}
-                      </option>
-                    ))}
-                  </select>
+                  <BeastSelector
+                    options={beastOptions}
+                    selectedIds={huntForm.beastIds}
+                    onToggle={handleToggleHuntBeast}
+                    className="manage-beast-selector"
+                  />
                 </label>
 
                 <div className="manage-form-row">

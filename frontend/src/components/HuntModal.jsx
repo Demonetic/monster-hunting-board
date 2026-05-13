@@ -18,6 +18,7 @@ import buttonSave from '../assets/button_save.png'
 import buttonStart from '../assets/button_start.png'
 import buttonUpdate from '../assets/button_update.png'
 import { getBeastDisplayName, getBeastImage } from '../assets/beastVisuals'
+import BeastSelector from './BeastSelector'
 
 const HUNT_PROGRESS_KEY = 'huntProgress'
 const LOW_HP_WARNING_THRESHOLD = 20
@@ -673,12 +674,11 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
     setUpdateForm((current) => ({ ...current, [name]: value }))
   }
 
-  const handleUpdateBeastSelectionChange = (event) => {
-    const selectedValues = Array.from(
-      event.target.selectedOptions,
-      (option) => Number(option.value),
-    )
-    setUpdateForm((current) => ({ ...current, beastIds: selectedValues }))
+  const handleToggleUpdateBeast = (beastId) => {
+    setUpdateForm((current) => ({
+      ...current,
+      beastIds: [beastId],
+    }))
   }
 
   const handleSubmitUpdate = async (event) => {
@@ -936,19 +936,16 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
 
               <label className="hunt-update-field">
                 <span>Beasts</span>
-                <select
-                  multiple
-                  value={updateForm.beastIds.map(String)}
-                  onChange={handleUpdateBeastSelectionChange}
-                  size={Math.min(4, Math.max(availableBeasts.length, 2))}
+                <BeastSelector
+                  options={availableBeasts.map((beast) => ({
+                    id: beast.id,
+                    label: `${getBeastDisplayName(beast)} (${beast.type})`,
+                  }))}
+                  selectedIds={updateForm.beastIds}
+                  onToggle={handleToggleUpdateBeast}
                   disabled={isLoadingBeasts}
-                >
-                  {availableBeasts.map((beast) => (
-                    <option key={beast.id} value={beast.id}>
-                      {`${getBeastDisplayName(beast)} (${beast.type})`}
-                    </option>
-                  ))}
-                </select>
+                  className="hunt-update-beast-selector"
+                />
               </label>
 
               <div className="hunt-update-row">
