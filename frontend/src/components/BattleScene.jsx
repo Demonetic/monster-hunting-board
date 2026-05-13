@@ -119,9 +119,9 @@ function getHunterPlacementStyle(index, count) {
   const step = safeCount >= 9 ? 4.5 : 5.1
   const bottom = 5 + index * step
   const left = 1.5 + (index % 2) * 2.1 + Math.floor(index / 2) * 0.55
-  const spriteWidth = safeCount >= 9 ? 'min(128px, 10vw)' : 'min(142px, 11vw)'
-  const uiWidth = safeCount >= 9 ? '118px' : '126px'
-  const uiOffset = safeCount >= 9 ? '76%' : '72%'
+  const spriteWidth = 'min(136px, 10.5vw)'
+  const uiWidth = '122px'
+  const uiOffset = safeCount >= 9 ? '74%' : '72%'
   const uiBottom = safeCount >= 9 ? '46%' : '48%'
 
   return {

@@ -144,19 +144,6 @@ function GroupHuntLobbyPage() {
           </div>
         </div>
 
-        {lobby.participants?.length > 0 && (
-          <section className="group-lobby-party-panel" aria-label="Party members">
-            <p className="group-lobby-party-heading">Hunters in party</p>
-            <ul className="group-lobby-party-list">
-              {lobby.participants.map((participant) => (
-                <li key={participant.hunterId}>
-                  {participant.hunterName} <span>{participant.hunterAppearance}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         {lobby.joined && !hasStarted && (
           <ChatBox
             mode="LOBBY"
