@@ -25,7 +25,7 @@ jobs:
           cache: maven
 
       - name: Run backend tests
-        run: ./mvnw -B test
+        run: mvn -B test
 
   frontend-check:
     name: Frontend lint and build
@@ -63,10 +63,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@
+        uses: actions/checkout@v4
 
       - name: Prepare env file
         run: cp .env.example .env
+
+      - name: Validate docker-compose
+        run: docker compose config
+
+      - name: Validate production docker-compose
+        run: docker compose -f docker-compose.prod.yml config
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -86,6 +92,3 @@ jobs:
           file: ./frontend/Dockerfile
           push: false
           tags: monster-hunting-board-frontend:ci
-
-      - name: Validate docker-compose
-        run: docker compose config

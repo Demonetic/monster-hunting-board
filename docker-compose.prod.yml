@@ -1,11 +1,10 @@
 services:
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/demonetic/monster-hunter-board-frontend:latest
     container_name: monster-hunter-board-frontend
+    restart: unless-stopped
     ports:
-      - '${FRONTEND_PORT}:80'
+      - "${FRONTEND_PORT}:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -13,12 +12,11 @@ services:
       - monster-network
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/demonetic/monster-hunter-board-backend:latest
     container_name: monster-hunter-board-backend
+    restart: unless-stopped
     ports:
-      - '${BACKEND_PORT}:8080'
+      - "${BACKEND_PORT}:8080"
     environment:
       DB_URL: ${DB_URL}
       DB_USER: ${DB_USER}
@@ -29,7 +27,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: [ 'CMD', 'curl', '-f', 'http://localhost:8080/swagger-ui.html' ]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/swagger-ui.html"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,24 +38,22 @@ services:
   db:
     image: mysql:8.4
     container_name: monster-hunter-board-mysql
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent || exit 1" ]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
     networks:
       - monster-network
-
 networks:
   monster-network:
     driver: bridge
