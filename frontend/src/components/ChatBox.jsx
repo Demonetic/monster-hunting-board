@@ -29,6 +29,7 @@ function ChatBox({
 }) {
   const messageListRef = useRef(null)
   const chatClientRef = useRef(null)
+  const shouldAutoScrollRef = useRef(true)
   const [collapsed, setCollapsed] = useState(initiallyCollapsed)
   const [messages, setMessages] = useState([])
   const [messageText, setMessageText] = useState('')
@@ -120,10 +121,21 @@ function ChatBox({
   useEffect(() => {
     const listElement = messageListRef.current
 
-    if (listElement) {
+    if (listElement && shouldAutoScrollRef.current) {
       listElement.scrollTop = listElement.scrollHeight
     }
   }, [messages])
+
+  const handleMessageListScroll = () => {
+    const listElement = messageListRef.current
+
+    if (!listElement) {
+      return
+    }
+
+    const distanceFromBottom = listElement.scrollHeight - listElement.scrollTop - listElement.clientHeight
+    shouldAutoScrollRef.current = distanceFromBottom < 32
+  }
 
   const trimmedMessage = messageText.trim()
   const canSend =
@@ -139,6 +151,7 @@ function ChatBox({
     }
 
     setSending(true)
+    shouldAutoScrollRef.current = true
 
     try {
       const chatClient = chatClientRef.current
@@ -180,7 +193,7 @@ function ChatBox({
 
       {!collapsed && (
         <>
-          <div className="chat-box-messages" ref={messageListRef}>
+          <div className="chat-box-messages" ref={messageListRef} onScroll={handleMessageListScroll}>
             {loading && <p className="chat-box-muted">Loading chat...</p>}
             {!loading && messages.length === 0 && (
               <p className="chat-box-muted">No messages yet.</p>

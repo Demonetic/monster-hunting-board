@@ -82,6 +82,24 @@ class ChatServiceTest {
     }
 
     @Test
+    void globalChatKeepsOnlyLatestFiftyMessages() {
+        String lastUsername = "";
+
+        for (int index = 0; index < 51; index++) {
+            lastUsername = saveHunter("retention-" + index, "Ret" + index).getUserAccount().getUsername();
+            chatService.sendGlobalMessage(lastUsername, new ChatMessageRequest("retention-" + index));
+        }
+
+        List<ChatMessageResponse> recentMessages = chatService.getRecentGlobalMessages(lastUsername);
+
+        assertThat(recentMessages).hasSize(50);
+        assertThat(recentMessages)
+                .extracting(ChatMessageResponse::messageText)
+                .doesNotContain("retention-0")
+                .contains("retention-50");
+    }
+
+    @Test
     void lobbyParticipantCanSendAndReadLobbyMessages() {
         Hunter participant = saveHunter("participant", "Rowan");
         Hunt lobby = saveLobby("Lobby A", HuntStatus.SCHEDULED);

@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +32,7 @@ import se.edugrade.monsterhuntingboard.repository.HunterRepository;
 @RequiredArgsConstructor
 public class ChatService {
     private static final int RECENT_MESSAGE_LIMIT = 50;
+    private static final Duration MESSAGE_RETENTION = Duration.ofHours(1);
     private static final int MAX_MESSAGE_LENGTH = 250;
     private static final Duration MIN_TIME_BETWEEN_MESSAGES = Duration.ofSeconds(1);
 
@@ -48,6 +48,7 @@ public class ChatService {
     public List<ChatMessageResponse> getRecentGlobalMessages(String username) {
         requireHunter(username);
         synchronized (recentGlobalMessages) {
+            removeExpiredMessages(recentGlobalMessages);
             return List.copyOf(recentGlobalMessages);
         }
     }
@@ -73,7 +74,12 @@ public class ChatService {
         requireLobbyParticipant(lobbyId, sender);
 
         synchronized (recentLobbyMessagesByLobbyId) {
-            return List.copyOf(recentLobbyMessagesByLobbyId.getOrDefault(lobbyId, new ArrayDeque<>()));
+            Deque<ChatMessageResponse> recentLobbyMessages = recentLobbyMessagesByLobbyId.getOrDefault(
+                    lobbyId,
+                    new ArrayDeque<>()
+            );
+            removeExpiredMessages(recentLobbyMessages);
+            return List.copyOf(recentLobbyMessages);
         }
     }
 
@@ -176,9 +182,18 @@ public class ChatService {
     }
 
     private void addRecentMessage(Deque<ChatMessageResponse> messages, ChatMessageResponse message) {
+        removeExpiredMessages(messages);
         messages.addLast(message);
 
         while (messages.size() > RECENT_MESSAGE_LIMIT) {
+            messages.removeFirst();
+        }
+    }
+
+    private void removeExpiredMessages(Deque<ChatMessageResponse> messages) {
+        LocalDateTime oldestAllowedCreatedAt = LocalDateTime.now().minus(MESSAGE_RETENTION);
+
+        while (!messages.isEmpty() && messages.getFirst().createdAt().isBefore(oldestAllowedCreatedAt)) {
             messages.removeFirst();
         }
     }
