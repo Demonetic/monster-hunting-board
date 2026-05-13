@@ -26,22 +26,27 @@ function ChatBox({
   initiallyCollapsed = false,
   collapsed: controlledCollapsed,
   onCollapsedChange = null,
+  connectWhenCollapsed = false,
+  onUnreadCountChange = null,
   disabled = false,
   className = '',
 }) {
   const messageListRef = useRef(null)
   const chatClientRef = useRef(null)
+  const collapsedRef = useRef(controlledCollapsed ?? initiallyCollapsed)
   const shouldAutoScrollRef = useRef(true)
   const [internalCollapsed, setInternalCollapsed] = useState(initiallyCollapsed)
   const [messages, setMessages] = useState([])
   const [messageText, setMessageText] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
   const [connectionStatus, setConnectionStatus] = useState('disconnected')
 
   const isLobbyChat = mode === 'LOBBY'
   const collapsed = controlledCollapsed ?? internalCollapsed
+  const canConnect = !disabled && (!isLobbyChat || lobbyId) && (!collapsed || connectWhenCollapsed)
   const canLoad = !collapsed && !disabled && (!isLobbyChat || lobbyId)
   const topicDestination = isLobbyChat
     ? `/topic/chat/lobby/${lobbyId}`
@@ -76,6 +81,14 @@ function ChatBox({
   }, [canLoad, isLobbyChat, lobbyId])
 
   useEffect(() => {
+    collapsedRef.current = collapsed
+  }, [collapsed])
+
+  useEffect(() => {
+    onUnreadCountChange?.(unreadCount)
+  }, [onUnreadCountChange, unreadCount])
+
+  useEffect(() => {
     if (!canLoad) {
       return undefined
     }
@@ -90,7 +103,7 @@ function ChatBox({
   }, [canLoad, loadMessages])
 
   useEffect(() => {
-    if (!canLoad) {
+    if (!canConnect) {
       return undefined
     }
 
@@ -104,6 +117,9 @@ function ChatBox({
 
           return [...currentMessages, message].slice(-50)
         })
+        if (collapsedRef.current) {
+          setUnreadCount((currentCount) => Math.min(99, currentCount + 1))
+        }
         setSending(false)
         setErrorMessage('')
       },
@@ -119,7 +135,7 @@ function ChatBox({
       chatClient.disconnect()
       chatClientRef.current = null
     }
-  }, [canLoad, topicDestination])
+  }, [canConnect, topicDestination])
 
   useEffect(() => {
     const listElement = messageListRef.current
@@ -181,6 +197,10 @@ function ChatBox({
   const updateCollapsed = (nextCollapsed) => {
     if (controlledCollapsed === undefined) {
       setInternalCollapsed(nextCollapsed)
+    }
+
+    if (!nextCollapsed) {
+      setUnreadCount(0)
     }
 
     onCollapsedChange?.(nextCollapsed)

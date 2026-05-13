@@ -24,6 +24,7 @@ function GamePage() {
   const [huntsError, setHuntsError] = useState('')
   const [selectedHuntId, setSelectedHuntId] = useState(null)
   const [globalChatOpen, setGlobalChatOpen] = useState(false)
+  const [globalChatUnreadCount, setGlobalChatUnreadCount] = useState(0)
   const [toast, setToast] = useState(null)
   const {
     weather,
@@ -119,6 +120,7 @@ function GamePage() {
     clearToken()
     setActiveOverlay(null)
     setGlobalChatOpen(false)
+    setGlobalChatUnreadCount(0)
     setSelectedHuntId(null)
     setAuthenticated(false)
     setRole('')
@@ -133,6 +135,18 @@ function GamePage() {
     setActiveOverlay(null)
   }
 
+  const handleToggleGlobalChat = () => {
+    setGlobalChatOpen((current) => {
+      const nextOpen = !current
+
+      if (nextOpen) {
+        setGlobalChatUnreadCount(0)
+      }
+
+      return nextOpen
+    })
+  }
+
   return (
     <div className="game-page-shell">
       <BoardPage
@@ -143,7 +157,8 @@ function GamePage() {
         onSelectHunt={handleSelectHunt}
         showChatButton={authenticated && role === 'HUNTER'}
         isChatOpen={globalChatOpen}
-        onToggleChat={() => setGlobalChatOpen((current) => !current)}
+        unreadChatCount={globalChatUnreadCount}
+        onToggleChat={handleToggleGlobalChat}
       />
 
       {selectedHunt && (
@@ -212,7 +227,15 @@ function GamePage() {
           title="Global Chat"
           collapsible
           collapsed={!globalChatOpen}
-          onCollapsedChange={(nextCollapsed) => setGlobalChatOpen(!nextCollapsed)}
+          onCollapsedChange={(nextCollapsed) => {
+            setGlobalChatOpen(!nextCollapsed)
+
+            if (!nextCollapsed) {
+              setGlobalChatUnreadCount(0)
+            }
+          }}
+          connectWhenCollapsed
+          onUnreadCountChange={setGlobalChatUnreadCount}
           className="global-chat-panel"
         />
       )}

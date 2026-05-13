@@ -101,6 +101,7 @@ function BoardPage({
   onSelectHunt,
   showChatButton = false,
   isChatOpen = false,
+  unreadChatCount = 0,
   onToggleChat = null,
 }) {
   const mappedHunts = useMemo(
@@ -167,6 +168,11 @@ function BoardPage({
           aria-pressed={isChatOpen}
         >
           <img src={iconChat} alt="" aria-hidden="true" />
+          {unreadChatCount > 0 && (
+            <span className="board-chat-unread" aria-label={`${unreadChatCount} unread chat messages`}>
+              {unreadChatCount > 99 ? '99+' : unreadChatCount}
+            </span>
+          )}
         </button>
       )}
 

@@ -95,7 +95,7 @@ textarea:focus-visible {
   --board-side-size: min(188px, calc(100vw - 1rem));
   --board-side-gap: 0.45rem;
   --board-weather-top: calc(var(--board-side-top) + var(--board-side-size) + var(--board-side-gap));
-  --board-chat-size: min(94px, calc(50vw - 0.5rem));
+  --board-chat-size: min(124px, calc(66vw - 0.66rem));
 
   min-height: 100vh;
   width: 100vw;
@@ -185,6 +185,28 @@ textarea:focus-visible {
   object-fit: contain;
 }
 
+.board-chat-unread {
+  position: absolute;
+  top: 0.08rem;
+  right: calc(50% - 62px);
+  min-width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  padding: 0 0.28rem;
+  border: 2px solid rgba(246, 255, 226, 0.92);
+  border-radius: 999px;
+  background: #2fa84f;
+  color: #fff9d8;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(20, 34, 14, 0.45);
+  box-shadow: 0 4px 10px rgba(21, 53, 18, 0.32);
+  pointer-events: none;
+}
+
 .weather-panel-title {
   display: grid;
   gap: 0.02rem;
@@ -251,8 +273,8 @@ textarea:focus-visible {
   top: var(--global-chat-top);
   left: var(--board-side-left);
   z-index: 18;
-  width: min(320px, calc(100vw - var(--board-side-left) - 1rem));
-  max-height: min(340px, calc(100vh - var(--global-chat-top) - 6.4rem));
+  width: min(260px, calc(100vw - var(--board-side-left) - 1rem));
+  max-height: min(460px, calc(100vh - var(--global-chat-top) - 6.4rem));
   padding: 0.85rem;
   background:
     linear-gradient(180deg, rgba(104, 67, 36, 0.92), rgba(55, 34, 19, 0.92));
@@ -265,8 +287,8 @@ textarea:focus-visible {
 }
 
 .global-chat-panel .chat-box-messages {
-  min-height: 5.5rem;
-  max-height: min(11rem, calc(100vh - var(--global-chat-top) - 13rem));
+  min-height: 10rem;
+  max-height: min(19rem, calc(100vh - var(--global-chat-top) - 13rem));
 }
 
 .chat-box-header {
@@ -3143,7 +3165,7 @@ textarea:focus-visible {
     --board-side-top: 0.8rem;
     --board-side-left: 0.8rem;
     --board-side-size: min(180px, calc(100vw - 1.6rem));
-    --board-chat-size: min(90px, calc(50vw - 0.8rem));
+    --board-chat-size: min(118px, calc(66vw - 1.05rem));
   }
 
   .auth-background-logo {
