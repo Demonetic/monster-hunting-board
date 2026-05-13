@@ -3,6 +3,7 @@ import { clearRole, clearToken, getRole, isAuthenticated } from '../api/authStor
 import { getAllHunts } from '../api/huntApi'
 import AuthModal from '../components/AuthModal'
 import BottomNav from '../components/BottomNav'
+import ChatBox from '../components/ChatBox'
 import HuntModal from '../components/HuntModal'
 import HuntsPanel from '../components/HuntsPanel'
 import InventoryPanel from '../components/InventoryPanel'
@@ -199,6 +200,15 @@ function GamePage() {
         />
       ) : (
         <AuthModal onAuthSuccess={handleAuthenticated} showToast={showToast} />
+      )}
+
+      {authenticated && role === 'HUNTER' && (
+        <ChatBox
+          title="Global Chat"
+          collapsible
+          initiallyCollapsed
+          className="global-chat-panel"
+        />
       )}
 
       {toast && (

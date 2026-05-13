@@ -203,6 +203,146 @@ textarea:focus-visible {
   color: #ffcbbe;
 }
 
+.chat-box {
+  display: grid;
+  gap: 0.55rem;
+  color: #f4ead5;
+  background: rgba(25, 17, 11, 0.82);
+  border: 1px solid rgba(244, 226, 185, 0.26);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(6px);
+}
+
+.global-chat-panel {
+  position: absolute;
+  right: 1rem;
+  bottom: 6.2rem;
+  z-index: 18;
+  width: min(340px, calc(100vw - 2rem));
+  max-height: min(440px, calc(100vh - 8rem));
+  padding: 0.85rem;
+}
+
+.global-chat-panel.is-collapsed {
+  width: auto;
+}
+
+.chat-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chat-box-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-box-toggle,
+.chat-box-input-row button {
+  border: 1px solid rgba(244, 226, 185, 0.34);
+  background: rgba(255, 244, 214, 0.14);
+  color: #f4ead5;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.chat-box-toggle {
+  padding: 0.32rem 0.55rem;
+}
+
+.chat-box-messages {
+  min-height: 8rem;
+  max-height: 13rem;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  padding-right: 0.2rem;
+}
+
+.chat-message {
+  display: grid;
+  gap: 0.1rem;
+  text-align: left;
+}
+
+.chat-message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #ffe49a;
+  font-size: 0.72rem;
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.chat-message-meta span,
+.chat-message-meta time {
+  min-width: 0;
+}
+
+.chat-message-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-message p,
+.chat-box-muted,
+.chat-box-error,
+.chat-box-count {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.28;
+}
+
+.chat-message p {
+  overflow-wrap: anywhere;
+}
+
+.chat-box-muted {
+  color: rgba(244, 234, 213, 0.72);
+  text-align: center;
+}
+
+.chat-box-error {
+  color: #ffcbbe;
+}
+
+.chat-box-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+}
+
+.chat-box-input-row input {
+  min-width: 0;
+  border: 1px solid rgba(244, 226, 185, 0.28);
+  background: rgba(255, 252, 240, 0.92);
+  color: #3f2a18;
+  padding: 0.42rem 0.55rem;
+}
+
+.chat-box-input-row button {
+  padding: 0.42rem 0.65rem;
+}
+
+.chat-box-input-row button:disabled,
+.chat-box-input-row input:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.chat-box-count {
+  justify-self: end;
+  color: rgba(244, 234, 213, 0.66);
+  font-size: 0.7rem;
+}
+
 .hunt-pin {
   position: absolute;
   width: 224px;
@@ -2767,6 +2907,17 @@ textarea:focus-visible {
   padding-left: 1rem;
   display: grid;
   gap: 0.2rem;
+}
+
+.lobby-chat-panel {
+  padding: 0.8rem;
+  text-align: left;
+  background: rgba(16, 11, 8, 0.58);
+}
+
+.lobby-chat-panel .chat-box-messages {
+  min-height: 7rem;
+  max-height: 10rem;
 }
 
 @keyframes battleDamageFlash {

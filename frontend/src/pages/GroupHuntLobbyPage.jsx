@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getGroupLobby } from '../api/huntApi'
+import ChatBox from '../components/ChatBox'
 
 const LOBBY_OPEN_MS = 10 * 60 * 1000
 
@@ -144,6 +145,16 @@ function GroupHuntLobbyPage() {
             </ul>
           )}
         </div>
+
+        {lobby.joined && !hasStarted && (
+          <ChatBox
+            mode="LOBBY"
+            lobbyId={huntId}
+            title="Lobby Chat"
+            className="lobby-chat-panel"
+            disabled={!isLobbyOpen}
+          />
+        )}
 
       </section>
     </main>
