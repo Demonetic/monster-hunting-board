@@ -72,6 +72,23 @@ public final class GameBalanceUtil {
         return Math.max(1, (int) Math.round(effectiveHp * participantMultiplier));
     }
 
+    public static int calculateSoloBeastBattleAttack(Difficulty difficulty, int hunterLevel) {
+        return calculateBeastBattleAttack(difficulty, hunterLevel, 1);
+    }
+
+    public static int calculateBeastBattleAttack(Difficulty difficulty, int averageHunterLevel, int participantCount) {
+        int safeLevel = Math.max(1, averageHunterLevel);
+        int effectiveAttack = getHuntBeastBaseAttack(difficulty)
+                + ((safeLevel - 1) * getHuntBeastAttackPerLevel(difficulty));
+
+        if (difficulty != Difficulty.BOSS) {
+            return effectiveAttack;
+        }
+
+        int safeParticipantCount = Math.max(1, participantCount);
+        return effectiveAttack + ((safeParticipantCount - 1) * 1);
+    }
+
     private static int getHuntBeastBaseHp(Difficulty difficulty) {
         return switch (difficulty) {
             case EASY -> 80;
@@ -87,6 +104,24 @@ public final class GameBalanceUtil {
             case MEDIUM -> 15;
             case HARD -> 22;
             case BOSS -> 30;
+        };
+    }
+
+    private static int getHuntBeastBaseAttack(Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY -> 8;
+            case MEDIUM -> 12;
+            case HARD -> 10;
+            case BOSS -> 16;
+        };
+    }
+
+    private static int getHuntBeastAttackPerLevel(Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY -> 1;
+            case MEDIUM -> 2;
+            case HARD -> 0;
+            case BOSS -> 2;
         };
     }
 

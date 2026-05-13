@@ -37,6 +37,7 @@ import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntSourceType;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
+import se.edugrade.monsterhuntingboard.model.HuntParticipation;
 import se.edugrade.monsterhuntingboard.model.Hunter;
 import se.edugrade.monsterhuntingboard.model.WeatherCategory;
 import se.edugrade.monsterhuntingboard.model.WeatherContext;
@@ -587,6 +588,31 @@ class HuntServiceTest {
         huntRepository.save(activeHunt);
         huntService.deleteHunt(activeHunt.getId());
         assertThat(huntRepository.existsById(activeHunt.getId())).isFalse();
+    }
+
+    @Test
+    void oldManualGroupHuntWithParticipantsCanBeDeleted() {
+        Hunt oldManualHunt = huntRepository.save(Hunt.builder()
+                .title("Yesterday Manual Hunt")
+                .type(HuntType.HUNT)
+                .difficulty(Difficulty.BOSS)
+                .status(HuntStatus.ACTIVE)
+                .startTime(currentStockholmTime().minusDays(1))
+                .maxPartySize(2)
+                .beasts(List.of(beast))
+                .rewardExp(50)
+                .rewardGold(25)
+                .build());
+
+        Hunter hunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        huntParticipationRepository.save(HuntParticipation.builder()
+                .hunt(oldManualHunt)
+                .hunter(hunter)
+                .build());
+        huntService.deleteHunt(oldManualHunt.getId());
+
+        assertThat(huntRepository.existsById(oldManualHunt.getId())).isFalse();
+        assertThat(huntParticipationRepository.existsByHuntId(oldManualHunt.getId())).isFalse();
     }
 
     private void saveHunter(String username, String displayName, Appearance appearance) {

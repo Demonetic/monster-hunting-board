@@ -298,6 +298,7 @@ public class HuntService {
     @Transactional
     public void deleteHunt(Long id) {
         Hunt hunt = getHuntOrThrow(id);
+        updateHuntStatusIfNeeded(hunt);
 
         if (huntParticipationRepository.existsByHuntId(hunt.getId()) && !canDeleteHuntWithParticipations(hunt)) {
             throw new InvalidGameRuleException("Cannot delete hunt because hunters have already joined it");
@@ -307,6 +308,8 @@ public class HuntService {
             huntParticipationRepository.deleteAll(huntParticipationRepository.findByHuntId(hunt.getId()));
         }
         huntRepository.delete(hunt);
+        completedGroupBattleResults.remove(hunt.getId());
+        groupCompletionLocks.remove(hunt.getId());
         log.info("Deleted hunt id={}", id);
     }
 
@@ -1004,7 +1007,14 @@ public class HuntService {
 
     private boolean canDeleteHuntWithParticipations(Hunt hunt) {
         return hunt.getType() == HuntType.HUNT
-                && (hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED);
+                && ((hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED)
+                || isManualGroupHuntPastDeleteGracePeriod(hunt));
+    }
+
+    private boolean isManualGroupHuntPastDeleteGracePeriod(Hunt hunt) {
+        return !hunt.isGenerated()
+                && hunt.getStartTime() != null
+                && !getCurrentTime().isBefore(hunt.getStartTime().plusHours(1));
     }
 
     private LocalDateTime getCurrentTime() {

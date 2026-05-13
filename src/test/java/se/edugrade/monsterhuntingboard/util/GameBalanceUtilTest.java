@@ -51,4 +51,19 @@ class GameBalanceUtilTest {
         assertThat(GameBalanceUtil.calculateBeastBattleHp(Difficulty.BOSS, 2, 2)).isEqualTo(479);
         assertThat(GameBalanceUtil.calculateBeastBattleHp(Difficulty.BOSS, 2, 4)).isEqualTo(776);
     }
+
+    @Test
+    void huntBeastAttackScalesByDifficultyAndHunterLevel() {
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleAttack(Difficulty.EASY, 1)).isEqualTo(8);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleAttack(Difficulty.MEDIUM, 1)).isEqualTo(12);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleAttack(Difficulty.HARD, 1)).isEqualTo(10);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleAttack(Difficulty.MEDIUM, 3)).isEqualTo(16);
+    }
+
+    @Test
+    void bossAttackScalesByAverageLevelAndParticipantCount() {
+        assertThat(GameBalanceUtil.calculateBeastBattleAttack(Difficulty.BOSS, 1, 1)).isEqualTo(16);
+        assertThat(GameBalanceUtil.calculateBeastBattleAttack(Difficulty.BOSS, 2, 2)).isEqualTo(19);
+        assertThat(GameBalanceUtil.calculateBeastBattleAttack(Difficulty.BOSS, 2, 4)).isEqualTo(21);
+    }
 }

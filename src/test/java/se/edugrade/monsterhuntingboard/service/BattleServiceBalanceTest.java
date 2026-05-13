@@ -102,6 +102,17 @@ class BattleServiceBalanceTest {
     }
 
     @Test
+    void soloBattleDamageComesFromHuntDifficultyInsteadOfBeastAttackPower() {
+        Hunt mediumDragonHunt = soloHunt(Difficulty.MEDIUM, beast("Reusable Dragon", BeastType.DRAGON, 9_999, 999));
+        Hunt mediumBasiliskHunt = soloHunt(Difficulty.MEDIUM, beast("Reusable Basilisk", BeastType.BASILISK, 80, 1));
+
+        assertThat(battleService.calculateDamageTaken(mediumDragonHunt, true, false, NEUTRAL_WEATHER))
+                .isEqualTo(battleService.calculateDamageTaken(mediumBasiliskHunt, true, false, NEUTRAL_WEATHER));
+        assertThat(battleService.calculateDamageTaken(mediumDragonHunt, true, false, NEUTRAL_WEATHER))
+                .isLessThan(30);
+    }
+
+    @Test
     void bossBattleHpComesFromDifficultyLevelAndPartySizeInsteadOfBeastHp() {
         Hunt bossHunt = Hunt.builder()
                 .title("Reusable Boss Hunt")

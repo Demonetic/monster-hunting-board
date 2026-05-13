@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { clearRole, clearToken, getRole, isAuthenticated } from '../api/authStorage'
 import { getAllHunts } from '../api/huntApi'
 import AuthModal from '../components/AuthModal'
@@ -14,6 +14,7 @@ import useCurrentWeather from '../hooks/useCurrentWeather'
 import BoardPage from './BoardPage'
 
 function GamePage() {
+  const isMountedRef = useRef(true)
   const [authenticated, setAuthenticated] = useState(isAuthenticated())
   const [role, setRole] = useState(getRole())
   const [activeOverlay, setActiveOverlay] = useState(null)
@@ -39,54 +40,72 @@ function GamePage() {
     })
   }
 
-  const fetchHunts = async () => {
-    setHuntsLoading(true)
+  const fetchHunts = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setHuntsLoading(true)
+    }
     setHuntsError('')
 
     try {
       const response = await getAllHunts()
-      setHunts(response.data)
+
+      if (isMountedRef.current) {
+        setHunts(response.data)
+      }
     } catch (error) {
-      setHuntsError(error.response?.data?.message ?? 'Could not load hunts.')
+      if (isMountedRef.current) {
+        setHuntsError(error.response?.data?.message ?? 'Could not load hunts.')
+      }
     } finally {
-      setHuntsLoading(false)
+      if (isMountedRef.current && showLoading) {
+        setHuntsLoading(false)
+      }
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!authenticated) {
-      return
+      return undefined
     }
 
-    let cancelled = false
-
-    ;(async () => {
-      setHuntsLoading(true)
-      setHuntsError('')
-
-      try {
-        const response = await getAllHunts()
-
-        if (!cancelled) {
-          setHunts(response.data)
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setHuntsError(
-            error.response?.data?.message ?? 'Could not load hunts.',
-          )
-        }
-      } finally {
-        if (!cancelled) {
-          setHuntsLoading(false)
-        }
-      }
-    })()
+    const timeoutId = window.setTimeout(() => {
+      fetchHunts()
+    }, 0)
 
     return () => {
-      cancelled = true
+      window.clearTimeout(timeoutId)
     }
-  }, [authenticated])
+  }, [authenticated, fetchHunts])
+
+  useEffect(() => {
+    if (!authenticated) {
+      return undefined
+    }
+
+    const refreshBoardHunts = () => {
+      fetchHunts({ showLoading: false })
+    }
+
+    const intervalId = window.setInterval(refreshBoardHunts, 5000)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshBoardHunts()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [authenticated, fetchHunts])
 
   const handleAuthenticated = () => {
     setAuthenticated(true)

@@ -27,7 +27,6 @@ export function getBattleArenaDifficulty(source) {
   return normalizeDifficulty(
     source?.difficulty
       ?? source?.huntDifficulty
-      ?? source?.battleDifficulty
-      ?? source?.beastDifficulty,
+      ?? source?.battleDifficulty,
   )
 }

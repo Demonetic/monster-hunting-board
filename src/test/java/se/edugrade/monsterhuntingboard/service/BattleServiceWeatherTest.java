@@ -40,16 +40,16 @@ class BattleServiceWeatherTest {
 
     @Test
     void windyReducesBeastDamage() {
-        Hunt easyHunt = huntWithDifficulty(Difficulty.EASY);
+        Hunt bossHunt = huntWithDifficulty(Difficulty.BOSS);
 
         int neutralDamage = battleService.calculateDamageTaken(
-                easyHunt,
+                bossHunt,
                 true,
                 false,
                 WeatherEffect.fromCategory(WeatherCategory.CLOUDY_OVERCAST)
         );
         int windyDamage = battleService.calculateDamageTaken(
-                easyHunt,
+                bossHunt,
                 true,
                 false,
                 WeatherEffect.fromCategory(WeatherCategory.WINDY)
