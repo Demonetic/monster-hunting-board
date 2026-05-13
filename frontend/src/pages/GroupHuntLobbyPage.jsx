@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getBattleArenaBackground, getBattleArenaDifficulty } from '../assets/battleArenaBackgrounds'
 import { getGroupLobby } from '../api/huntApi'
+import panelBattleResult from '../assets/panel_battle_result.png'
 import ChatBox from '../components/ChatBox'
 
 const LOBBY_OPEN_MS = 10 * 60 * 1000
@@ -101,41 +102,51 @@ function GroupHuntLobbyPage() {
 
   return (
     <main className="group-lobby-page" style={{ backgroundImage: `url(${arenaBackgroundImage})` }}>
-      <section className="group-lobby-card">
-        <p className="group-lobby-kicker">{lobby.huntTitle}</p>
-        <h1 className="group-lobby-title">{lobby.beastName}</h1>
+      <section className="group-lobby-layout">
+        <div
+          className="group-lobby-panel battle-result-card"
+          style={{ backgroundImage: `url(${panelBattleResult})` }}
+        >
+          <div className="group-lobby-panel-content battle-result-card-content">
+            <p className="group-lobby-kicker">{lobby.huntTitle}</p>
+            <h1 className="group-lobby-title">{lobby.beastName}</h1>
 
-        {!isLobbyOpen && (
-          <p className="group-lobby-state">
-            Lobby opens 10 minutes before the hunt starts.
-          </p>
-        )}
+            {!isLobbyOpen && (
+              <p className="group-lobby-state">
+                Lobby opens 10 minutes before the hunt starts.
+              </p>
+            )}
 
-        {isLobbyOpen && !hasStarted && (
-          <>
-            <p className="group-lobby-state">Countdown to hunt start</p>
-            <p className="group-lobby-timer">{formatCountdown(msUntilStart)}</p>
-          </>
-        )}
+            {isLobbyOpen && !hasStarted && (
+              <>
+                <p className="group-lobby-state">Countdown to hunt start</p>
+                <p className="group-lobby-timer">{formatCountdown(msUntilStart)}</p>
+              </>
+            )}
 
-        {hasStarted && (
-          <>
-            <p className="group-lobby-state">The hunt has started.</p>
-            <button
-              type="button"
-              className="group-lobby-enter-button"
-              onClick={() => navigate(`/battle/group/${huntId}`)}
-            >
-              Enter Battle
-            </button>
-          </>
-        )}
+            {hasStarted && (
+              <>
+                <p className="group-lobby-state">The hunt has started.</p>
+                <button
+                  type="button"
+                  className="group-lobby-enter-button"
+                  onClick={() => navigate(`/battle/group/${huntId}`)}
+                >
+                  Enter Battle
+                </button>
+              </>
+            )}
+            <div className="group-lobby-party">
+              <p>
+                <span>Party:</span> {lobby.currentPartySize} / {lobby.maxPartySize ?? '?'}
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <div className="group-lobby-party">
-          <p>
-            <span>Party:</span> {lobby.currentPartySize} / {lobby.maxPartySize ?? '?'}
-          </p>
-          {lobby.participants?.length > 0 && (
+        {lobby.participants?.length > 0 && (
+          <section className="group-lobby-party-panel" aria-label="Party members">
+            <p className="group-lobby-party-heading">Hunters in party</p>
             <ul className="group-lobby-party-list">
               {lobby.participants.map((participant) => (
                 <li key={participant.hunterId}>
@@ -143,8 +154,8 @@ function GroupHuntLobbyPage() {
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </section>
+        )}
 
         {lobby.joined && !hasStarted && (
           <ChatBox
@@ -155,7 +166,6 @@ function GroupHuntLobbyPage() {
             disabled={!isLobbyOpen}
           />
         )}
-
       </section>
     </main>
   )
