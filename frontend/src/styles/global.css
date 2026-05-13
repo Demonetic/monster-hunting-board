@@ -267,7 +267,7 @@ textarea:focus-visible {
   position: absolute;
   --global-chat-top: calc(
     var(--board-weather-top) + var(--board-side-size) + var(--board-side-gap) +
-    var(--board-chat-size) + var(--board-side-gap)
+    var(--board-chat-size) + var(--board-side-gap) + 0.45rem
   );
 
   top: var(--global-chat-top);
@@ -1287,7 +1287,7 @@ textarea:focus-visible {
 .inventory-player-summary {
   position: absolute;
   left: 24.8%;
-  top: 12.6%;
+  top: 15.2%;
   transform: translateX(-50%);
   width: 39%;
   z-index: 2;
@@ -3216,7 +3216,7 @@ textarea:focus-visible {
 
   .inventory-player-summary {
     left: 24.4%;
-    top: 12.8%;
+    top: 15.2%;
     transform: translateX(-50%);
     width: 38%;
     gap: 0.2rem;

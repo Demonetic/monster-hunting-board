@@ -11,4 +11,6 @@ public interface HunterGeneratedHuntProgressRepository extends JpaRepository<Hun
     Optional<HunterGeneratedHuntProgress> findByHunterIdAndHuntId(Long hunterId, Long huntId);
 
     List<HunterGeneratedHuntProgress> findByHunterIdAndHuntIdIn(Long hunterId, Collection<Long> huntIds);
+
+    void deleteByHuntId(Long huntId);
 }

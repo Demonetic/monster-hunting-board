@@ -304,6 +304,8 @@ public class HuntService {
             throw new InvalidGameRuleException("Cannot delete hunt because hunters have already joined it");
         }
 
+        hunterGeneratedHuntProgressRepository.deleteByHuntId(hunt.getId());
+
         if (canDeleteHuntWithParticipations(hunt)) {
             huntParticipationRepository.deleteAll(huntParticipationRepository.findByHuntId(hunt.getId()));
         }
@@ -1006,6 +1008,10 @@ public class HuntService {
     }
 
     private boolean canDeleteHuntWithParticipations(Hunt hunt) {
+        if (hunt.getType() == HuntType.SOLO_HUNT) {
+            return true;
+        }
+
         return hunt.getType() == HuntType.HUNT
                 && ((hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED)
                 || isManualGroupHuntPastDeleteGracePeriod(hunt));
