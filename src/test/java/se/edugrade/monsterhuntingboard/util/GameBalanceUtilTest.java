@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import se.edugrade.monsterhuntingboard.model.Appearance;
+import se.edugrade.monsterhuntingboard.model.Difficulty;
 
 class GameBalanceUtilTest {
 
@@ -34,5 +35,20 @@ class GameBalanceUtilTest {
         assertThat(GameBalanceUtil.applyAppearanceExpBonus(100, Appearance.RANGER)).isEqualTo(100);
         assertThat(GameBalanceUtil.applyAppearanceGoldBonus(75, Appearance.BARD, true)).isEqualTo(83);
         assertThat(GameBalanceUtil.applyAppearanceGoldBonus(75, Appearance.BARD, false)).isEqualTo(75);
+    }
+
+    @Test
+    void huntBeastHpScalesByDifficultyAndHunterLevel() {
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleHp(Difficulty.EASY, 1)).isEqualTo(80);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleHp(Difficulty.EASY, 4)).isEqualTo(110);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleHp(Difficulty.MEDIUM, 3)).isEqualTo(160);
+        assertThat(GameBalanceUtil.calculateSoloBeastBattleHp(Difficulty.HARD, 3)).isEqualTo(234);
+    }
+
+    @Test
+    void bossHpScalesByAverageLevelAndParticipantCount() {
+        assertThat(GameBalanceUtil.calculateBeastBattleHp(Difficulty.BOSS, 2, 1)).isEqualTo(330);
+        assertThat(GameBalanceUtil.calculateBeastBattleHp(Difficulty.BOSS, 2, 2)).isEqualTo(479);
+        assertThat(GameBalanceUtil.calculateBeastBattleHp(Difficulty.BOSS, 2, 4)).isEqualTo(776);
     }
 }

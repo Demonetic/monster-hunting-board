@@ -1,11 +1,13 @@
 package se.edugrade.monsterhuntingboard.util;
 
 import se.edugrade.monsterhuntingboard.model.Appearance;
+import se.edugrade.monsterhuntingboard.model.Difficulty;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 
 public final class GameBalanceUtil {
     private static final int BASE_EXP_TO_LEVEL_UP = 200;
     private static final int EXP_INCREMENT_PER_LEVEL = 50;
+    private static final double BOSS_PARTICIPANT_HP_MULTIPLIER = 0.45;
 
     private GameBalanceUtil() {
     }
@@ -50,6 +52,42 @@ public final class GameBalanceUtil {
             baseHp += 15;
         }
         return baseHp;
+    }
+
+    public static int calculateSoloBeastBattleHp(Difficulty difficulty, int hunterLevel) {
+        return calculateBeastBattleHp(difficulty, hunterLevel, 1);
+    }
+
+    public static int calculateBeastBattleHp(Difficulty difficulty, int averageHunterLevel, int participantCount) {
+        int safeLevel = Math.max(1, averageHunterLevel);
+        int effectiveHp = getHuntBeastBaseHp(difficulty)
+                + ((safeLevel - 1) * getHuntBeastHpPerLevel(difficulty));
+
+        if (difficulty != Difficulty.BOSS) {
+            return effectiveHp;
+        }
+
+        int safeParticipantCount = Math.max(1, participantCount);
+        double participantMultiplier = 1.0 + (BOSS_PARTICIPANT_HP_MULTIPLIER * (safeParticipantCount - 1));
+        return Math.max(1, (int) Math.round(effectiveHp * participantMultiplier));
+    }
+
+    private static int getHuntBeastBaseHp(Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY -> 80;
+            case MEDIUM -> 130;
+            case HARD -> 190;
+            case BOSS -> 300;
+        };
+    }
+
+    private static int getHuntBeastHpPerLevel(Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY -> 10;
+            case MEDIUM -> 15;
+            case HARD -> 22;
+            case BOSS -> 30;
+        };
     }
 
     public static RewardResult applyWinReward(Hunt hunt) {

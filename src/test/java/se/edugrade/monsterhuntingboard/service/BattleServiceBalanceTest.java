@@ -38,7 +38,7 @@ class BattleServiceBalanceTest {
                 450
         );
         BattleStats hardStats = simulateSoloBattles(
-                soloHunt(Difficulty.HARD, beast("Chimera", BeastType.CHIMERA, 260, 48)),
+                soloHunt(Difficulty.HARD, beast("Chimera", BeastType.CHIMERA, 260, 35)),
                 hunter(1L, "Aria", Appearance.MAGE, 3, 120, false),
                 450
         );
@@ -86,6 +86,42 @@ class BattleServiceBalanceTest {
 
         assertThat(partySimulation.initialBossHp()).isGreaterThan(duoSimulation.initialBossHp());
         assertThat(partySimulation.initialBossHp()).isLessThan(Math.round(duoSimulation.initialBossHp() * 1.9f));
+    }
+
+    @Test
+    void soloBattleHpComesFromHuntDifficultyInsteadOfBeastHp() {
+        Beast reusedBeast = beast("Reusable Beast", BeastType.DRAGON, 9_999, 18);
+        Hunter hunter = hunter(1L, "Aria", Appearance.MAGE, 1, 100, false);
+
+        assertThat(battleService.simulateSoloBattle(soloHunt(Difficulty.EASY, reusedBeast), hunter, NEUTRAL_WEATHER)
+                .initialMonsterHp()).isEqualTo(80);
+        assertThat(battleService.simulateSoloBattle(soloHunt(Difficulty.MEDIUM, reusedBeast), hunter, NEUTRAL_WEATHER)
+                .initialMonsterHp()).isEqualTo(130);
+        assertThat(battleService.simulateSoloBattle(soloHunt(Difficulty.HARD, reusedBeast), hunter, NEUTRAL_WEATHER)
+                .initialMonsterHp()).isEqualTo(190);
+    }
+
+    @Test
+    void bossBattleHpComesFromDifficultyLevelAndPartySizeInsteadOfBeastHp() {
+        Hunt bossHunt = Hunt.builder()
+                .title("Reusable Boss Hunt")
+                .type(HuntType.HUNT)
+                .difficulty(Difficulty.BOSS)
+                .status(HuntStatus.ACTIVE)
+                .beasts(List.of(beast("Reusable Beast", BeastType.DRAGON, 9_999, 82)))
+                .rewardExp(420)
+                .rewardGold(520)
+                .build();
+        Hunter firstHunter = hunter(1L, "Aria", Appearance.MAGE, 2, 110, false);
+        Hunter secondHunter = hunter(2L, "Rowan", Appearance.RANGER, 2, 110, false);
+
+        GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(
+                bossHunt,
+                participations(firstHunter, secondHunter),
+                weatherContexts(firstHunter, secondHunter)
+        );
+
+        assertThat(simulation.initialBossHp()).isEqualTo(479);
     }
 
     private BattleStats simulateSoloBattles(Hunt hunt, Hunter hunterTemplate, int iterations) {
