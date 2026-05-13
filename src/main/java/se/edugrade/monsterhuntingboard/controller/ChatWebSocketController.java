@@ -3,6 +3,7 @@ package se.edugrade.monsterhuntingboard.controller;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -19,6 +20,7 @@ import se.edugrade.monsterhuntingboard.service.ChatService;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class ChatWebSocketController {
 
     private final ChatService chatService;
@@ -30,6 +32,7 @@ public class ChatWebSocketController {
             Principal principal,
             @Valid @Payload ChatMessageRequest request
     ) {
+        log.info("Global chat SEND: username={}", principal.getName());
         ChatMessageResponse message = chatService.sendGlobalMessage(principal.getName(), request);
         messagingTemplate.convertAndSend("/topic/chat/global", message);
     }
@@ -41,6 +44,7 @@ public class ChatWebSocketController {
             Principal principal,
             @Valid @Payload ChatMessageRequest request
     ) {
+        log.info("Lobby chat SEND: username={}, lobbyId={}", principal.getName(), lobbyId);
         ChatMessageResponse message = chatService.sendLobbyMessage(lobbyId, principal.getName(), request);
         messagingTemplate.convertAndSend("/topic/chat/lobby/" + lobbyId, message);
     }
@@ -48,6 +52,7 @@ public class ChatWebSocketController {
     @MessageExceptionHandler(Exception.class)
     @SendToUser("/queue/chat/errors")
     public ErrorResponse handleChatError(Exception exception) {
+        log.warn("Chat websocket error: {}", exception.getMessage());
         return ErrorResponse.from(HttpStatus.BAD_REQUEST, exception.getMessage(), "/ws");
     }
 }

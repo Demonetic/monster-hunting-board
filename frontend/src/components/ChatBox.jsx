@@ -127,7 +127,12 @@ function ChatBox({
         setSending(false)
         setErrorMessage(message)
       },
-      onStatusChange: setConnectionStatus,
+      onStatusChange: (status) => {
+        setConnectionStatus(status)
+        if (status === 'connected') {
+          setErrorMessage('')
+        }
+      },
     })
     chatClientRef.current = chatClient
 

@@ -94,7 +94,8 @@ export function createChatSocketClient({
       return
     }
 
-    socket = new WebSocket(getWebSocketUrl(), ['v12.stomp', 'v11.stomp'])
+    const socketUrl = getWebSocketUrl()
+    socket = new WebSocket(socketUrl, ['v12.stomp', 'v11.stomp', 'v10.stomp'])
     onStatusChange?.('connecting')
 
     socket.addEventListener('open', () => {
@@ -151,9 +152,15 @@ export function createChatSocketClient({
       })
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       connected = false
       onStatusChange?.('disconnected')
+
+      if (!manuallyClosed && event.code !== 1000) {
+        onError?.(
+          `Chat disconnected (${socketUrl}) code=${event.code} reason=${event.reason || 'none'} readyState=${socket?.readyState ?? 'unknown'}`,
+        )
+      }
 
       if (!manuallyClosed) {
         reconnectTimeoutId = window.setTimeout(connect, RECONNECT_DELAY_MS)
@@ -161,7 +168,9 @@ export function createChatSocketClient({
     })
 
     socket.addEventListener('error', () => {
-      onError?.(`Chat connection failed (${getWebSocketUrl()})`)
+      onError?.(
+        `Chat connection failed (${socketUrl}) readyState=${socket?.readyState ?? 'unknown'}`,
+      )
     })
   }
 

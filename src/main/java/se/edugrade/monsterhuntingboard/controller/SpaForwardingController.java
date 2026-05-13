@@ -6,9 +6,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class SpaForwardingController {
 
+    @GetMapping("/")
+    public String forwardRootToIndex() {
+        return "forward:/index.html";
+    }
+
     @GetMapping({
-            "/{path:^(?!api$|assets$|actuator$|v3$)[^.]*}",
-            "/{path:^(?!api$|assets$|actuator$|v3$)[^.]*}/**/{subpath:[^.]*}"
+            "/battle",
+            "/battle/group/{huntId}",
+            "/hunts/{huntId}/lobby"
     })
     public String forwardToIndex() {
         return "forward:/index.html";
