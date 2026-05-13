@@ -1,16 +1,42 @@
 # Frontend README
 
-## Overview
+The frontend is a React application built with Vite. It provides the user interface for Monster Hunting Board and communicates with the Spring Boot backend through Axios.
 
-The frontend is a React application built with Vite. It communicates with the backend API through Axios and supports both:
+---
 
-- local development with the Vite dev server
-- bundled production builds served by Spring Boot
+## Technology
 
-## Prerequisites
+- React
+- Vite
+- Axios
+- React Router
+- ESLint
+- Nginx for the production frontend container
 
-- Node.js
-- npm
+---
+
+## Structure
+
+Frontend source code is under:
+
+```text
+frontend/src
+```
+
+Important areas:
+
+- `src/api`: Axios client and API-specific request helpers
+- `src/components`: reusable UI components and panels
+- `src/pages`: route-level page components
+- `src/hooks`: frontend hooks
+- `src/assets`: frontend assets used by the UI
+
+Container files:
+
+- `frontend/Dockerfile`
+- `frontend/nginx.conf`
+
+---
 
 ## Install Dependencies
 
@@ -20,69 +46,179 @@ From the `frontend` folder:
 npm install
 ```
 
-## Run the Frontend in Development Mode
+For CI-like installs, use:
 
-Start the Vite dev server:
+```powershell
+npm ci
+```
+
+---
+
+## Run in Development Mode
+
+Start the frontend dev server:
 
 ```powershell
 npm run dev
 ```
 
-Default frontend URL:
+Default URL:
 
-- `http://localhost:5173`
-
-API behavior in development:
-
-- the frontend uses `/api` by default
-- Vite proxies `/api` requests to `http://localhost:8080`
-
-This means the backend should also be running during frontend development.
-
-## Build the Frontend for Bundled Mode
-
-Build the frontend into the Spring Boot static resource directory:
-
-```powershell
-npm.cmd run build
+```text
+http://localhost:5173
 ```
 
-The production build output is written to:
+The backend should also be running on:
 
-- `../src/main/resources/static`
+```text
+http://localhost:8080
+```
 
-After building, start the backend from the repository root and open:
-
-- `http://localhost:8080`
-
-## Environment Variables
-
-Frontend environment variables use the Vite `VITE_` prefix.
-
-Relevant variable:
-
-- `VITE_API_URL`
-
-Example:
+The frontend uses `/api` as the default API base. If you run Vite directly on your host machine and need to bypass the proxy, create `frontend/.env.local` with:
 
 ```env
 VITE_API_URL=http://localhost:8080/api
 ```
 
-If `VITE_API_URL` is not set, the frontend falls back to:
+Then browser requests go directly to the backend on `localhost:8080`.
+
+---
+
+## API Configuration
+
+The Axios client is configured in:
 
 ```text
-/api
+src/api/apiClient.js
 ```
 
-That fallback works for:
+It uses:
 
-- bundled mode in Spring Boot
-- local development through the Vite proxy
+```javascript
+import.meta.env.VITE_API_URL || '/api'
+```
+
+This means:
+
+- if `VITE_API_URL` is set, that value is used
+- otherwise, requests go to `/api`
+
+The `/api` fallback works for Docker production through Nginx and for bundled Spring Boot mode.
+
+Most local and Docker workflows do not need this variable.
+
+---
+
+## Build the Frontend
+
+From the `frontend` folder:
+
+```powershell
+npm run build
+```
+
+The Vite build output is written to:
+
+```text
+dist
+```
+
+Spring Boot can serve frontend files from:
+
+```text
+../src/main/resources/static
+```
+
+Vite does not automatically write to that folder. To refresh the bundled Spring Boot static files manually:
+
+```powershell
+npm run build
+Remove-Item -Recurse -Force ..\src\main\resources\static\*
+Copy-Item -Recurse .\dist\* ..\src\main\resources\static\
+```
+
+After copying the files, the Spring Boot backend can serve the built frontend on:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## Preview Production Build
+
+From the `frontend` folder:
+
+```powershell
+npm run preview
+```
+
+This previews the built Vite output locally.
+
+---
+
+## Lint
+
+From the `frontend` folder:
+
+```powershell
+npm run lint
+```
+
+This is also run by GitHub Actions.
+
+---
+
+## Docker
+
+The frontend Docker image is built from:
+
+```text
+frontend/Dockerfile
+```
+
+It uses a multi-stage build:
+
+1. Node builds the Vite app.
+2. Nginx serves the built static files.
+
+---
+
+## Nginx
+
+The production frontend container uses:
+
+```text
+frontend/nginx.conf
+```
+
+Nginx serves the React app and proxies backend-related paths to the backend container:
+
+- `/api/...` -> `http://backend:8080`
+- `/swagger-ui.html` -> `http://backend:8080`
+- `/swagger-ui/...` -> `http://backend:8080`
+- `/v3/api-docs` and `/v3/api-docs/...` -> `http://backend:8080`
+
+The frontend uses client-side routing. Nginx falls back to `index.html` for normal frontend routes.
+
+---
 
 ## Available Scripts
 
 - `npm run dev`: start the Vite development server
-- `npm.cmd run build`: create a production build for Spring Boot
-- `npm run preview`: preview the production build with Vite
+- `npm run build`: build production assets
+- `npm run preview`: preview the production build
 - `npm run lint`: run ESLint
+
+---
+
+## Published Image
+
+GitHub Actions publishes the frontend image to GitHub Container Registry:
+
+```text
+ghcr.io/demonetic/monster-hunter-board-frontend:latest
+ghcr.io/demonetic/monster-hunter-board-frontend:<commit-sha>
+```
+
+The Hetzner production server pulls this image through `docker-compose.prod.yml`.

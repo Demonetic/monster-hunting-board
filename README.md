@@ -1,75 +1,149 @@
 # Monster Hunting Board
 
-## Overview
+Monster Hunting Board is a full-stack web application for managing fantasy hunts, hunters, beasts, inventory, battles, and weather-influenced hunt results.
 
-Monster Hunting Board is a full-stack web application built with:
+The project was built for a DevOps assignment and includes local development workflows, Dockerized runtime, CI checks, image publishing, and automated deployment to a Hetzner server.
 
-- Spring Boot for the backend API
-- React + Vite for the frontend
-- MySQL for the main application database
-- H2 for automated tests
+---
 
-The application supports authentication with JWT, hunter and hunt management, and a bundled one-port mode where Spring Boot serves both the frontend and the API on `http://localhost:8080`.
+## Stack
 
-The repository now also includes:
+- Backend: Spring Boot 3, Java 21, Spring Security, JWT, Spring Data JPA
+- Frontend: React, Vite, Axios
+- Database: MySQL in Docker
+- Tests: Maven, Spring Boot Test, H2
+- API docs: Swagger UI / OpenAPI
+- Weather service: Open-Meteo, called from the backend
+- DevOps: Docker, Docker Compose, GitHub Actions, GHCR, Hetzner
 
-- a GitHub Actions CI workflow
+---
 
-## Repository Structure
+## Project Guides
 
-- [src/README.md](src/README.md): backend setup, run commands, tests, and API request file usage
-- [frontend/README.md](frontend/README.md): frontend setup, development mode, and production build workflow
-- [generated-requests.http](generated-requests.http): sample API requests for manual backend testing
+- [src/README.md](src/README.md): backend setup, configuration, API, and tests
+- [frontend/README.md](frontend/README.md): frontend setup, development, build, and Nginx behavior
+
+Important root files:
+
+- [docker-compose.yml](docker-compose.yml): local full-stack Docker setup
+- [docker-compose.prod.yml](docker-compose.prod.yml): production Docker setup for Hetzner
+- [generated-requests.http](generated-requests.http): manual API requests
 - [requirements.md](requirements.md): assignment requirements
-- [documentation/](documentation/intended-layout-design.md): design notes and screenshots
 
-## Main Workflows
+---
 
-### Backend Only
+## Quick Start With Docker
 
-Run the Spring Boot application from the repository root:
+Create a local `.env` file:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+Copy-Item .env.example .env
 ```
 
-The backend API will be available on `http://localhost:8080/api/...`.
+Start the full application:
 
-### Frontend Development
+```powershell
+docker compose up --build
+```
 
-Run the frontend dev server from the `frontend` folder:
+Open:
+
+- App: `http://localhost`
+- Backend API: `http://localhost:8080/api`
+- Swagger UI: `http://localhost/swagger-ui.html`
+
+Stop containers:
+
+```powershell
+docker compose down
+```
+
+---
+
+## Other Local Workflows
+
+Backend only:
+
+```powershell
+mvn spring-boot:run
+```
+
+Frontend dev server:
 
 ```powershell
 cd frontend
+npm install
 npm run dev
 ```
 
-The Vite dev server runs on `http://localhost:5173` and proxies `/api` requests to the backend.
+For more detail, use the backend and frontend README files linked above.
 
-### Bundled Full App
+---
 
-Build the frontend into Spring Boot static resources, then start the backend:
+## Production
 
-```powershell
-cd frontend
-npm.cmd run build
-cd ..
-.\mvnw.cmd spring-boot:run
+The application is deployed on Hetzner:
+
+```text
+http://178.105.130.72
 ```
 
-Open `http://localhost:8080`.
+Production uses [docker-compose.prod.yml](docker-compose.prod.yml) and pulls images from GitHub Container Registry:
 
-## Environment Configuration
+- `ghcr.io/demonetic/monster-hunter-board-backend:latest`
+- `ghcr.io/demonetic/monster-hunter-board-frontend:latest`
 
-Copy `.env.example` to `.env` and fill in your local values for the main application.
+Manual production update on the server:
 
-Example values include:
+```bash
+cd ~/git/06_devops_assignment_1_individual
+git pull origin main
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+docker compose -f docker-compose.prod.yml ps
+```
 
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `SERVER_PORT`
-- `VITE_API_URL`
+Public production URLs:
 
-Tests do not require `.env`. They use isolated H2 settings from `src/test/resources/application-test.properties`.
+- App: `http://178.105.130.72`
+- API example: `http://178.105.130.72/api/beasts`
+- Swagger UI: `http://178.105.130.72/swagger-ui.html`
+- OpenAPI JSON: `http://178.105.130.72/v3/api-docs`
+
+---
+
+## CI/CD
+
+GitHub Actions workflows:
+
+- [ci.yml](.github/workflows/ci.yml): backend tests, frontend lint/build, Docker build checks, and Compose validation
+- [publish-images.yml](.github/workflows/publish-images.yml): publishes backend and frontend images to GHCR
+- [deploy.yml](.github/workflows/deploy.yml): deploys the latest images to Hetzner over SSH
+
+Pipeline:
+
+```text
+Push to main
+-> CI validates the project
+-> Docker images are published to GHCR
+-> Hetzner pulls and recreates the production containers
+```
+
+Required GitHub Actions secrets:
+
+- `HETZNER_HOST`
+- `HETZNER_USER`
+- `HETZNER_SSH_KEY`
+- `HETZNER_PORT`
+
+---
+
+## Main Features
+
+- JWT login and role-based access
+- Hunter registration and profile management
+- Beast and hunt management
+- Solo and group hunt flows
+- Inventory and shop functionality
+- Weather-aware hunt calculations with Open-Meteo data
+- Swagger/OpenAPI documentation
