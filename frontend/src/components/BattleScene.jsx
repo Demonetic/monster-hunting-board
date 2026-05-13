@@ -99,16 +99,18 @@ function buildInitialHunterCombatants(battleResult) {
 }
 
 function getHunterPlacementStyle(index, count) {
-  if (count <= 1) {
-    return {}
-  }
+    if (count <= 1) {
+      return {}
+    }
 
-  const verticalOffsets = ['10%', '21%', '2%', '30%', '-6%']
+  const verticalOffsets = [10, 21, 2, 30, -6]
   const horizontalOffsets = ['0px', '34px', '68px', '18px', '88px']
+  const verticalOffset = verticalOffsets[index] ?? index * 7
 
   return {
-    bottom: `calc(10% + ${verticalOffsets[index] ?? `${index * 7}%`})`,
+    bottom: `calc(10% + ${verticalOffset}%)`,
     left: `calc(5% + ${horizontalOffsets[index] ?? `${index * 24}px`})`,
+    zIndex: 100 - verticalOffset,
   }
 }
 

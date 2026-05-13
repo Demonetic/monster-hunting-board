@@ -2062,6 +2062,11 @@ textarea:focus-visible {
   height: auto;
 }
 
+.menu-panel-location-save-button {
+  align-self: start;
+  margin-top: 1.45rem;
+}
+
 .menu-panel-save-button:disabled {
   cursor: default;
   opacity: 0.56;

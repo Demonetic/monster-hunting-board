@@ -555,6 +555,11 @@ class HuntServiceTest {
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
         assertThatThrownBy(() -> huntService.deleteHunt(activeHunt.getId()))
                 .isInstanceOf(InvalidGameRuleException.class);
+
+        activeHunt.setStatus(HuntStatus.COMPLETED);
+        huntRepository.save(activeHunt);
+        huntService.deleteHunt(activeHunt.getId());
+        assertThat(huntRepository.existsById(activeHunt.getId())).isFalse();
     }
 
     private void saveHunter(String username, String displayName, Appearance appearance) {

@@ -276,7 +276,7 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
 
                       <button
                         type="button"
-                        className="menu-panel-save-button"
+                        className="menu-panel-save-button menu-panel-location-save-button"
                         onClick={handleSaveLocation}
                         disabled={isSavingLocation || selectedCity.trim() === (hunter.city ?? '').trim()}
                         aria-label="Save location"

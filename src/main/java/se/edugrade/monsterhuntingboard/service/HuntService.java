@@ -283,10 +283,13 @@ public class HuntService {
     public void deleteHunt(Long id) {
         Hunt hunt = getHuntOrThrow(id);
 
-        if (huntParticipationRepository.existsByHuntId(hunt.getId())) {
+        if (huntParticipationRepository.existsByHuntId(hunt.getId()) && !canDeleteHuntWithParticipations(hunt)) {
             throw new InvalidGameRuleException("Cannot delete hunt because hunters have already joined it");
         }
 
+        if (canDeleteHuntWithParticipations(hunt)) {
+            huntParticipationRepository.deleteAll(huntParticipationRepository.findByHuntId(hunt.getId()));
+        }
         huntRepository.delete(hunt);
         log.info("Deleted hunt id={}", id);
     }
@@ -933,6 +936,11 @@ public class HuntService {
         return afterAvailability
                 && beforeExpiry
                 && (hunt.getStatus() == HuntStatus.SCHEDULED || hunt.getStatus() == HuntStatus.ACTIVE);
+    }
+
+    private boolean canDeleteHuntWithParticipations(Hunt hunt) {
+        return hunt.getType() == HuntType.HUNT
+                && (hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED);
     }
 
     private LocalDateTime getCurrentTime() {
