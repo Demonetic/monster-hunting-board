@@ -36,7 +36,7 @@ public class SecurityConfig {
     private static final String ACTUATOR_HEALTH_PATH = "/actuator/health";
     private static final String SWAGGER_UI_ROOT = "/swagger-ui.html";
     private static final String SWAGGER_UI_PATH = "/swagger-ui/**";
-    private static final String API_DOCS_ROOT = "/v3/api-docs/";
+    private static final String API_DOCS_ROOT = "/v3/api-docs";
     private static final String API_DOCS_PATH = "/v3/api-docs/**";
     private static final String BEASTS_PATH = "/api/beasts/**";
     private static final String HUNTS_PATH = "/api/hunts/**";
