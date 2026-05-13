@@ -82,6 +82,9 @@ function HuntsPanel({ hunts, onClose, onSelectHunt }) {
                     {hunt.type === 'SOLO_HUNT' && hunt.maxWins && (
                       <p>{hunt.completed ? 'Completed' : `Wins: ${hunt.winCount} / ${hunt.maxWins}`}</p>
                     )}
+                    {hunt.type === 'HUNT' && (hunt.status === 'COMPLETED' || hunt.status === 'FAILED') && (
+                      <p>{hunt.status === 'FAILED' ? 'Failed' : 'Completed'}</p>
+                    )}
                     {hunt.type === 'HUNT' && (
                       <p>
                         Party: {hunt.currentPartySize}

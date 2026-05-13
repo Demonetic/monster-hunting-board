@@ -164,6 +164,8 @@ function getActionConfig({
   isSubmitting,
   canEnterLobby,
 }) {
+  const isFinished = hunt.status === 'COMPLETED' || hunt.status === 'FAILED' || isCompleted
+
   if (role === 'GAME_MASTER') {
     return {
       primary: {
@@ -179,11 +181,11 @@ function getActionConfig({
     }
   }
 
-  if (hunt.status === 'COMPLETED' || isCompleted) {
+  if (isFinished) {
     return {
       primary: {
         disabled: true,
-        label: 'Completed',
+        label: hunt.status === 'FAILED' ? 'Failed' : 'Completed',
       },
     }
   }
@@ -283,6 +285,10 @@ function getActionImage(actionConfig) {
     return buttonCompleted
   }
 
+  if (actionConfig.label === 'Failed') {
+    return buttonCompleted
+  }
+
   if (actionConfig.label === 'Complete Hunt') {
     return buttonCompleteHunt
   }
@@ -347,7 +353,9 @@ function HuntModal({ hunt, onClose, onHuntChanged, role, showToast, weather }) {
       : { joined: false, completed: false, inProgress: false, signature: huntSignature }
   const isGroupHunt = hunt.type === 'HUNT'
   const isJoined = huntProgress.joined
-  const isCompleted = isGroupHunt ? huntProgress.completed : Boolean(hunt.completed)
+  const isCompleted = isGroupHunt
+    ? huntProgress.completed || hunt.status === 'COMPLETED' || hunt.status === 'FAILED' || Boolean(hunt.completed)
+    : Boolean(hunt.completed)
   const isInProgress = huntProgress.inProgress || hunt.status === 'ACTIVE'
   const msUntilStart = getMillisecondsUntilStart(hunt.startTime)
   const canEnterLobby =

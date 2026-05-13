@@ -880,7 +880,8 @@ public class HuntService {
     ) {
         Integer maxWins = getSoloHuntMaxWins(hunt);
         int winCount = 0;
-        boolean completed = false;
+        boolean completed = hunt.getType() == HuntType.HUNT
+                && (hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED);
 
         if (hunter != null && maxWins != null) {
             winCount = progressByHuntId.getOrDefault(hunt.getId(), null) != null

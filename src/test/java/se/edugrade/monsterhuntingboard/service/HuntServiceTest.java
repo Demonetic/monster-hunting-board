@@ -491,6 +491,9 @@ class HuntServiceTest {
         assertThat(firstHunter.getCurrentHp()).isEqualTo(100);
         assertThat(secondHunter.getCurrentHp()).isEqualTo(100);
         assertThat(huntRepository.findById(activeHunt.getId()).orElseThrow().getStatus()).isEqualTo(HuntStatus.FAILED);
+
+        HuntResponse failedHuntResponse = huntService.getHuntById(activeHunt.getId(), hunterOneUsername);
+        assertThat(failedHuntResponse.completed()).isTrue();
     }
 
     @Test
