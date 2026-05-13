@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import HuntPin from '../components/HuntPin'
+import iconChat from '../assets/icon_chat.png'
 import logoRound from '../assets/logo_round.png'
 import weatherPanel from '../assets/weather_panel.png'
 import worldMap from '../assets/world_map.png'
@@ -92,7 +93,16 @@ function getAvailablePosition(index, placedPositions) {
   return clampPosition({ x: 50, y: 60 })
 }
 
-function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
+function BoardPage({
+  hunts,
+  loading,
+  error,
+  weather,
+  onSelectHunt,
+  showChatButton = false,
+  isChatOpen = false,
+  onToggleChat = null,
+}) {
   const mappedHunts = useMemo(
     () => {
       const placedPositions = []
@@ -146,6 +156,18 @@ function BoardPage({ hunts, loading, error, weather, onSelectHunt }) {
           <span>{weather.city}{weather.country ? `, ${weather.country}` : ''}</span>
           <p>{weather.activeEffects[0] ?? 'No weather effects'}</p>
         </section>
+      )}
+
+      {showChatButton && (
+        <button
+          type="button"
+          className="board-chat-button"
+          onClick={onToggleChat}
+          aria-label="Toggle global chat"
+          aria-pressed={isChatOpen}
+        >
+          <img src={iconChat} alt="" aria-hidden="true" />
+        </button>
       )}
 
       {loading && <p className="board-status">Loading hunts...</p>}

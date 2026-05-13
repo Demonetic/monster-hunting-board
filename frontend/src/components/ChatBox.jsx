@@ -24,13 +24,15 @@ function ChatBox({
   title = 'Global Chat',
   collapsible = false,
   initiallyCollapsed = false,
+  collapsed: controlledCollapsed,
+  onCollapsedChange = null,
   disabled = false,
   className = '',
 }) {
   const messageListRef = useRef(null)
   const chatClientRef = useRef(null)
   const shouldAutoScrollRef = useRef(true)
-  const [collapsed, setCollapsed] = useState(initiallyCollapsed)
+  const [internalCollapsed, setInternalCollapsed] = useState(initiallyCollapsed)
   const [messages, setMessages] = useState([])
   const [messageText, setMessageText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -39,6 +41,7 @@ function ChatBox({
   const [connectionStatus, setConnectionStatus] = useState('disconnected')
 
   const isLobbyChat = mode === 'LOBBY'
+  const collapsed = controlledCollapsed ?? internalCollapsed
   const canLoad = !collapsed && !disabled && (!isLobbyChat || lobbyId)
   const topicDestination = isLobbyChat
     ? `/topic/chat/lobby/${lobbyId}`
@@ -175,6 +178,14 @@ function ChatBox({
     }
   }
 
+  const updateCollapsed = (nextCollapsed) => {
+    if (controlledCollapsed === undefined) {
+      setInternalCollapsed(nextCollapsed)
+    }
+
+    onCollapsedChange?.(nextCollapsed)
+  }
+
   return (
     <section className={`chat-box ${collapsed ? 'is-collapsed' : ''} ${className}`.trim()}>
       <header className="chat-box-header">
@@ -183,7 +194,7 @@ function ChatBox({
           <button
             type="button"
             className="chat-box-toggle"
-            onClick={() => setCollapsed((current) => !current)}
+            onClick={() => updateCollapsed(!collapsed)}
             aria-expanded={!collapsed}
           >
             {collapsed ? 'Open' : 'Close'}

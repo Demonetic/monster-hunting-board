@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const backendTarget = 'http://localhost:8080'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -13,12 +15,18 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://backend:8080',
+        target: backendTarget,
         changeOrigin: true,
         secure: false,
       },
+      '/ws': {
+        target: backendTarget,
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
       '/swagger-ui': {
-        target: 'http://backend:8080',
+        target: backendTarget,
         changeOrigin: true,
         secure: false,
       },

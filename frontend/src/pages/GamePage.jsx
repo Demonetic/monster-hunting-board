@@ -23,6 +23,7 @@ function GamePage() {
   const [huntsLoading, setHuntsLoading] = useState(false)
   const [huntsError, setHuntsError] = useState('')
   const [selectedHuntId, setSelectedHuntId] = useState(null)
+  const [globalChatOpen, setGlobalChatOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const {
     weather,
@@ -117,6 +118,7 @@ function GamePage() {
     clearRole()
     clearToken()
     setActiveOverlay(null)
+    setGlobalChatOpen(false)
     setSelectedHuntId(null)
     setAuthenticated(false)
     setRole('')
@@ -139,6 +141,9 @@ function GamePage() {
         error={authenticated ? huntsError : ''}
         weather={weather}
         onSelectHunt={handleSelectHunt}
+        showChatButton={authenticated && role === 'HUNTER'}
+        isChatOpen={globalChatOpen}
+        onToggleChat={() => setGlobalChatOpen((current) => !current)}
       />
 
       {selectedHunt && (
@@ -206,7 +211,8 @@ function GamePage() {
         <ChatBox
           title="Global Chat"
           collapsible
-          initiallyCollapsed
+          collapsed={!globalChatOpen}
+          onCollapsedChange={(nextCollapsed) => setGlobalChatOpen(!nextCollapsed)}
           className="global-chat-panel"
         />
       )}

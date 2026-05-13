@@ -31,8 +31,10 @@ import se.edugrade.monsterhuntingboard.security.JwtAuthenticationFilter;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private static final RequestMatcher SPA_GET_REQUESTS =
-            RegexRequestMatcher.regexMatcher(HttpMethod.GET, "^/(?!api(?:/|$)).*$");
+            RegexRequestMatcher.regexMatcher(HttpMethod.GET, "^/(?!(api|ws)(?:/|$)).*$");
     private static final String AUTH_PATH = "/api/auth/**";
+    private static final String WEB_SOCKET_PATH = "/ws";
+    private static final String WEB_SOCKET_PATHS = "/ws/**";
     private static final String ACTUATOR_HEALTH_PATH = "/actuator/health";
     private static final String SWAGGER_UI_ROOT = "/swagger-ui.html";
     private static final String SWAGGER_UI_PATH = "/swagger-ui/**";
@@ -56,6 +58,7 @@ public class SecurityConfig {
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(WEB_SOCKET_PATH, WEB_SOCKET_PATHS).permitAll()
                         .requestMatchers(SPA_GET_REQUESTS).permitAll()
                         .requestMatchers(AUTH_PATH, ACTUATOR_HEALTH_PATH, SWAGGER_UI_ROOT, SWAGGER_UI_PATH, API_DOCS_PATH, API_DOCS_ROOT)
                         .permitAll()
