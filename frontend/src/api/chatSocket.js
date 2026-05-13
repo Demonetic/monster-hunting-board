@@ -94,7 +94,7 @@ export function createChatSocketClient({
       return
     }
 
-    socket = new WebSocket(getWebSocketUrl())
+    socket = new WebSocket(getWebSocketUrl(), ['v12.stomp', 'v11.stomp'])
     onStatusChange?.('connecting')
 
     socket.addEventListener('open', () => {
