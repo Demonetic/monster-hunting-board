@@ -3,9 +3,38 @@ import { getToken } from './authStorage'
 const FRAME_TERMINATOR = '\u0000'
 const RECONNECT_DELAY_MS = 2500
 
+function toWebSocketUrl(value) {
+  if (value.startsWith('ws://') || value.startsWith('wss://')) {
+    return value
+  }
+
+  if (value.startsWith('http://')) {
+    return `ws://${value.slice('http://'.length)}`
+  }
+
+  if (value.startsWith('https://')) {
+    return `wss://${value.slice('https://'.length)}`
+  }
+
+  if (value.startsWith('/')) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}${value}`
+  }
+
+  return value
+}
+
 function getWebSocketUrl() {
   if (import.meta.env.VITE_WS_URL) {
-    return import.meta.env.VITE_WS_URL
+    return toWebSocketUrl(import.meta.env.VITE_WS_URL)
+  }
+
+  const isLocalViteDev =
+    ['localhost', '127.0.0.1'].includes(window.location.hostname) &&
+    window.location.port === '5173'
+
+  if (isLocalViteDev) {
+    return 'ws://localhost:8080/ws'
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -132,7 +161,7 @@ export function createChatSocketClient({
     })
 
     socket.addEventListener('error', () => {
-      onError?.('Chat connection failed')
+      onError?.(`Chat connection failed (${getWebSocketUrl()})`)
     })
   }
 

@@ -3,6 +3,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NGINX_CONF: nginx.local.conf
     container_name: monster-hunter-board-frontend
     ports:
       - '${FRONTEND_PORT}:80'

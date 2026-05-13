@@ -1350,13 +1350,13 @@ textarea:focus-visible {
 .inventory-character-stage {
   position: absolute;
   left: 4.8%;
-  top: 30.2%;
+  top: 39.4%;
   width: 44%;
-  height: 56.6%;
+  height: 47.4%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 1.1%;
+  padding-bottom: 0.2%;
   pointer-events: none;
 }
 
@@ -3236,9 +3236,9 @@ textarea:focus-visible {
   }
 
   .inventory-character-stage {
-    top: 30.8%;
+    top: 39.8%;
     width: 43%;
-    height: 54.2%;
+    height: 45.2%;
   }
 
   .inventory-character-image {
