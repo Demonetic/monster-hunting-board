@@ -269,6 +269,9 @@ function MenuPanel({ onClose, showToast, onLocationUpdated }) {
                           onChange={(event) => setSelectedCity(event.target.value)}
                           placeholder="Stockholm"
                         />
+                        <small className="weather-source-note menu-weather-source">
+                          Weather data from Open-Meteo
+                        </small>
                       </label>
 
                       <button

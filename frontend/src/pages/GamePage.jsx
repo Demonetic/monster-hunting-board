@@ -11,7 +11,6 @@ import MenuPanel from '../components/MenuPanel'
 import ShopPanel from '../components/ShopPanel'
 import Toast from '../components/Toast'
 import useCurrentWeather from '../hooks/useCurrentWeather'
-import titleImage from '../assets/monster_hunter_board.png'
 import BoardPage from './BoardPage'
 
 function GamePage() {
@@ -114,12 +113,6 @@ function GamePage() {
 
   return (
     <div className="game-page-shell">
-      {!authenticated && (
-        <div className="game-title" aria-hidden="true">
-          <img src={titleImage} alt="" />
-        </div>
-      )}
-
       <BoardPage
         hunts={hunts}
         loading={authenticated && huntsLoading}
