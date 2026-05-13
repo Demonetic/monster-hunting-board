@@ -222,6 +222,30 @@ class HuntServiceTest {
     }
 
     @Test
+    void completedGroupHuntCanReturnCachedBattleResultForOtherParticipants() {
+        huntService.joinHunt(activeHunt.getId(), hunterOneUsername);
+        huntService.joinHunt(activeHunt.getId(), hunterTwoUsername);
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        HuntResultResponse firstResponse = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterOneUsername,
+                new CompleteHuntRequest(true)
+        );
+        HuntResultResponse secondResponse = huntService.completeHuntForCurrentHunter(
+                activeHunt.getId(),
+                hunterTwoUsername,
+                new CompleteHuntRequest(true)
+        );
+
+        assertThat(firstResponse.turns()).hasSize(3);
+        assertThat(secondResponse.currentHunterId()).isEqualTo(secondHunter.getId());
+        assertThat(secondResponse.turns()).hasSize(3);
+        assertThat(secondResponse.initialBeastHp()).isEqualTo(firstResponse.initialBeastHp());
+        assertThat(secondResponse.battleParticipants()).hasSize(2);
+    }
+
+    @Test
     void sunnyWeatherAddsTenPercentGoldReward() {
         given(weatherService.getCurrentWeatherForHunter(any(Hunter.class))).willReturn(sunnyWeather());
         huntService.joinHunt(activeHunt.getId(), hunterOneUsername);

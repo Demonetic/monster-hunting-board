@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -67,6 +68,8 @@ public class HuntService {
     private final HunterGeneratedHuntProgressRepository hunterGeneratedHuntProgressRepository;
     private final BattleService battleService;
     private final WeatherService weatherService;
+    private final Map<Long, Map<Long, HuntResultResponse>> completedGroupBattleResults = new ConcurrentHashMap<>();
+    private final Map<Long, Object> groupCompletionLocks = new ConcurrentHashMap<>();
 
     @Transactional
     public HuntResponse createHunt(CreateHuntRequest request) {
@@ -221,21 +224,34 @@ public class HuntService {
                 .findByHunterIdAndHuntId(hunter.getId(), hunt.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Participation not found for this hunter and hunt"));
 
-        validateHuntCanBeCompleted(hunt);
-        if (participation.isCompleted()) {
-            throw new InvalidHuntStateException("Hunt participation has already been completed");
-        }
-        validateGeneratedHuntAvailability(hunt);
-        validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
-        validateHunterCanFight(hunter);
         if (hunt.getType() != HuntType.HUNT) {
             throw new InvalidGameRuleException("Only HUNT missions can be completed here");
         }
 
-        List<HuntParticipation> participations = huntParticipationRepository.findByHuntIdOrderByJoinedAtAscIdAsc(hunt.getId());
-        Map<Long, GroupParticipantBattleContext> participantWeatherContexts = buildParticipantWeatherContexts(participations);
-        GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(hunt, participations, participantWeatherContexts);
-        return applyGroupResult(hunt, participations, hunter.getId(), simulation, participantWeatherContexts);
+        synchronized (groupCompletionLocks.computeIfAbsent(hunt.getId(), ignored -> new Object())) {
+            HuntResultResponse cachedResult = findCachedGroupBattleResult(hunt.getId(), hunter.getId());
+            if (cachedResult != null) {
+                return cachedResult;
+            }
+
+            if ((hunt.getStatus() == HuntStatus.COMPLETED || hunt.getStatus() == HuntStatus.FAILED)
+                    && participation.isCompleted()) {
+                return getCachedGroupBattleResult(hunt.getId(), hunter.getId());
+            }
+
+            validateHuntCanBeCompleted(hunt);
+            if (participation.isCompleted()) {
+                return getCachedGroupBattleResult(hunt.getId(), hunter.getId());
+            }
+            validateGeneratedHuntAvailability(hunt);
+            validateHunterHasRemainingGeneratedEligibility(hunt, hunter);
+            validateHunterCanFight(hunter);
+
+            List<HuntParticipation> participations = huntParticipationRepository.findByHuntIdOrderByJoinedAtAscIdAsc(hunt.getId());
+            Map<Long, GroupParticipantBattleContext> participantWeatherContexts = buildParticipantWeatherContexts(participations);
+            GroupBattleSimulation simulation = battleService.simulateGroupBossBattle(hunt, participations, participantWeatherContexts);
+            return applyGroupResult(hunt, participations, hunter.getId(), simulation, participantWeatherContexts);
+        }
     }
 
     @Transactional
@@ -530,21 +546,54 @@ public class HuntService {
         }
 
         hunt.setStatus(won ? HuntStatus.COMPLETED : HuntStatus.FAILED);
-        Hunter currentHunter = participationsByHunterId.get(currentHunterId).getHunter();
-        HuntParticipation currentParticipation = participationsByHunterId.get(currentHunterId);
-        HunterBattleOutcome currentOutcome = outcomes.get(currentHunterId);
-        GroupParticipantBattleContext currentWeatherContext = participantWeatherContexts.get(currentHunterId);
-        InitialParticipantState currentInitialState = initialStates.get(currentHunterId);
-        if (currentHunter == null || currentParticipation == null || currentOutcome == null
-                || currentWeatherContext == null || currentInitialState == null) {
-            throw new ResourceNotFoundException("Current hunter result not found for this hunt");
-        }
         List<BattleParticipantResponse> battleParticipants = buildGroupBattleParticipants(
                 participations,
                 initialStates,
                 outcomes
         );
+        Map<Long, HuntResultResponse> battleResultsByHunterId = new java.util.LinkedHashMap<>();
+        for (HuntParticipation partyParticipation : participations) {
+            Hunter partyHunter = partyParticipation.getHunter();
+            battleResultsByHunterId.put(
+                    partyHunter.getId(),
+                    buildGroupHuntResultResponse(
+                            hunt,
+                            partyHunter,
+                            participationsByHunterId.get(partyHunter.getId()),
+                            outcomes.get(partyHunter.getId()),
+                            initialStates.get(partyHunter.getId()),
+                            participantWeatherContexts.get(partyHunter.getId()),
+                            participantWeather,
+                            battleParticipants,
+                            simulation
+                    )
+            );
+        }
+        completedGroupBattleResults.put(hunt.getId(), battleResultsByHunterId);
         log.info("Completed group hunt {} with result {}", hunt.getTitle(), won ? "WIN" : "LOSS");
+        HuntResultResponse currentHunterResult = battleResultsByHunterId.get(currentHunterId);
+        if (currentHunterResult == null) {
+            throw new ResourceNotFoundException("Current hunter result not found for this hunt");
+        }
+        return currentHunterResult;
+    }
+
+    private HuntResultResponse buildGroupHuntResultResponse(
+            Hunt hunt,
+            Hunter currentHunter,
+            HuntParticipation currentParticipation,
+            HunterBattleOutcome currentOutcome,
+            InitialParticipantState currentInitialState,
+            GroupParticipantBattleContext currentWeatherContext,
+            List<ParticipantWeatherResponse> participantWeather,
+            List<BattleParticipantResponse> battleParticipants,
+            GroupBattleSimulation simulation
+    ) {
+        if (currentHunter == null || currentParticipation == null || currentOutcome == null
+                || currentWeatherContext == null || currentInitialState == null) {
+            throw new ResourceNotFoundException("Current hunter result not found for this hunt");
+        }
+
         return HuntResultResponse.from(
                 hunt,
                 currentHunter,
@@ -552,18 +601,32 @@ public class HuntService {
                 currentInitialState.initialMaxHp(),
                 simulation.initialBossHp(),
                 simulation.initialBossHp(),
-                won,
+                simulation.huntersWon(),
                 currentParticipation.getExpChange(),
                 currentParticipation.getGoldChange(),
                 currentHunter.getLevel() > currentInitialState.initialLevel(),
                 currentOutcome.damageTaken(),
-                currentInitialState.expPotionActive() && won,
+                currentInitialState.expPotionActive() && simulation.huntersWon(),
                 currentInitialState.endurancePotionActive(),
                 WeatherResponse.from(currentWeatherContext.weatherContext()),
                 participantWeather,
                 battleParticipants,
                 simulation.turns()
         );
+    }
+
+    private HuntResultResponse getCachedGroupBattleResult(Long huntId, Long hunterId) {
+        HuntResultResponse result = findCachedGroupBattleResult(huntId, hunterId);
+        if (result == null) {
+            throw new InvalidHuntStateException("This hunt has already been completed and the battle result is no longer available");
+        }
+        return result;
+    }
+
+    private HuntResultResponse findCachedGroupBattleResult(Long huntId, Long hunterId) {
+        return completedGroupBattleResults
+                .getOrDefault(huntId, Map.of())
+                .get(hunterId);
     }
 
     private void applyGroupHunterOutcome(
