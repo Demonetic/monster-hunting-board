@@ -5,9 +5,22 @@ services:
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT}:80"
+      - "443:443"
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-conf:/etc/letsencrypt
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - monster-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: monster-hunter-board-certbot
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-conf:/etc/letsencrypt
     networks:
       - monster-network
 
@@ -60,3 +73,5 @@ networks:
 
 volumes:
   mysql-data:
+  certbot-www:
+  certbot-conf:
