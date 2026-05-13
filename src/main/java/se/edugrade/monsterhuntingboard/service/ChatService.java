@@ -2,12 +2,16 @@ package se.edugrade.monsterhuntingboard.service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
+import java.time.LocalDateTime;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.edugrade.monsterhuntingboard.dto.ChatMessageRequest;
@@ -16,13 +20,11 @@ import se.edugrade.monsterhuntingboard.exception.InvalidGameRuleException;
 import se.edugrade.monsterhuntingboard.exception.InvalidHuntStateException;
 import se.edugrade.monsterhuntingboard.exception.ResourceNotFoundException;
 import se.edugrade.monsterhuntingboard.exception.UnauthorizedActionException;
-import se.edugrade.monsterhuntingboard.model.ChatMessage;
 import se.edugrade.monsterhuntingboard.model.ChatType;
 import se.edugrade.monsterhuntingboard.model.Hunt;
 import se.edugrade.monsterhuntingboard.model.HuntStatus;
 import se.edugrade.monsterhuntingboard.model.HuntType;
 import se.edugrade.monsterhuntingboard.model.Hunter;
-import se.edugrade.monsterhuntingboard.repository.ChatMessageRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntParticipationRepository;
 import se.edugrade.monsterhuntingboard.repository.HuntRepository;
 import se.edugrade.monsterhuntingboard.repository.HunterRepository;
@@ -34,19 +36,20 @@ public class ChatService {
     private static final int MAX_MESSAGE_LENGTH = 250;
     private static final Duration MIN_TIME_BETWEEN_MESSAGES = Duration.ofSeconds(1);
 
-    private final ChatMessageRepository chatMessageRepository;
     private final HunterRepository hunterRepository;
     private final HuntRepository huntRepository;
     private final HuntParticipationRepository huntParticipationRepository;
+    private final AtomicLong nextMessageId = new AtomicLong(1);
+    private final Deque<ChatMessageResponse> recentGlobalMessages = new ArrayDeque<>();
+    private final Map<Long, Deque<ChatMessageResponse>> recentLobbyMessagesByLobbyId = new HashMap<>();
     private final Map<Long, Instant> lastMessageSentByHunterId = new ConcurrentHashMap<>();
 
     @Transactional(readOnly = true)
     public List<ChatMessageResponse> getRecentGlobalMessages(String username) {
         requireHunter(username);
-        return toOldestFirst(chatMessageRepository.findByChatTypeOrderByCreatedAtDescIdDesc(
-                ChatType.GLOBAL,
-                PageRequest.of(0, RECENT_MESSAGE_LIMIT)
-        ));
+        synchronized (recentGlobalMessages) {
+            return List.copyOf(recentGlobalMessages);
+        }
     }
 
     @Transactional
@@ -55,14 +58,13 @@ public class ChatService {
         String messageText = normalizeMessage(request.message());
         enforceRateLimit(sender);
 
-        ChatMessage savedMessage = chatMessageRepository.save(ChatMessage.builder()
-                .senderHunterId(sender.getId())
-                .senderDisplayName(sender.getDisplayName())
-                .messageText(messageText)
-                .chatType(ChatType.GLOBAL)
-                .build());
+        ChatMessageResponse message = createMessage(sender, messageText, ChatType.GLOBAL, null);
 
-        return ChatMessageResponse.from(savedMessage);
+        synchronized (recentGlobalMessages) {
+            addRecentMessage(recentGlobalMessages, message);
+        }
+
+        return message;
     }
 
     @Transactional(readOnly = true)
@@ -70,11 +72,15 @@ public class ChatService {
         Hunter sender = requireHunter(username);
         requireLobbyParticipant(lobbyId, sender);
 
-        return toOldestFirst(chatMessageRepository.findByChatTypeAndLobbyIdOrderByCreatedAtDescIdDesc(
-                ChatType.LOBBY,
-                lobbyId,
-                PageRequest.of(0, RECENT_MESSAGE_LIMIT)
-        ));
+        synchronized (recentLobbyMessagesByLobbyId) {
+            return List.copyOf(recentLobbyMessagesByLobbyId.getOrDefault(lobbyId, new ArrayDeque<>()));
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public void validateLobbySubscription(Long lobbyId, String username) {
+        Hunter sender = requireHunter(username);
+        requireLobbyParticipant(lobbyId, sender);
     }
 
     @Transactional
@@ -84,15 +90,17 @@ public class ChatService {
         String messageText = normalizeMessage(request.message());
         enforceRateLimit(sender);
 
-        ChatMessage savedMessage = chatMessageRepository.save(ChatMessage.builder()
-                .senderHunterId(sender.getId())
-                .senderDisplayName(sender.getDisplayName())
-                .messageText(messageText)
-                .chatType(ChatType.LOBBY)
-                .lobbyId(lobby.getId())
-                .build());
+        ChatMessageResponse message = createMessage(sender, messageText, ChatType.LOBBY, lobby.getId());
 
-        return ChatMessageResponse.from(savedMessage);
+        synchronized (recentLobbyMessagesByLobbyId) {
+            Deque<ChatMessageResponse> recentLobbyMessages = recentLobbyMessagesByLobbyId.computeIfAbsent(
+                    lobby.getId(),
+                    ignored -> new ArrayDeque<>()
+            );
+            addRecentMessage(recentLobbyMessages, message);
+        }
+
+        return message;
     }
 
     private Hunter requireHunter(String username) {
@@ -150,10 +158,28 @@ public class ChatService {
         lastMessageSentByHunterId.put(sender.getId(), now);
     }
 
-    private List<ChatMessageResponse> toOldestFirst(List<ChatMessage> messages) {
-        return messages.stream()
-                .sorted(Comparator.comparing(ChatMessage::getCreatedAt).thenComparing(ChatMessage::getId))
-                .map(ChatMessageResponse::from)
-                .toList();
+    private ChatMessageResponse createMessage(
+            Hunter sender,
+            String messageText,
+            ChatType chatType,
+            Long lobbyId
+    ) {
+        return new ChatMessageResponse(
+                nextMessageId.getAndIncrement(),
+                sender.getId(),
+                sender.getDisplayName(),
+                messageText,
+                chatType,
+                lobbyId,
+                LocalDateTime.now()
+        );
+    }
+
+    private void addRecentMessage(Deque<ChatMessageResponse> messages, ChatMessageResponse message) {
+        messages.addLast(message);
+
+        while (messages.size() > RECENT_MESSAGE_LIMIT) {
+            messages.removeFirst();
+        }
     }
 }

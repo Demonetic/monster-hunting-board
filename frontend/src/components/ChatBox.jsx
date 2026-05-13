@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   getRecentGlobalMessages,
   getRecentLobbyMessages,
-  sendGlobalMessage,
-  sendLobbyMessage,
 } from '../api/chatApi'
+import { createChatSocketClient } from '../api/chatSocket'
 
 const MAX_MESSAGE_LENGTH = 250
-const POLL_INTERVAL_MS = 3000
 
 function formatChatTime(value) {
   if (!value) {
@@ -30,15 +28,23 @@ function ChatBox({
   className = '',
 }) {
   const messageListRef = useRef(null)
+  const chatClientRef = useRef(null)
   const [collapsed, setCollapsed] = useState(initiallyCollapsed)
   const [messages, setMessages] = useState([])
   const [messageText, setMessageText] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [connectionStatus, setConnectionStatus] = useState('disconnected')
 
   const isLobbyChat = mode === 'LOBBY'
   const canLoad = !collapsed && !disabled && (!isLobbyChat || lobbyId)
+  const topicDestination = isLobbyChat
+    ? `/topic/chat/lobby/${lobbyId}`
+    : '/topic/chat/global'
+  const sendDestination = isLobbyChat
+    ? `/app/chat/lobby/${lobbyId}`
+    : '/app/chat/global'
 
   const loadMessages = useCallback(async ({ showLoading = false } = {}) => {
     if (!canLoad) {
@@ -73,15 +79,43 @@ function ChatBox({
     const initialLoadId = window.setTimeout(() => {
       loadMessages({ showLoading: true })
     }, 0)
-    const intervalId = window.setInterval(() => {
-      loadMessages()
-    }, POLL_INTERVAL_MS)
 
     return () => {
       window.clearTimeout(initialLoadId)
-      window.clearInterval(intervalId)
     }
   }, [canLoad, loadMessages])
+
+  useEffect(() => {
+    if (!canLoad) {
+      return undefined
+    }
+
+    const chatClient = createChatSocketClient({
+      subscriptions: [topicDestination],
+      onMessage: (message) => {
+        setMessages((currentMessages) => {
+          if (currentMessages.some((currentMessage) => currentMessage.id === message.id)) {
+            return currentMessages
+          }
+
+          return [...currentMessages, message].slice(-50)
+        })
+        setSending(false)
+        setErrorMessage('')
+      },
+      onError: (message) => {
+        setSending(false)
+        setErrorMessage(message)
+      },
+      onStatusChange: setConnectionStatus,
+    })
+    chatClientRef.current = chatClient
+
+    return () => {
+      chatClient.disconnect()
+      chatClientRef.current = null
+    }
+  }, [canLoad, topicDestination])
 
   useEffect(() => {
     const listElement = messageListRef.current
@@ -92,7 +126,12 @@ function ChatBox({
   }, [messages])
 
   const trimmedMessage = messageText.trim()
-  const canSend = trimmedMessage.length > 0 && trimmedMessage.length <= MAX_MESSAGE_LENGTH && !sending && !disabled
+  const canSend =
+    trimmedMessage.length > 0 &&
+    trimmedMessage.length <= MAX_MESSAGE_LENGTH &&
+    !sending &&
+    !disabled &&
+    connectionStatus === 'connected'
 
   const handleSend = async () => {
     if (!canSend) {
@@ -102,17 +141,17 @@ function ChatBox({
     setSending(true)
 
     try {
-      const response = isLobbyChat
-        ? await sendLobbyMessage(lobbyId, trimmedMessage)
-        : await sendGlobalMessage(trimmedMessage)
+      const chatClient = chatClientRef.current
 
-      setMessages((currentMessages) => [...currentMessages, response.data].slice(-50))
+      if (!chatClient?.send(sendDestination, { message: trimmedMessage })) {
+        throw new Error('Chat is reconnecting')
+      }
+
       setMessageText('')
       setErrorMessage('')
     } catch (error) {
-      setErrorMessage(error.response?.data?.message ?? 'Could not send message')
-    } finally {
       setSending(false)
+      setErrorMessage(error.message ?? 'Could not send message')
     }
   }
 
