@@ -615,6 +615,48 @@ class HuntServiceTest {
         assertThat(huntParticipationRepository.existsByHuntId(oldManualHunt.getId())).isFalse();
     }
 
+    @Test
+    void completedGroupParticipationsCanBeDeletedEvenIfHuntStatusWasNotUpdated() {
+        Hunt inconsistentHunt = huntRepository.save(Hunt.builder()
+                .title("Completed Participation Hunt")
+                .type(HuntType.HUNT)
+                .difficulty(Difficulty.BOSS)
+                .status(HuntStatus.ACTIVE)
+                .startTime(futureStockholmTime(2))
+                .maxPartySize(10)
+                .beasts(List.of(beast))
+                .rewardExp(50)
+                .rewardGold(25)
+                .build());
+
+        Hunter firstHunter = userAccountRepository.findByUsername(hunterOneUsername).orElseThrow().getHunter();
+        Hunter secondHunter = userAccountRepository.findByUsername(hunterTwoUsername).orElseThrow().getHunter();
+
+        huntParticipationRepository.save(HuntParticipation.builder()
+                .hunt(inconsistentHunt)
+                .hunter(firstHunter)
+                .completed(true)
+                .won(true)
+                .expChange(50)
+                .goldChange(25)
+                .completedAt(currentStockholmTime())
+                .build());
+        huntParticipationRepository.save(HuntParticipation.builder()
+                .hunt(inconsistentHunt)
+                .hunter(secondHunter)
+                .completed(true)
+                .won(true)
+                .expChange(50)
+                .goldChange(25)
+                .completedAt(currentStockholmTime())
+                .build());
+
+        huntService.deleteHunt(inconsistentHunt.getId());
+
+        assertThat(huntRepository.existsById(inconsistentHunt.getId())).isFalse();
+        assertThat(huntParticipationRepository.existsByHuntId(inconsistentHunt.getId())).isFalse();
+    }
+
     private void saveHunter(String username, String displayName, Appearance appearance) {
         UserAccount userAccount = UserAccount.builder()
                 .username(username)
