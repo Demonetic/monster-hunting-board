@@ -24,6 +24,18 @@ const hunterImages = {
 const INTRO_DELAY_MS = 850
 const IMPACT_DELAY_MS = 480
 const TURN_TOTAL_MS = 1280
+const FINISH_DELAY_MS = 420
+
+function getBattleTiming(hunterCount) {
+  const extraHunters = Math.max(0, Math.min((hunterCount ?? 1) - 1, 9))
+  const speedMultiplier = 1 - extraHunters * 0.025
+
+  return {
+    impactDelayMs: Math.round(IMPACT_DELAY_MS * speedMultiplier),
+    turnTotalMs: Math.round(TURN_TOTAL_MS * speedMultiplier),
+    finishDelayMs: Math.round(FINISH_DELAY_MS * speedMultiplier),
+  }
+}
 
 function buildFloatingEntries(turn) {
   const entries = []
@@ -167,6 +179,10 @@ function BattleScene({ battleResult, onContinue }) {
     () => formatWeatherTemperature(weather?.temperatureCelsius),
     [weather?.temperatureCelsius],
   )
+  const battleTiming = useMemo(
+    () => getBattleTiming(initialHunters.length),
+    [initialHunters.length],
+  )
 
   const [phase, setPhase] = useState('intro')
   const [playedTurnIndex, setPlayedTurnIndex] = useState(-1)
@@ -217,7 +233,7 @@ function BattleScene({ battleResult, onContinue }) {
     if (nextTurnIndex >= turns.length) {
       const timeoutId = window.setTimeout(() => {
         setPhase('finished')
-      }, 420)
+      }, battleTiming.finishDelayMs)
 
       return () => window.clearTimeout(timeoutId)
     }
@@ -268,21 +284,21 @@ function BattleScene({ battleResult, onContinue }) {
       }))
 
       setFloatingTextsByCombatant(nextFloatingTexts.length > 0 ? { [targetId]: nextFloatingTexts } : {})
-    }, IMPACT_DELAY_MS)
+    }, battleTiming.impactDelayMs)
 
     const resolveTimeoutId = window.setTimeout(() => {
       setActingCombatantId('')
       setDamagedCombatantId('')
       setFloatingTextsByCombatant({})
       setPlayedTurnIndex(nextTurnIndex)
-    }, TURN_TOTAL_MS)
+    }, battleTiming.turnTotalMs)
 
     return () => {
       window.clearTimeout(startTimeoutId)
       window.clearTimeout(impactTimeoutId)
       window.clearTimeout(resolveTimeoutId)
     }
-  }, [battleResult, phase, playedTurnIndex, turns])
+  }, [battleResult, battleTiming.finishDelayMs, battleTiming.impactDelayMs, battleTiming.turnTotalMs, phase, playedTurnIndex, turns])
 
   if (!battleResult) {
     return null
