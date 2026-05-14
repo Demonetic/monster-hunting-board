@@ -2822,6 +2822,10 @@ textarea:focus-visible {
   width: min(430px, 36vw);
 }
 
+.battle-page.is-crowded-group-battle .battle-combatant-hunter .battle-combatant-sprite img {
+  width: min(380px, 31vw);
+}
+
 .battle-combatant-beast {
   right: 6%;
   bottom: 18%;
@@ -3536,6 +3540,10 @@ textarea:focus-visible {
 
   .battle-combatant-hunter .battle-combatant-sprite img {
     width: min(230px, 48vw);
+  }
+
+  .battle-page.is-crowded-group-battle .battle-combatant-hunter .battle-combatant-sprite img {
+    width: min(205px, 43vw);
   }
 
   .battle-combatant-beast {

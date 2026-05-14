@@ -116,17 +116,17 @@ function getHunterPlacementStyle(index, count) {
   }
 
   const centerIndex = (count - 1) / 2
-  const distanceFromCenter = index - centerIndex
-  const absoluteDistance = Math.abs(distanceFromCenter)
-  const verticalStep = count >= 8 ? 8.2 : 9.3
-  const baseBottom = count >= 8 ? 13 : 12
-  const baseLeft = count >= 8 ? 4.5 : 5
-  const horizontalStep = count >= 8 ? 2.8 : 3.2
+  const absoluteDistance = Math.abs(index - centerIndex)
+  const verticalStep = count >= 8 ? 4.4 : count >= 6 ? 5.4 : 7.8
+  const baseBottom = count >= 8 ? 10 : count >= 6 ? 10.5 : 12
+  const baseLeft = count >= 8 ? 4 : count >= 6 ? 4.4 : 5
+  const horizontalStep = count >= 8 ? 2 : count >= 6 ? 2.35 : 3
+  const bottom = baseBottom + ((count - 1) - index) * verticalStep
 
   return {
-    bottom: `calc(${baseBottom}% + ${distanceFromCenter * verticalStep}%)`,
+    bottom: `${bottom}%`,
     left: `calc(${baseLeft}% + ${absoluteDistance * horizontalStep}%)`,
-    zIndex: Math.round(220 - absoluteDistance * 10),
+    zIndex: 160 + index,
   }
 }
 
@@ -306,7 +306,7 @@ function BattleScene({ battleResult, onContinue }) {
 
   return (
     <main
-      className={`battle-page ${isGroupBattle ? 'is-group-battle' : ''}`.trim()}
+      className={`battle-page ${isGroupBattle ? 'is-group-battle' : ''} ${initialHunters.length > 5 ? 'is-crowded-group-battle' : ''}`.trim()}
       style={{ backgroundImage: `url(${arenaBackgroundImage})` }}
     >
       <div className="battle-stage">
