@@ -2822,47 +2822,6 @@ textarea:focus-visible {
   width: min(430px, 36vw);
 }
 
-.battle-page.is-group-battle .battle-combatant-hunter .battle-combatant-sprite img {
-  width: min(300px, 24vw);
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-sprite img {
-  width: var(--hunter-sprite-width, min(142px, 11vw));
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-ui {
-  left: var(--hunter-ui-offset, 72%);
-  bottom: var(--hunter-ui-bottom, 48%);
-  transform: translateY(50%);
-  width: var(--hunter-ui-width, 126px);
-  gap: 0.18rem;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-name {
-  font-size: 0.66rem;
-  padding: 0.16rem 0.38rem;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-hp {
-  padding: 0.18rem 0.26rem;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-hp-track {
-  height: 9px;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter .battle-combatant-hp-value {
-  font-size: 0.5rem;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter.is-damaged .battle-combatant-sprite img {
-  animation: battleLargeGroupDamageFlash 420ms ease-out;
-}
-
-.battle-page.is-large-group-battle .battle-combatant-hunter.is-damaged .battle-combatant-ui {
-  animation: battleLargeGroupUiFlash 420ms ease-out;
-}
-
 .battle-combatant-beast {
   right: 6%;
   bottom: 18%;
@@ -3577,10 +3536,6 @@ textarea:focus-visible {
 
   .battle-combatant-hunter .battle-combatant-sprite img {
     width: min(230px, 48vw);
-  }
-
-  .battle-page.is-group-battle .battle-combatant-hunter .battle-combatant-sprite img {
-    width: min(156px, 31vw);
   }
 
   .battle-combatant-beast {

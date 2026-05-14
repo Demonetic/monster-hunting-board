@@ -103,35 +103,18 @@ function getHunterPlacementStyle(index, count) {
     return {}
   }
 
-  if (count <= 5) {
-    const verticalOffsets = [10, 21, 2, 30, -6]
-    const horizontalOffsets = ['0px', '34px', '68px', '18px', '88px']
-    const verticalOffset = verticalOffsets[index] ?? index * 7
-
-    return {
-      bottom: `calc(10% + ${verticalOffset}%)`,
-      left: `calc(5% + ${horizontalOffsets[index] ?? `${index * 24}px`})`,
-      zIndex: 100 - verticalOffset,
-    }
-  }
-
-  const safeCount = Math.min(count, 10)
-  const step = safeCount >= 9 ? 4.5 : 5.1
-  const bottom = 5 + index * step
-  const left = 1.5 + (index % 2) * 2.1 + Math.floor(index / 2) * 0.55
-  const spriteWidth = 'min(136px, 10.5vw)'
-  const uiWidth = '122px'
-  const uiOffset = safeCount >= 9 ? '74%' : '72%'
-  const uiBottom = safeCount >= 9 ? '46%' : '48%'
+  const centerIndex = (count - 1) / 2
+  const distanceFromCenter = index - centerIndex
+  const absoluteDistance = Math.abs(distanceFromCenter)
+  const verticalStep = count >= 8 ? 8.2 : 9.3
+  const baseBottom = count >= 8 ? 13 : 12
+  const baseLeft = count >= 8 ? 4.5 : 5
+  const horizontalStep = count >= 8 ? 2.8 : 3.2
 
   return {
-    bottom: `${bottom}%`,
-    left: `${left}%`,
-    zIndex: 200 - index,
-    '--hunter-sprite-width': spriteWidth,
-    '--hunter-ui-width': uiWidth,
-    '--hunter-ui-offset': uiOffset,
-    '--hunter-ui-bottom': uiBottom,
+    bottom: `calc(${baseBottom}% + ${distanceFromCenter * verticalStep}%)`,
+    left: `calc(${baseLeft}% + ${absoluteDistance * horizontalStep}%)`,
+    zIndex: Math.round(220 - absoluteDistance * 10),
   }
 }
 
@@ -307,7 +290,7 @@ function BattleScene({ battleResult, onContinue }) {
 
   return (
     <main
-      className={`battle-page ${isGroupBattle ? 'is-group-battle' : ''} ${initialHunters.length >= 6 ? 'is-large-group-battle' : ''}`.trim()}
+      className={`battle-page ${isGroupBattle ? 'is-group-battle' : ''}`.trim()}
       style={{ backgroundImage: `url(${arenaBackgroundImage})` }}
     >
       <div className="battle-stage">
