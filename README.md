@@ -85,7 +85,7 @@ For more detail, use the backend and frontend README files linked above.
 The application is deployed on Hetzner:
 
 ```text
-http://178.105.130.72
+https://monster-hunter-board.duckdns.org/
 ```
 
 Production uses [docker-compose.prod.yml](docker-compose.prod.yml) and pulls images from GitHub Container Registry:
@@ -105,10 +105,10 @@ docker compose -f docker-compose.prod.yml ps
 
 Public production URLs:
 
-- App: `http://178.105.130.72`
-- API example: `http://178.105.130.72/api/beasts`
-- Swagger UI: `http://178.105.130.72/swagger-ui.html`
-- OpenAPI JSON: `http://178.105.130.72/v3/api-docs`
+- App: `https://monster-hunter-board.duckdns.org/`
+- API example: `https://monster-hunter-board.duckdns.org/api/beasts`
+- Swagger UI: `https://monster-hunter-board.duckdns.org/swagger-ui.html`
+- OpenAPI JSON: `https://monster-hunter-board.duckdns.org/v3/api-docs`
 
 ---
 
