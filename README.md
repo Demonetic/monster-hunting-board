@@ -80,9 +80,9 @@ For more detail, use the backend and frontend README files linked above.
 
 ---
 
-## Production
+## Production — Inactive
 
-The application is deployed on Hetzner:
+The application was previously deployed on Hetzner. The public deployment is currently inactive:
 
 ```text
 https://monster-hunter-board.duckdns.org/
