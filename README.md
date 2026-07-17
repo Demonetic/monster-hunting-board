@@ -114,13 +114,15 @@ Public production URLs:
 
 ## CI/CD
 
+> **Portfolio mirror:** GitHub Actions is intentionally disabled in this public repository to prevent the included publishing and deployment workflows from affecting the original production environment. The workflow files are retained to demonstrate the project's CI/CD implementation.
+
 GitHub Actions workflows:
 
 - [ci.yml](.github/workflows/ci.yml): backend tests, frontend lint/build, Docker build checks, and Compose validation
 - [publish-images.yml](.github/workflows/publish-images.yml): publishes backend and frontend images to GHCR
 - [deploy.yml](.github/workflows/deploy.yml): deploys the latest images to Hetzner over SSH
 
-Pipeline:
+Original pipeline:
 
 ```text
 Push to main
