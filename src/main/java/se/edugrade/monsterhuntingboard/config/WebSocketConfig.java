@@ -68,8 +68,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns(
                         "http://localhost:*",
                         "http://127.0.0.1:*",
-                        "http://monster-hunter-board.duckdns.org",
-                        "https://monster-hunter-board.duckdns.org"
+                        "http://monster-hunting-board.duckdns.org",
+                        "https://monster-hunting-board.duckdns.org"
                 );
     }
 

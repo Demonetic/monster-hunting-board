@@ -5,7 +5,6 @@ import panelParchment from '../assets/panel_information.png'
 import panelHunt from '../assets/panel_hunt.png'
 import buttonLogin from '../assets/button_login.png'
 import buttonRegister from '../assets/button_register.png'
-import logoRound from '../assets/logo_round.png'
 import AppearanceOptionSelector from './AppearanceOptionSelector'
 import PassiveSkillSummary from './PassiveSkillSummary'
 
@@ -133,8 +132,6 @@ function AuthModal({ onAuthSuccess, showToast }) {
 
   return (
     <div className="auth-modal-overlay">
-      <img className="auth-background-logo" src={logoRound} alt="" aria-hidden="true" />
-
       <section
         className={`auth-modal ${mode === 'register' ? 'is-register' : ''}`.trim()}
         style={{ backgroundImage: `url(${panelImage})` }}

@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import HuntPin from '../components/HuntPin'
 import iconChat from '../assets/icon_chat.png'
-import logoRound from '../assets/logo_round.png'
 import weatherPanel from '../assets/weather_panel.png'
 import worldMap from '../assets/world_map.png'
 import { getHuntPinType } from '../assets/beastVisuals'
@@ -136,8 +135,6 @@ function BoardPage({
       className="board-page"
       style={{ backgroundImage: `url(${worldMap})` }}
     >
-      <img className="board-logo-round" src={logoRound} alt="" aria-hidden="true" />
-
       {weather && (
         <section
           className="board-weather-card"
