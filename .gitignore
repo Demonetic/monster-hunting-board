@@ -39,6 +39,7 @@ temp/
 .env.*
 !.env.example
 !**/.env.example
+!.env.production.example
 frontend/.env
 frontend/.env.local
 application-local.properties

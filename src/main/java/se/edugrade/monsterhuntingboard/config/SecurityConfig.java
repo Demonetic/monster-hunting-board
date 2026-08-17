@@ -76,8 +76,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "http://monster-hunter-board.duckdns.org",
-                "https://monster-hunter-board.duckdns.org"
+                "http://monster-hunting-board.duckdns.org",
+                "https://monster-hunting-board.duckdns.org"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

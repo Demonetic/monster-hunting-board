@@ -1,77 +1,104 @@
 services:
-  frontend:
-    image: ghcr.io/demonetic/monster-hunter-board-frontend:latest
-    container_name: monster-hunter-board-frontend
-    restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT}:80"
-      - "443:443"
-    volumes:
-      - certbot-www:/var/www/certbot
-      - certbot-conf:/etc/letsencrypt:ro
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - monster-network
-
-  certbot:
-    image: certbot/certbot
-    container_name: monster-hunter-board-certbot
-    volumes:
-      - certbot-www:/var/www/certbot
-      - certbot-conf:/etc/letsencrypt
-    networks:
-      - monster-network
-
-  backend:
-    image: ghcr.io/demonetic/monster-hunter-board-backend:latest
-    container_name: monster-hunter-board-backend
-    restart: unless-stopped
-    ports:
-      - "${BACKEND_PORT}:8080"
-    environment:
-      DB_URL: ${DB_URL}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      SERVER_PORT: ${SERVER_PORT}
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/swagger-ui.html"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - monster-network
-
   db:
     image: mysql:8.4
-    container_name: monster-hunter-board-mysql
     restart: unless-stopped
+
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
     volumes:
       - mysql-data:/var/lib/mysql
+
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+
     networks:
       - monster-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: monster-hunting-board-backend:local
+    restart: unless-stopped
+
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SERVER_PORT: 8080
+      SPRING_JPA_SHOW_SQL: "false"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://127.0.0.1:8080/v3/api-docs"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+    networks:
+      - monster-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NGINX_CONF: nginx.conf
+
+    image: monster-hunting-board-frontend:local
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:${APP_PORT:-8082}:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--spider",
+          "http://127.0.0.1/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - monster-network
+
 networks:
   monster-network:
     driver: bridge
 
 volumes:
   mysql-data:
-  certbot-www:
-  certbot-conf:

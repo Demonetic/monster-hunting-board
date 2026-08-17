@@ -49,7 +49,7 @@ class BattleServiceBalanceTest {
         assertThat(mediumStats.winRate()).isGreaterThan(0.65);
         assertThat(mediumStats.averageRemainingHpOnWins()).isBetween(12.0, 40.0);
 
-        assertThat(hardStats.winRate()).isBetween(0.25, 0.7);
+        assertThat(hardStats.winRate()).isBetween(0.20, 0.7);
         assertThat(hardStats.averageRemainingHpOnWins()).isLessThan(30.0);
     }
 

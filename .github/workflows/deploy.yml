@@ -1,30 +1,49 @@
-name: Deploy to Hetzner
+name: Deploy production
 
 on:
-  workflow_run:
-    workflows:
-      - Publish Docker Images
-    types:
-      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monster-hunting-board-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy production containers
+    name: Deploy to production
     runs-on: ubuntu-latest
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: ${{ secrets.HETZNER_PORT }}
-          script: |
-            cd ~/git/06_devops_assignment_1_individual
-            git pull origin main
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --force-recreate
-            docker compose -f docker-compose.prod.yml ps
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+
+          printf '%s\n' "$DEPLOY_SSH_KEY" \
+            | tr -d '\r' \
+            > "$HOME/.ssh/monster-hunting-board-deploy"
+
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" \
+            | tr -d '\r' \
+            > "$HOME/.ssh/known_hosts"
+
+          chmod 600 "$HOME/.ssh/monster-hunting-board-deploy"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Deploy Monster Hunting Board
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh \
+            -T \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -i "$HOME/.ssh/monster-hunting-board-deploy" \
+            -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST"
